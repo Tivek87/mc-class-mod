@@ -282,6 +282,7 @@ public final class Factions {
             data.adopt();
             FactionEdits.store();
         }
+        FactionUpgrade.run(server, data);
     }
 
     // The factions or someone's place among them changed: who hunts whom is worked out again, and everyone told.

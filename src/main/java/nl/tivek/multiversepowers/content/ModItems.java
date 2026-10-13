@@ -47,6 +47,7 @@ import nl.tivek.multiversepowers.creature.screamer.Screamer;
 import nl.tivek.multiversepowers.creature.stalker.Stalker;
 import nl.tivek.multiversepowers.creature.wizard.WizardEntities;
 import nl.tivek.multiversepowers.creature.wizard.ritual.ArcaneTomeItem;
+import nl.tivek.multiversepowers.faction.FactionBookItem;
 import nl.tivek.multiversepowers.schematic.SchematicWandItem;
 import nl.tivek.multiversepowers.stage.StageBlocks;
 
@@ -150,6 +151,9 @@ public final class ModItems {
     public static final DeferredItem<ArcaneTomeItem> ARCANE_TOME = ITEMS.register("arcane_tome",
             () -> new ArcaneTomeItem(new Item.Properties().stacksTo(16).rarity(Rarity.EPIC)));
 
+    public static final DeferredItem<FactionBookItem> FACTION_BOOK = ITEMS.register("faction_book",
+            () -> new FactionBookItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
+
     public static final DeferredItem<SchematicWandItem> SCHEMATIC_WAND = ITEMS.register("schematic_wand",
             () -> new SchematicWandItem(new Item.Properties().stacksTo(1).rarity(Rarity.EPIC)));
 
@@ -165,6 +169,7 @@ public final class ModItems {
                         HARD_LIGHT_EGGS.forEach(egg -> output.accept(egg.get()));
                         LAMPS.forEach(lamp -> output.accept(lamp.get()));
                         output.accept(ARCANE_TOME.get());
+                        output.accept(FACTION_BOOK.get());
                         output.accept(SCHEMATIC_WAND.get());
                     }).build());
 
@@ -197,6 +202,7 @@ public final class ModItems {
         }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(ARCANE_TOME.get());
+            event.accept(FACTION_BOOK.get());
         }
         if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
             LAMPS.forEach(lamp -> event.accept(lamp.get()));

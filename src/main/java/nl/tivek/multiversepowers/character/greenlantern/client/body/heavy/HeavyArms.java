@@ -270,8 +270,9 @@ public final class HeavyArms {
         }
         for (int side = 0; side < 2; side++) {
             float sign = side == 0 ? 1.0F : -1.0F;
-            // From his own eyes the cannon's and the minigun's support arm is left out: it would fill the view.
-            if (side == 1 && (held.weapon == CANNON || held.weapon == MINIGUN)) {
+            // From his own eyes the cannon's support arm and both of the minigun's are left out: they would fill the
+            // view as a block under the gun.
+            if (held.weapon == MINIGUN || side == 1 && held.weapon == CANNON) {
                 continue;
             }
             float w = pose.weight;
@@ -297,14 +298,17 @@ public final class HeavyArms {
             Vec3 at = (side == 0 ? frame : leftFrame).at(mouth.x, mouth.y, mouth.z);
             Vector3f seen = stack.last().pose().transformPosition((float) at.x, (float) at.y, (float) at.z,
                     new Vector3f());
-            // The hand's pose stack turns its space about: past it, +x is the view's left and +z straight ahead.
+            // Past the hand's pose stack +x is the view's right and -z straight ahead.
             Vector3f left = camera.getLeftVector();
             Vector3f up = camera.getUpVector();
             Vector3f ahead = camera.getLookVector();
+            float across = -seen.x * widen;
+            float high = seen.y * widen;
+            float far = -seen.z;
             held.muzzle[side] = camera.getPosition()
-                    .add(left.x * seen.x * widen, left.y * seen.x * widen, left.z * seen.x * widen)
-                    .add(up.x * seen.y * widen, up.y * seen.y * widen, up.z * seen.y * widen)
-                    .add(ahead.x * seen.z, ahead.y * seen.z, ahead.z * seen.z);
+                    .add(left.x * across, left.y * across, left.z * across)
+                    .add(up.x * high, up.y * high, up.z * high)
+                    .add(ahead.x * far, ahead.y * far, ahead.z * far);
         }
         held.muzzleAt = ClientHeavy.now(partialTick);
     }

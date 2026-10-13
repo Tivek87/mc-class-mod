@@ -3,6 +3,41 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.12-alpha] - 2026-10-13
+
+### Added
+- **Faction Book:** a new item (a book, an ink sac and a gold nugget): every faction of the world, how it stands
+  to you, its creatures with a turning model, its story and lore, its allies and sworn enemies, the named creatures
+  near you that belong to it, and its players with their own skins.
+- **Faction over heads:** every creature and player near shows its faction in small see-through letters over its
+  head, above its name where a name shows (client setting Faction over heads).
+
+### Changed
+- **Lore factions:** the world's factions are now fifteen peoples with a story, each with a name, description and
+  lore: The Hearthbound Accord, The Exiled Covenant, The Hollow Legion, The Rotborn Blight, The Gilded Horde, The
+  Cinder Court, The Wanderers Between, The Endwatch, The Creeping Dark, The Abyssal Throne, The Wild Kin, The
+  Meadowfolk, The Tidefolk, The Arcane Conclave and The Ironfang Syndicate (no creatures: for players to join).
+- **Faction standings:** "as in the game" is gone: every faction starts hostile, neutral or friendly toward players.
+  The undead and the monsters are hostile, villagers, wild animals and sea life neutral, farm animals friendly; a
+  neutral creature that hunts by nature leaves you alone until provoked. The Legion, the Blight and the Covenant are
+  at war with the Hearthbound.
+- **Faction sides:** a player in a faction takes its side: the factions at war with it are hostile to them, its
+  friends friendly.
+- **Old worlds:** a world's factions move to the new ones by themselves, keeping their players, reputation and the
+  host's own factions.
+- **Faction players:** the Factions page's Members tab lists a faction's players with their own skins, and its card
+  shows them.
+- **Factions page numbers:** a number set on the Factions page shows at once, and quick clicks add up while the
+  server answers.
+
+### Fixed
+- **Iron golems:** a player in a faction at war with the Hearthbound, such as the Covenant, is attacked by golems on
+  sight.
+- **Beam dial:** the Light Beam's stage dial is about half as big, with thinner arcs and smaller numbers; the stage
+  text left of the crosshair is gone, and the time to the next stage sits small under the dial.
+- **Minigun in first person:** its rounds leave from the barrels you see instead of flying past your view as a second
+  stream, and no arm hangs as a block under the gun.
+
 ## [0.9.11-alpha] - 2026-10-13
 
 ### Added

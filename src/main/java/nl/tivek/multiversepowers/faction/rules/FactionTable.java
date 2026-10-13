@@ -14,7 +14,8 @@ import nl.tivek.multiversepowers.faction.Standing;
 // The world's factions as its settings file holds them, read into one table. Three lists of lines: a faction's own
 // words and numbers, "<faction>|<key>=<value>" (a faction is there once it has a line); which faction a kind of
 // creature is in, "<creature>=<faction>" (nothing after the = for none); and how one faction stands to another,
-// "<faction>><other>=friendly|neutral|hostile" (a faction toward itself is how its members stand to each other).
+// "<faction>><other>=friendly|neutral|hostile" (a faction toward itself is how its members stand to each other; with
+// no line each creature does as its nature has it, `NATURAL`).
 // The same lists are changed through the `with...` methods, which give a new list each.
 public final class FactionTable {
     public static final Pattern ID = Pattern.compile("[A-Za-z0-9_.+-]{1,16}");
@@ -24,7 +25,7 @@ public final class FactionTable {
     public static final int TEXT = 300;
     public static final int[] COLORS = {0xE25C5C, 0xF2994A, 0xF2C84B, 0x8BD45A, 0x4CC9A6, 0x5CB8E2, 0x6F8CF0, 0xA57BEA,
         0xE27BC4, 0xC9A27A, 0xB8C0CC, 0x7A8494};
-    public static final String GAME = "game";
+    public static final String NATURAL = "natural";
     private static final String KIND = "[a-z0-9_.-]+:[a-z0-9_./-]+";
     private static final Pattern FACTION_LINE = Pattern.compile(ID.pattern() + "\\|(" + String.join("|", KEYS)
             + ")=[^\\r\\n]{0," + TEXT + "}");
@@ -92,8 +93,10 @@ public final class FactionTable {
         int hostileAt = Math.max(Faction.LOWEST, Math.min(-1, whole(words.get("hostileAt"), Faction.HOSTILE_AT)));
         int friendlyAt = Math.max(1, Math.min(Faction.HIGHEST, whole(words.get("friendlyAt"), Faction.FRIENDLY_AT)));
         String name = words.getOrDefault("name", "");
+        Standing attitude = standing(words.get("attitude"));
         return new Faction(id, name.isBlank() ? id : name, words.getOrDefault("description", ""),
-                words.getOrDefault("lore", ""), color(id, words.get("color")), standing(words.get("attitude")),
+                words.getOrDefault("lore", ""), color(id, words.get("color")),
+                attitude == null ? Standing.NEUTRAL : attitude,
                 !"false".equals(words.get("reputation")), hostileAt, friendlyAt, !"false".equals(words.get("help")),
                 "true".equals(words.get("open")));
     }
@@ -127,7 +130,7 @@ public final class FactionTable {
     }
 
     public static String name(@Nullable Standing standing) {
-        return standing == null ? GAME : standing.name().toLowerCase(Locale.ROOT);
+        return standing == null ? NATURAL : standing.name().toLowerCase(Locale.ROOT);
     }
 
     // Text as a line can hold it: one line, no stray spaces, at most `max` long.

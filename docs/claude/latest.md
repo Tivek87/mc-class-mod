@@ -1,12 +1,10 @@
 # Laatste sessie
 
-- Datum: 2026-10-13 16:26
-- Verzoek: eigen factiesysteem: elke mob en speler in een factie, vriendelijk/neutraal/vijandig per factie en per mob, reputatie met drempels, helpen, config-pagina, commando's, idee-formulier "New faction" met mob-lijst (3D-model + info), veel QOL.
-- Gedaan: `faction/` uitgebreid (`rules/` = `factions.toml`, `FactionStands`, `MobFactions`, `Reputation`, `FactionHelp`, `FactionEdits`, `net/`, `command/`), Factions-pagina (`faction/client/page/`), mob-kiezer (`faction/client/pick/`), `FactionIdea` + veldtype `Field.mobs`, Mobs-pagina toont factie, 11 startfacties (alles "zoals het spel"), tourstappen, CHANGELOG 0.9.11, `docs/PROJECT.md` hoofdstuk 6.
-- Bugs gevonden door de test in het spel en opgelost: jacht-cache ververste nooit (overflow); het spel-eigen doelzoeken bleef hangen op een geweigerd doel en blokkeerde elke andere jacht -> `mixin/TargetingConditionsMixin` (bevriend dier vlucht daardoor ook niet meer). Undead standaard niet "united" (skelet-pijl maakt zombie nog boos, zoals in het spel).
-- Getest: in het spel 53 checks, 0 fouten (reputatie, eigen houding per mob, helpen, jacht tussen facties, hert vlucht niet voor vriend, undo/reset, join/leave, echte klikken op pagina, kiezer en formulier); tour gelopen (3 kaarten); `gradlew build` slaagt.
-- Niet getest: pagina als niet-host, echte multiplayer-verbinding.
-- Opgeruimd: testklasse, probe, testwereld `ftest`, screenshots; `run/options.txt`, `reports.json`, `tour.json` teruggezet.
-- `CLAUDE.md`: code-indeling `faction/`, regel over geweigerde doelen (mixin), testregel over hergebruikte testwereld.
-- Nog niet gecommit/gepusht: alles samen als v0.9.11-alpha, wacht op ja. Daarna `release.ps1 publish`.
-- Open: bugs #76 (medium), #77 (low); ideeen #79 (testje van gebruiker), #78, #24 alleen na ja.
+- Datum: 2026-10-13 19:24
+- Verzoek: facties met lore (15 volken), factie-naam boven elk wezen/speler, live sliders, logische standaarden (undead/monsters vijandig), "game"-houding weg, Faction Book-item, alle gemelde bugs fixen.
+- Gedaan: `FactionDefaults` herschreven (naam, beschrijving, lore per factie), `FactionUpgrade` zet oude werelden eenmalig om, `FactionTags` (naam boven hoofden, client setting `factionTags`), `FactionBookItem` + `client/book/FactionBookScreen` (recept: book + ink sac + gold nugget), pending-waarden in `FactionsState` (sliders direct bijgewerkt), spelers in Members/boek met hun skin.
+- Bugs: #83 golem valt Covenant-speler aan, #77 beam-dial 55% zonder linkertekst (`BeamGauge`, `ArcGauge`), #76 minigun first person: geen armblok, kogels uit de loop (`HeavyArms`). Alle drie gesloten met `bugs.ps1 fixed`.
+- Versie 0.9.12-alpha: `CHANGELOG.md`, 3 tour-stappen (`TourSteps`), `docs/PROJECT.md`.
+- Getest in het spel: tags, boek, golem, dial, minigun, sliders, tour-wandeling. `./gradlew build` groen.
+- Niet getest: `FactionUpgrade` op een echte oude wereld, echte multiplayer.
+- Open: commit + push + `release.ps1 publish` wachten op ja; ideeen #78, #80, #81, #82, #24 alleen na ja.

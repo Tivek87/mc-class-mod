@@ -88,8 +88,7 @@ public final class Reputation {
         return faction.reputation(FactionRules.reputation() ? SOURCE.earned(player, faction.id()) : 0);
     }
 
-    // How `faction` stands to `player` now; null where each of its creatures does as the game has it.
-    @Nullable
+    // How `faction` stands to `player` now.
     public static Standing toward(Faction faction, ServerPlayer player) {
         return FactionStands.toward(faction, player, SOURCE);
     }
@@ -123,10 +122,10 @@ public final class Reputation {
         Standing now = toward(faction, player);
         boolean turned = was != now;
         PacketDistributor.sendToPlayer(player, new ReputationNotePayload(faction.id(), after - before,
-                !turned ? -1 : now == null ? Standing.values().length : now.ordinal()));
+                !turned ? -1 : now.ordinal()));
         if (turned) {
-            player.sendSystemMessage(Component.translatable(KEY + "turned." + (now == null ? "game"
-                    : now.name().toLowerCase(Locale.ROOT)), name(faction)));
+            player.sendSystemMessage(Component.translatable(KEY + "turned." + now.name().toLowerCase(Locale.ROOT),
+                    name(faction)));
         }
         PlayerTeam team = player.getTeam();
         if (!forced && team != null && team.getName().equals(faction.id()) && faction.zone(after) == Standing.HOSTILE) {

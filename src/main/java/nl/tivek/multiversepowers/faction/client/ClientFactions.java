@@ -4,7 +4,12 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.resources.DefaultPlayerSkin;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.api.distmarker.Dist;
@@ -13,11 +18,13 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.faction.FactionBookItem;
 import nl.tivek.multiversepowers.faction.FactionStands;
-import nl.tivek.multiversepowers.faction.net.FactionStatePayload;
-import nl.tivek.multiversepowers.faction.net.MobFactionPayload;
 import nl.tivek.multiversepowers.faction.MobFactions;
 import nl.tivek.multiversepowers.faction.Standing;
+import nl.tivek.multiversepowers.faction.client.book.FactionBookScreen;
+import nl.tivek.multiversepowers.faction.net.FactionStatePayload;
+import nl.tivek.multiversepowers.faction.net.MobFactionPayload;
 import nl.tivek.multiversepowers.faction.rules.Faction;
 import nl.tivek.multiversepowers.faction.rules.FactionRules;
 
@@ -46,6 +53,7 @@ public final class ClientFactions {
 
     static {
         MobFactions.told = entity -> MOBS.get(entity.getId());
+        FactionBookItem.clientUse = () -> Minecraft.getInstance().setScreen(new FactionBookScreen());
     }
 
     private ClientFactions() {
@@ -82,8 +90,7 @@ public final class ClientFactions {
         return faction.reputation(FactionRules.reputation() ? EARNED.getOrDefault(faction.id(), 0) : 0);
     }
 
-    // How `faction` stands to the player; null where each of its creatures does as the game has it.
-    @Nullable
+    // How `faction` stands to the player.
     public static Standing toward(Faction faction) {
         LocalPlayer player = Minecraft.getInstance().player;
         return player == null ? faction.zone(0) : FactionStands.toward(faction, player, SOURCE);
@@ -91,6 +98,19 @@ public final class ClientFactions {
 
     public static boolean pinned(Faction faction) {
         return PINS.containsKey(faction.id());
+    }
+
+    // A player's face in their own skin, the plain one while they are not on.
+    public static void face(GuiGraphics graphics, String player, int x, int y, int size) {
+        PlayerInfo info = Minecraft.getInstance().getConnection() == null ? null
+                : Minecraft.getInstance().getConnection().getPlayerInfo(player);
+        PlayerFaceRenderer.draw(graphics, info != null ? info.getSkin()
+                : DefaultPlayerSkin.get(UUIDUtil.createOfflinePlayerUUID(player)), x, y, size);
+    }
+
+    public static boolean online(String player) {
+        return Minecraft.getInstance().getConnection() != null
+                && Minecraft.getInstance().getConnection().getPlayerInfo(player) != null;
     }
 
     // The faction the player is in, if the world has one by their team's name.

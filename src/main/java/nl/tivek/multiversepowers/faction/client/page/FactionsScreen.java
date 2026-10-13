@@ -156,8 +156,8 @@ public final class FactionsScreen extends FactionsDetail {
             lines.add(this.row(name, tip, (graphics, right, y, mouseX, mouseY) -> rule.toggle()
                     ? this.options(graphics, this.yesNo(rule.get() > 0, yes -> this.send(FactionEditPayload.RULE,
                             "", rule.key, yes ? "1" : "0")), right, y + 3, mouseX, mouseY, this.editable())
-                    : this.stepper(graphics, rule.get(), 0, rule.most, 1, right, y, mouseX, mouseY,
-                            value -> this.send(FactionEditPayload.RULE, "", rule.key, String.valueOf(value)))));
+                    : this.stepper(graphics, "rule|" + rule.key, rule.get(), 0, rule.most, 1, right, y, mouseX,
+                            mouseY, value -> this.send(FactionEditPayload.RULE, "", rule.key, String.valueOf(value)))));
         }
         return lines;
     }
@@ -234,7 +234,7 @@ public final class FactionsScreen extends FactionsDetail {
             right -= chip;
             this.chip(graphics, stand, right, y + 4, 0x262626, toward == null ? 0xC8C8C8 : toward.rgb());
             if (faction.reputation() && FactionRules.reputation()) {
-                int value = ClientFactions.reputation(faction);
+                int value = this.reputation(faction);
                 right -= 46;
                 this.scale(graphics, faction, value, right, y + 7, 40);
                 String shown = String.valueOf(value);

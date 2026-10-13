@@ -28,6 +28,7 @@ public final class FactionData extends SavedData {
     private final Set<String> enemies = new HashSet<>();
     private long day = -1L;
     private boolean adopted;
+    private int version;
 
     public static FactionData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
@@ -40,6 +41,7 @@ public final class FactionData extends SavedData {
         read(tag.getList("enemies", Tag.TAG_STRING), data.enemies);
         data.day = tag.contains("day") ? tag.getLong("day") : -1L;
         data.adopted = tag.getBoolean("adopted");
+        data.version = tag.getInt("version");
         CompoundTag players = tag.getCompound("players");
         for (String key : players.getAllKeys()) {
             UUID id;
@@ -82,6 +84,7 @@ public final class FactionData extends SavedData {
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
         tag.putLong("day", this.day);
         tag.putBoolean("adopted", this.adopted);
+        tag.putInt("version", this.version);
         if (!this.adopted) {
             tag.put("allies", write(this.allies));
             tag.put("enemies", write(this.enemies));
@@ -179,6 +182,33 @@ public final class FactionData extends SavedData {
 
     boolean adopted() {
         return this.adopted;
+    }
+
+    // Which faction upgrade the world has had (`FactionUpgrade`).
+    int version() {
+        return this.version;
+    }
+
+    void version(int version) {
+        this.version = version;
+        this.setDirty();
+    }
+
+    // What every player earned with or had pinned for `from` now counts for `to`.
+    void rename(String from, String to) {
+        for (Map<String, Integer> own : this.earned.values()) {
+            Integer value = own.remove(from);
+            if (value != null) {
+                own.put(to, value);
+            }
+        }
+        for (Map<String, Standing> own : this.pins.values()) {
+            Standing standing = own.remove(from);
+            if (standing != null) {
+                own.put(to, standing);
+            }
+        }
+        this.setDirty();
     }
 
     void adopt() {

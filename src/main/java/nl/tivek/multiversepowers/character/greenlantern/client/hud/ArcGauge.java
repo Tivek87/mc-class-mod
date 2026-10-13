@@ -25,7 +25,6 @@ final class ArcGauge {
     static final float INNER = 21.0F;
     static final float OUTER = 27.0F;
     private static final float LABEL_GAP = 14.0F;
-    private static final float TITLE_SCALE = 1.5F;
 
     private ArcGauge() {
     }
@@ -62,20 +61,40 @@ final class ArcGauge {
     }
 
     static void flash(GuiGraphics graphics, float x, float y, float outer, float from, float to, float flash) {
+        flash(graphics, x, y, outer, from, to, flash, 1.0F);
+    }
+
+    // The ring that flies out of a piece as it fills, its size times `size`.
+    static void flash(GuiGraphics graphics, float x, float y, float outer, float from, float to, float flash,
+            float size) {
         if (flash < 1.0F) {
-            float out = outer + 3.0F + 8.0F * flash;
-            GuiShapes.arc(graphics, x, y, out - 2.5F, out, from, to, GuiShapes.fade(WHITE, 1.0F - flash));
+            float out = outer + (3.0F + 8.0F * flash) * size;
+            GuiShapes.arc(graphics, x, y, out - 2.5F * size, out, from, to, GuiShapes.fade(WHITE, 1.0F - flash));
         }
     }
 
     // A number just outside a piece, at its middle.
     static void number(GuiGraphics graphics, Font font, float x, float y, float radius, float angle, String text,
             int argb) {
+        number(graphics, font, x, y, radius, angle, text, argb, 1.0F);
+    }
+
+    // A text centred on a point of the ring, its letters `size` times as large.
+    static void number(GuiGraphics graphics, Font font, float x, float y, float radius, float angle, String text,
+            int argb, float size) {
         double rad = Math.toRadians(angle);
         float px = x + (float) Math.sin(rad) * radius;
         float py = y - (float) Math.cos(rad) * radius;
-        graphics.drawString(font, text, Mth.floor(px - font.width(text) * 0.5F + 0.5F), Mth.floor(py - 3.5F), argb,
-                true);
+        if (size == 1.0F) {
+            graphics.drawString(font, text, Mth.floor(px - font.width(text) * 0.5F + 0.5F), Mth.floor(py - 3.5F),
+                    argb, true);
+            return;
+        }
+        graphics.pose().pushPose();
+        graphics.pose().translate(px - font.width(text) * 0.5F * size, py - 3.5F * size, 0.0F);
+        graphics.pose().scale(size, size, 1.0F);
+        graphics.drawString(font, text, 0, 0, argb, true);
+        graphics.pose().popPose();
     }
 
     // A padlock of whole pixels, 5 wide and 7 high, its top left corner at (x, y): the shackle over a body with a
@@ -94,37 +113,24 @@ final class ArcGauge {
     // Claims the gauge's band right of the crosshair, out `reach` past its pieces for its numbers and marks, and
     // returns how far out its pieces start: INNER, or past whatever stood there first.
     static float claim(float x, float y, float reach) {
-        return HudSpace.ring(x, y, INNER - 1.0F, OUTER - INNER + 2.0F + reach, FROM - 2.0F, FROM + SPAN + 2.0F) + 1.0F;
+        return claim(x, y, INNER, OUTER - INNER, reach);
     }
 
-    // What a gauge held where it is shows under its title: a padlock, LOCKED, and the key that lets it go on.
+    // The same for a gauge whose pieces start `inner` out and are `thick` deep.
+    static float claim(float x, float y, float inner, float thick, float reach) {
+        return HudSpace.ring(x, y, inner - 1.0F, thick + 2.0F + reach, FROM - 2.0F, FROM + SPAN + 2.0F) + 1.0F;
+    }
+
+    // What a gauge held where it is shows left of the crosshair: a padlock, LOCKED, and the key that lets it go on.
     record Lock(float throb, @Nullable Component key) {
     }
 
-    // The big title with a line or the lock under it, lined up to the left of the crosshair (the gauge is on its
-    // right), moved up or down off whatever is there already; drawn after the arcs are flushed.
-    static void label(GuiGraphics graphics, Font font, float x, float y, Component title, int titleColor,
-            @Nullable Component line, int lineColor, float appear, @Nullable Lock lock) {
-        int alpha = (int) (255 * appear) << 24;
-        Component bold = title.copy().withStyle(ChatFormatting.BOLD);
-        int titleWidth = Mth.ceil(font.width(bold) * TITLE_SCALE);
-        int under = lock != null ? lockWidth(font, lock) : line != null ? font.width(line) : 0;
-        int width = Math.max(titleWidth, under);
-        int height = lock != null ? 27 : line != null ? 24 : 14;
-        HudSpace.Box box = HudSpace.place(Mth.floor(x - LABEL_GAP) - width, Mth.floor(y) - 12, width, height,
+    // Only the lock, where the title would be.
+    static void lockLabel(GuiGraphics graphics, Font font, float x, float y, float appear, Lock lock) {
+        int width = lockWidth(font, lock);
+        HudSpace.Box box = HudSpace.place(Mth.floor(x - LABEL_GAP) - width, Mth.floor(y) - 7, width, 13,
                 HudSpace.Way.UP, HudSpace.Way.DOWN);
-        int right = Mth.floor(box.right());
-        int top = Mth.floor(box.y());
-        graphics.pose().pushPose();
-        graphics.pose().translate(right - font.width(bold) * TITLE_SCALE, top, 0.0F);
-        graphics.pose().scale(TITLE_SCALE, TITLE_SCALE, 1.0F);
-        graphics.drawString(font, bold, 0, 0, alpha | titleColor, true);
-        graphics.pose().popPose();
-        if (lock != null) {
-            lockPill(graphics, font, right - lockWidth(font, lock), top + 14, appear, lock);
-        } else if (line != null) {
-            graphics.drawString(font, line, right - font.width(line), top + 15, alpha | lineColor, true);
-        }
+        lockPill(graphics, font, Mth.floor(box.right()) - width, Mth.floor(box.y()), appear, lock);
     }
 
     private static int lockWidth(Font font, Lock lock) {

@@ -19,7 +19,8 @@ import nl.tivek.multiversepowers.faction.Standing;
 
 // The world's factions: a world setting of its own file, the three lists `FactionTable` reads and the numbers of
 // reputation. Every kind of creature is in one faction: the one its line names, else the one for its sort (a monster
-// of a mod no list knows joins the Monsters), else none. Both sides read it: the server sends every player its copy.
+// of a mod no list knows joins the Creeping Dark), else none. Both sides read it: the server sends every player its
+// copy.
 public final class FactionRules {
     public static final String FILE = ModConfigs.file("factions");
     public static final ModConfigSpec SPEC;
@@ -107,23 +108,24 @@ public final class FactionRules {
                 "World settings: every world keeps its own copy of this file, in <world>/serverconfig/welcomescreen/.",
                 "Easiest changed in the game: settings window > Factions, or the command /faction.").push("factions");
         FACTIONS = builder.comment("One line per thing a faction has: \"<faction>|<key>=<value>\". Keys: name,"
-                + " description, lore, color (six hex digits), attitude (how it starts toward players: game, hostile,"
-                + " neutral or friendly; game leaves each of its creatures as the game has it), reputation (true or"
-                + " false: whether a player's deeds change how it stands to them), hostileAt and friendlyAt (the"
-                + " reputation, from -100 to 100, at which it turns hostile or friendly), help (true or false: its"
-                + " creatures come to the aid of members and friends) and open (true or false: players may join"
-                + " without an invite).")
-                .defineListAllowEmpty("factions", FactionDefaults.factions(), () -> "bandits|name=Bandits",
-                        FactionTable::validFaction);
+                + " description, lore, color (six hex digits), attitude (how it starts toward players: hostile,"
+                + " neutral or friendly; neutral creatures only answer a provocation, as a wolf or an enderman does),"
+                + " reputation (true or false: whether a player's deeds change how it stands to them), hostileAt and"
+                + " friendlyAt (the reputation, from -100 to 100, at which it turns hostile or friendly), help (true"
+                + " or false: its creatures come to the aid of members and friends) and open (true or false: players"
+                + " may join without an invite).")
+                .defineListAllowEmpty("factions", FactionDefaults.factions(),
+                        () -> "ironfang|name=The Ironfang Syndicate", FactionTable::validFaction);
         MEMBERS = builder.comment("Which faction each kind of creature is in: \"<creature>=<faction>\", nothing after"
-                + " the = for none. A creature with no line joins the faction of its sort (monsters, wildlife, sea).")
-                .defineListAllowEmpty("members", FactionDefaults.members(), () -> "minecraft:zombie=undead",
+                + " the = for none. A creature with no line joins the faction of its sort (creeping, wildkin,"
+                + " tidefolk).")
+                .defineListAllowEmpty("members", FactionDefaults.members(), () -> "minecraft:zombie=legion",
                         FactionTable::validMember);
         RELATIONS = builder.comment("How one faction stands toward another:"
                 + " \"<faction>><other>=friendly|neutral|hostile\". Friendly never attacks, neutral only hits back,"
                 + " hostile attacks on sight. A faction toward itself is how its members stand to each other. With no"
-                + " line each creature does as the game has it.")
-                .defineListAllowEmpty("relations", FactionDefaults.relations(), () -> "bandits>villagers=hostile",
+                + " line each creature does as its nature has it.")
+                .defineListAllowEmpty("relations", FactionDefaults.relations(), () -> "covenant>hearthbound=hostile",
                         FactionTable::validRelation);
         builder.pop();
         builder.comment("How players earn and lose reputation with a faction.").push("reputation");

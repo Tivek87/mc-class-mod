@@ -110,9 +110,9 @@ public final class ReputationHud {
     private static Component line(Faction faction, Note note) {
         Component name = Component.literal(faction.name()).withColor(faction.color());
         if (note.turned >= 0) {
-            String how = note.turned < Standing.values().length
-                    ? Standing.values()[note.turned].name().toLowerCase(Locale.ROOT) : "game";
-            int color = note.turned < Standing.values().length ? Standing.values()[note.turned].rgb() : 0xC8C8C8;
+            Standing now = Standing.values()[Math.min(note.turned, Standing.values().length - 1)];
+            String how = now.name().toLowerCase(Locale.ROOT);
+            int color = now.rgb();
             return Component.translatable(KEY + "note.turned", name,
                     Component.translatable(KEY + "stand." + how).withColor(color));
         }

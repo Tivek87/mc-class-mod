@@ -93,15 +93,15 @@ final class FactionAdmin {
         int run(CommandContext<CommandSourceStack> context, @Nullable Standing standing) throws CommandSyntaxException;
     }
 
-    // `node` with friendly, neutral and hostile under it, and `game` for as the game has it.
+    // `node` with friendly, neutral and hostile under it, and `natural` for as each creature's nature has it.
     private static <T extends com.mojang.brigadier.builder.ArgumentBuilder<CommandSourceStack, T>> T stances(T node,
-            boolean game, Stand run) {
+            boolean natural, Stand run) {
         for (String name : STANCES) {
             Standing standing = FactionTable.standing(name);
             node.then(Commands.literal(name).executes(context -> run.run(context, standing)));
         }
-        if (game) {
-            node.then(Commands.literal(FactionTable.GAME).executes(context -> run.run(context, null)));
+        if (natural) {
+            node.then(Commands.literal(FactionTable.NATURAL).executes(context -> run.run(context, null)));
         }
         return node;
     }
@@ -114,7 +114,7 @@ final class FactionAdmin {
         }
         faction.then(Commands.literal("color").then(Commands.argument("hex", StringArgumentType.word())
                 .executes(context -> word(context, "color", StringArgumentType.getString(context, "hex")))));
-        faction.then(stances(Commands.literal("attitude"), true, (context, standing) -> word(context, "attitude",
+        faction.then(stances(Commands.literal("attitude"), false, (context, standing) -> word(context, "attitude",
                 FactionTable.name(standing))));
         for (String key : new String[] {"reputation", "help", "open"}) {
             faction.then(Commands.literal(key)
@@ -146,7 +146,7 @@ final class FactionAdmin {
         Faction faction = FactionCommand.faction(context, "faction");
         Faction other = FactionCommand.faction(context, "other");
         FactionEdits.relation(context.getSource().getServer(), faction.id(), other.id(), standing);
-        String key = (faction == other ? "relation.own" : "relation.set") + (standing == null ? ".game" : "");
+        String key = (faction == other ? "relation.own" : "relation.set") + (standing == null ? ".natural" : "");
         context.getSource().sendSuccess(() -> FactionCommand.text(key, Reputation.name(faction),
                 FactionCommand.stand(standing), Reputation.name(other)), true);
         return 1;

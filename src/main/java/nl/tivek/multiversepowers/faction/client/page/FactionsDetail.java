@@ -69,9 +69,13 @@ abstract class FactionsDetail extends FactionsState {
         for (MobInfo.Info info : members) {
             kind = info.type() == this.shownKind ? info : kind;
         }
+        List<String> players = this.players(faction);
+        String player = this.shownPlayer != null && players.contains(this.shownPlayer) ? this.shownPlayer
+                : kind == null && !players.isEmpty() ? players.get(0) : null;
         boolean over = this.overCard(mouseX, mouseY);
-        boolean drawn = kind != null && this.preview.draw(graphics, kind.type(), this.cardX + 3, top + 14,
-                width - 4, this.cardHeight - 26);
+        boolean drawn = player != null ? this.preview.drawPlayer(graphics, player, this.cardX + 3, top + 14,
+                width - 4, this.cardHeight - 26) : kind != null && this.preview.draw(graphics, kind.type(),
+                this.cardX + 3, top + 14, width - 4, this.cardHeight - 26);
         if (!drawn) {
             int size = Math.min(48, width - 30);
             int x = this.cardX + (width - size) / 2 + 1;
@@ -88,7 +92,8 @@ abstract class FactionsDetail extends FactionsState {
         } else if (over || this.preview.held()) {
             graphics.fill(this.cardX + 2, top, this.cardX + width, bottom, 0x0CFFFFFF);
         }
-        Component head = kind != null ? kind.name() : Component.translatable(KEY + "card.none");
+        Component head = player != null ? Component.literal(player) : kind != null ? kind.name()
+                : Component.translatable(KEY + "card.none");
         graphics.drawString(this.font, this.fit(head, width - 10), this.cardX + 6, top + 4, MUTED, false);
         if (drawn) {
             graphics.drawString(this.font, this.fit(Component.translatable(PREFIX + "mobs.preview.drag"), width - 10),
@@ -117,7 +122,7 @@ abstract class FactionsDetail extends FactionsState {
         int left = this.contentX;
         int width = this.contentWidth;
         graphics.fill(left, y + TAB_HEIGHT - 1, left + width, y + TAB_HEIGHT, 0x1CFFFFFF);
-        int[] counts = {0, members, this.relations(faction), 0};
+        int[] counts = {0, members + this.players(faction).size(), this.relations(faction), 0};
         int all = 0;
         for (int i = 0; i < TABS.length; i++) {
             all += this.font.width(Component.translatable(KEY + "tab." + TABS[i])) + 12
@@ -178,7 +183,7 @@ abstract class FactionsDetail extends FactionsState {
     private Line attitude(Faction faction) {
         return this.row(Component.translatable(KEY + "attitude"), Component.translatable(KEY + "attitude.tip"),
                 (graphics, right, y, mouseX, mouseY) -> this.options(graphics, this.stances(faction.attitude(),
-                        "game", standing -> this.word(faction, "attitude", FactionTable.name(standing))), right,
+                        null, standing -> this.word(faction, "attitude", FactionTable.name(standing))), right,
                         y + 3, mouseX, mouseY, this.editable()));
     }
 
@@ -209,7 +214,7 @@ abstract class FactionsDetail extends FactionsState {
                     right -= this.font.width(stand) + 6;
                     this.chip(graphics, stand, right, y + 4, 0x262626, stand.getStyle().getColor().getValue());
                     if (faction.reputation() && FactionRules.reputation()) {
-                        String value = String.valueOf(ClientFactions.reputation(faction));
+                        String value = String.valueOf(this.reputation(faction));
                         right -= this.font.width(value) + 6;
                         graphics.drawString(this.font, value, right, y + 5, BODY, false);
                     }
@@ -288,7 +293,7 @@ abstract class FactionsDetail extends FactionsState {
             }
             lines.add(new Line(true, (graphics, y, width, mouseX, mouseY) -> {
                 boolean over = this.area.over(mouseX, mouseY, this.listX, y, width, ROW);
-                boolean shown = info.type() == this.shownKind;
+                boolean shown = info.type() == this.shownKind && this.shownPlayer == null;
                 if (over || shown) {
                     graphics.fill(this.listX, y, this.listX + width, y + ROW, shown ? 0x22FFFFFF : 0x18FFFFFF);
                 }
@@ -308,12 +313,44 @@ abstract class FactionsDetail extends FactionsState {
                 right -= tagWidth + 6;
                 graphics.drawString(this.font, this.fit(info.name(), right - this.listX - 24), this.listX + 22,
                         y + 5, over || shown ? TEXT : BODY, false);
-                this.area.hit(this.listX, y, width, ROW, () -> this.shownKind = info.type());
+                this.area.hit(this.listX, y, width, ROW, () -> {
+                    this.shownKind = info.type();
+                    this.shownPlayer = null;
+                });
                 return over ? info.about() : null;
             }));
         }
         if (members.isEmpty()) {
             lines.add(this.row(Component.translatable(KEY + "members.none").withColor(DIM & 0xFFFFFF), null,
+                    (graphics, right, y, mouseX, mouseY) -> right));
+        }
+        List<String> players = this.players(faction);
+        lines.add(this.heading(Component.translatable(KEY + "members.players", players.size())));
+        for (String player : players) {
+            if (!this.query.isBlank() && !player.toLowerCase(Locale.ROOT).contains(this.query.strip()
+                    .toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            lines.add(new Line(true, (graphics, y, width, mouseX, mouseY) -> {
+                boolean over = this.area.over(mouseX, mouseY, this.listX, y, width, ROW);
+                boolean shown = player.equals(this.shownPlayer);
+                if (over || shown) {
+                    graphics.fill(this.listX, y, this.listX + width, y + ROW, shown ? 0x22FFFFFF : 0x18FFFFFF);
+                }
+                this.face(graphics, player, this.listX + 5, y + 4, 10);
+                boolean on = this.online(player);
+                Component state = Component.translatable(KEY + (on ? "members.online" : "members.away"));
+                int stateWidth = this.font.width(state);
+                graphics.drawString(this.font, state, this.listX + width - 4 - stateWidth, y + 5, on ? MUTED : DIM,
+                        false);
+                graphics.drawString(this.font, this.fit(Component.literal(player), width - stateWidth - 34),
+                        this.listX + 22, y + 5, over || shown ? TEXT : on ? BODY : MUTED, false);
+                this.area.hit(this.listX, y, width, ROW, () -> this.shownPlayer = player);
+                return null;
+            }));
+        }
+        if (players.isEmpty()) {
+            lines.add(this.row(Component.translatable(KEY + "members.no_players").withColor(DIM & 0xFFFFFF), null,
                     (graphics, right, y, mouseX, mouseY) -> right));
         }
         return lines;
@@ -332,8 +369,8 @@ abstract class FactionsDetail extends FactionsState {
         lines.add(this.row(Component.translatable(KEY + "relations.self"),
                 Component.translatable(KEY + "relations.self.tip"), (graphics, right, y, mouseX, mouseY) ->
                         this.options(graphics, this.stances(FactionRules.relation(faction.id(), faction.id()),
-                                "game", standing -> this.relation(faction, faction, standing)), right, y + 3,
-                                mouseX, mouseY, this.editable())));
+                                FactionTable.NATURAL, standing -> this.relation(faction, faction, standing)), right,
+                                y + 3, mouseX, mouseY, this.editable())));
         lines.add(this.attitude(faction));
         lines.add(this.heading(Component.translatable(KEY + "relations.others")));
         for (Faction other : FactionRules.all()) {
@@ -344,8 +381,8 @@ abstract class FactionsDetail extends FactionsState {
             lines.add(new Line(true, (graphics, y, width, mouseX, mouseY) -> {
                 int right = this.listX + width - 4;
                 int left = this.options(graphics, this.stances(FactionRules.relation(faction.id(), other.id()),
-                        "game", standing -> this.relation(faction, other, standing)), right, y + 3, mouseX, mouseY,
-                        this.editable());
+                        FactionTable.NATURAL, standing -> this.relation(faction, other, standing)), right, y + 3,
+                        mouseX, mouseY, this.editable());
                 boolean onPills = this.area.over(mouseX, mouseY, left, y, right - left, ROW);
                 Standing back = FactionRules.relation(other.id(), faction.id());
                 if (back != null) {
@@ -377,8 +414,7 @@ abstract class FactionsDetail extends FactionsState {
         int friendly = x + Math.round(width * (faction.friendlyAt() - Faction.LOWEST) / 200.0F);
         graphics.fill(x - 1, y - 1, x + width + 1, y + 5, 0xFF000000);
         graphics.fill(x, y, hostile, y + 4, 0xFF000000 | dim(Standing.HOSTILE.rgb()));
-        graphics.fill(hostile, y, friendly, y + 4, 0xFF000000 | (faction.attitude() == null ? 0x4A4A4A
-                : dim(Standing.NEUTRAL.rgb())));
+        graphics.fill(hostile, y, friendly, y + 4, 0xFF000000 | dim(Standing.NEUTRAL.rgb()));
         graphics.fill(friendly, y, x + width, y + 4, 0xFF000000 | dim(Standing.FRIENDLY.rgb()));
         int at = x + Math.round(width * (Mth.clamp(value, Faction.LOWEST, Faction.HIGHEST) - Faction.LOWEST)
                 / 200.0F);
@@ -397,7 +433,7 @@ abstract class FactionsDetail extends FactionsState {
             lines.add(this.row(Component.translatable(KEY + "rep.world_off").withColor(WARN), null,
                     (graphics, right, y, mouseX, mouseY) -> right));
         }
-        int mine = ClientFactions.reputation(faction);
+        int mine = this.reputation(faction);
         lines.add(new Line(true, (graphics, y, width, mouseX, mouseY) -> {
             int x = this.listX + Math.min(LABEL, width / 3);
             graphics.drawString(this.font, this.fit(Component.translatable(KEY + "rep.yours"), x - this.listX - 8),
@@ -411,11 +447,13 @@ abstract class FactionsDetail extends FactionsState {
         }));
         lines.add(this.row(Component.translatable(KEY + "rep.hostile_at"),
                 Component.translatable(KEY + "rep.hostile_at.tip"), (graphics, right, y, mouseX, mouseY) ->
-                        this.stepper(graphics, faction.hostileAt(), Faction.LOWEST, -1, 5, right, y, mouseX, mouseY,
+                        this.stepper(graphics, faction.id() + "|hostileAt", faction.hostileAt(), Faction.LOWEST, -1,
+                                5, right, y, mouseX, mouseY,
                                 value -> this.word(faction, "hostileAt", String.valueOf(value)))));
         lines.add(this.row(Component.translatable(KEY + "rep.friendly_at"),
                 Component.translatable(KEY + "rep.friendly_at.tip"), (graphics, right, y, mouseX, mouseY) ->
-                        this.stepper(graphics, faction.friendlyAt(), 1, Faction.HIGHEST, 5, right, y, mouseX, mouseY,
+                        this.stepper(graphics, faction.id() + "|friendlyAt", faction.friendlyAt(), 1,
+                                Faction.HIGHEST, 5, right, y, mouseX, mouseY,
                                 value -> this.word(faction, "friendlyAt", String.valueOf(value)))));
         lines.add(this.row(Component.translatable(KEY + "rep.start"), Component.translatable(KEY + "rep.start.tip"),
                 (graphics, right, y, mouseX, mouseY) -> {
@@ -429,13 +467,13 @@ abstract class FactionsDetail extends FactionsState {
                     (graphics, right, y, mouseX, mouseY) -> {
                         Component back = Component.translatable(KEY + "rep.test.start");
                         right -= this.font.width(back) + 6;
-                        this.button(graphics, back, right, y + 4, mouseX, mouseY, true, () -> this.send(
-                                FactionEditPayload.REPUTATION, faction.id(), "set", String.valueOf(faction.start())));
+                        this.button(graphics, back, right, y + 4, mouseX, mouseY, true,
+                                () -> this.changeReputation(faction, "set", faction.start()));
                         for (int delta : new int[] {10, -10}) {
                             Component by = Component.literal(delta > 0 ? "+" + delta : String.valueOf(delta));
                             right -= this.font.width(by) + 10;
-                            this.button(graphics, by, right, y + 4, mouseX, mouseY, true, () -> this.send(
-                                    FactionEditPayload.REPUTATION, faction.id(), "add", String.valueOf(delta)));
+                            this.button(graphics, by, right, y + 4, mouseX, mouseY, true,
+                                    () -> this.changeReputation(faction, "add", delta));
                         }
                         return right;
                     }));

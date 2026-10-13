@@ -35,6 +35,7 @@ public final class ClientSettings {
     public static final ModConfigSpec.IntValue RAGDOLL_FORCE;
     public static final ModConfigSpec.IntValue RAGDOLL_THUDS;
     public static final ModConfigSpec.IntValue REPUTATION_NOTES;
+    public static final ModConfigSpec.IntValue FACTION_TAGS;
     public static final ModConfigSpec.IntValue WALL_SLUMP;
     public static final ModConfigSpec.IntValue FOOT_PLANTING;
     public static final ModConfigSpec.IntValue CAPE_CLOTH;
@@ -63,6 +64,8 @@ public final class ClientSettings {
                 + " a movie, before you look out of its cockpit (1 = yes, 0 = keep your own view)", true);
         REPUTATION_NOTES = sheet.toggle("reputationNotes", "Show a line at the left edge when your reputation with a"
                 + " faction changes (1 = yes, 0 = no)", true);
+        FACTION_TAGS = sheet.toggle("factionTags", "Show the faction of every creature and player near in small"
+                + " letters over their head (1 = yes, 0 = no)", true);
         sheet.section("panel");
         PANEL_SIZE = sheet.number("panelSize", "How big the ability overlay is (1 = as the mod makes it for your GUI"
                 + " scale)", 1.0, 0.5, 2.0, Unit.PERCENT, 0.05);
@@ -225,6 +228,10 @@ public final class ClientSettings {
 
     public static boolean reputationNotes() {
         return get(REPUTATION_NOTES) != 0;
+    }
+
+    public static boolean factionTags() {
+        return get(FACTION_TAGS) != 0;
     }
 
     // How hard blows and blasts throw limp bodies, as a share of how the mod makes it.

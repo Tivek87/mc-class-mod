@@ -23,13 +23,19 @@ import nl.tivek.multiversepowers.character.greenlantern.client.ClientConstructs;
 import nl.tivek.multiversepowers.character.greenlantern.client.ClientRing;
 import nl.tivek.multiversepowers.engine.client.gui.GuiShapes;
 
-// The beam's gauge: one numbered piece per stage, the first filled by the hold itself, the rest while the beam grows,
-// each a little thicker than the one before; a padlock where it stops while the stage is locked.
+// The beam's gauge: a small dial of one numbered piece per stage, the first filled by the hold itself, the rest while
+// the beam grows, each a little thicker than the one before, the time to the next stage under it; a padlock where it
+// stops while the stage is locked, with the key that lets it go on beside the crosshair.
 final class BeamGauge {
+    // How large the dial is beside the other arc gauges.
+    private static final float SIZE = 0.55F;
     private static final float GAP = 3.5F;
-    private static final float GROW = 1.6F;
+    private static final float GROW = 1.6F * SIZE;
+    private static final float INNER = 12.0F;
+    private static final float THICK = (ArcGauge.OUTER - ArcGauge.INNER) * SIZE;
     // Room past the outermost piece for its number.
-    private static final float NUMBERS = 11.0F;
+    private static final float NUMBERS = 7.0F;
+    private static final float LETTERS = 0.7F;
     private static final float SHOWN = 0.1F;
     private static final float FLASH_MS = 450.0F;
     private static int lastStage = -1;
@@ -80,8 +86,8 @@ final class BeamGauge {
         float throb = 0.5F + 0.5F * Mth.sin((now % 100000L) / (top || locked ? 70.0F : 110.0F));
         int count = LightBeam.STAGES;
         float piece = ArcGauge.piece(count, GAP);
-        float inner = ArcGauge.claim(x, y, GROW * (count - 1) + NUMBERS);
-        float thick = ArcGauge.OUTER - ArcGauge.INNER;
+        float inner = ArcGauge.claim(x, y, INNER, THICK, GROW * (count - 1) + NUMBERS);
+        float thick = THICK;
         Font font = Minecraft.getInstance().font;
         for (int k = 0; k < count; k++) {
             float from = ArcGauge.pieceFrom(k, count, GAP);
@@ -96,9 +102,9 @@ final class BeamGauge {
             ArcGauge.filled(graphics, x, y, inner, outer, from, to, fill, full,
                     GuiShapes.mix(ArcGauge.GREEN, ArcGauge.BRIGHT, fill), appear);
             if (k == stage) {
-                ArcGauge.flash(graphics, x, y, outer, from, to, flash);
+                ArcGauge.flash(graphics, x, y, outer, from, to, flash, SIZE);
                 if (locked) {
-                    GuiShapes.arc(graphics, x, y, outer + 1.5F, outer + 3.0F, from, to,
+                    GuiShapes.arc(graphics, x, y, outer + 1.0F, outer + 2.0F, from, to,
                             GuiShapes.fade(ArcGauge.AMBER, (0.6F + 0.4F * throb) * appear));
                 }
             }
@@ -118,27 +124,21 @@ final class BeamGauge {
             float outer = inner + thick + GROW * k;
             boolean reached = k <= stage;
             int color = k == stage ? 0xFFFFFF : reached ? ArcGauge.BRIGHT : 0x6F8A78;
-            ArcGauge.number(graphics, font, x, y, outer + 6.5F, mid, String.valueOf(k + 1),
-                    (int) (255 * appear) << 24 | color);
+            ArcGauge.number(graphics, font, x, y, outer + 5.0F, mid, String.valueOf(k + 1),
+                    (int) (255 * appear) << 24 | color, LETTERS);
         }
-        Component title;
-        Component line;
-        int titleColor;
-        int lineColor = 0xB9D8C2;
-        if (stage < 0) {
-            title = Component.translatable(ArcGauge.PREFIX + "beam");
-            line = Component.translatable(ArcGauge.PREFIX + "beam_charging");
-            titleColor = ArcGauge.GREEN;
-        } else {
-            title = top ? Component.translatable(ArcGauge.PREFIX + "beam_top")
-                    : Component.translatable(ArcGauge.PREFIX + "beam_stage_of", stage + 1, LightBeam.STAGES);
-            titleColor = top ? GuiShapes.mix(ArcGauge.BRIGHT, 0xFFFFFF, throb) : ArcGauge.BRIGHT;
+        if (stage >= 0 && !top && !locked) {
             float left = (LightBeam.stageFrom(stage + 1, hold) - ticks) / 20.0F;
-            line = top || locked ? null : Component.translatable(ArcGauge.PREFIX + "beam_next",
-                    String.format(Locale.ROOT, "%.1f", Math.max(0.0F, left)));
+            String next = Component.translatable(ArcGauge.PREFIX + "beam_next", String.format(Locale.ROOT, "%.1f",
+                    Math.max(0.0F, left))).getString();
+            float end = ArcGauge.FROM + ArcGauge.SPAN;
+            ArcGauge.number(graphics, font, x, y, inner + thick + GROW * (count - 1) + 5.0F, end + 14.0F, next,
+                    (int) (255 * appear) << 24 | 0xB9D8C2, LETTERS);
         }
-        ArcGauge.Lock lock = locked ? new ArcGauge.Lock(throb, unlockKey()) : null;
-        labels.add(() -> ArcGauge.label(graphics, font, x, y, title, titleColor, line, lineColor, appear, lock));
+        if (locked) {
+            ArcGauge.Lock lock = new ArcGauge.Lock(throb, unlockKey());
+            labels.add(() -> ArcGauge.lockLabel(graphics, font, x, y, appear, lock));
+        }
         return true;
     }
 

@@ -252,8 +252,8 @@ public final class MobPickerScreen extends Screen {
         if (faction != null) {
             Standing toward = ClientFactions.toward(faction);
             Component stand = Component.translatable("faction." + MultiversePowers.MODID + ".stand."
-                    + (toward == null ? "game" : toward.name().toLowerCase(Locale.ROOT)))
-                    .withColor(toward == null ? 0xC8C8C8 : toward.rgb());
+                    + toward.name().toLowerCase(Locale.ROOT))
+                    .withColor(toward.rgb());
             facts.add(Component.translatable(KEY + "fact.faction",
                     Component.literal(faction.name()).withColor(faction.color()), stand));
         }

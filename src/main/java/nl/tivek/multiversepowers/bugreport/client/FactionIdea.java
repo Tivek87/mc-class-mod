@@ -13,14 +13,14 @@ import nl.tivek.multiversepowers.bugreport.client.form.Field;
 import nl.tivek.multiversepowers.bugreport.client.form.Form;
 import nl.tivek.multiversepowers.bugreport.client.form.Section;
 import nl.tivek.multiversepowers.bugreport.client.form.Values;
+import nl.tivek.multiversepowers.faction.rules.FactionDefaults;
 
 // The idea form for a new faction: what it is, how it starts toward players and what reputation does, which
 // creatures are in it (picked from the game's own, or new ones described), how it stands to each faction the game
 // starts with, and where it lives.
 final class FactionIdea {
     // The factions every world starts with, as `faction/rules/FactionDefaults` has them.
-    static final String[] FACTIONS = {"villagers", "illagers", "undead", "piglins", "nether", "end", "monsters",
-        "wildlife", "farm", "sea", "arcane"};
+    static final String[] FACTIONS = FactionDefaults.ids().toArray(String[]::new);
 
     static final Form FORM = new Form("faction", "faction.name", "faction.priority", List.of(
             FeedbackForms.category(),

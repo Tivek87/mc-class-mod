@@ -103,9 +103,9 @@ public final class FactionCommand {
         return new SimpleCommandExceptionType(text(key, args)).create();
     }
 
-    // How a faction stands, in its colour; null is each creature as the game has it.
+    // How a faction stands, in its colour; null is each creature as its nature has it.
     static Component stand(@Nullable Standing standing) {
-        return standing == null ? text("stand.game").withColor(0xC8C8C8)
+        return standing == null ? text("stand.natural").withColor(0xC8C8C8)
                 : text("stand." + standing.name().toLowerCase(Locale.ROOT)).withColor(standing.rgb());
     }
 

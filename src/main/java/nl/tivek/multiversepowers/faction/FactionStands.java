@@ -12,9 +12,9 @@ import nl.tivek.multiversepowers.faction.rules.FactionRules;
 
 // How one creature stands to another or to a player, the one rule for server and client. Toward a player, most
 // its own first: the creature's own behaviour, what the player is to its faction (a member, a standing pinned for
-// them, how its faction stands to theirs, a reputation that crossed a threshold), the Mobs page's line for its kind,
-// then its faction's attitude. Toward a creature: the Mobs page's line for the two kinds, how its faction stands to
-// the other's, then the Mobs page's wider lines. Null wherever nothing says: the game's own then.
+// them, how its faction and theirs stand to each other, a reputation that crossed a threshold), the Mobs page's line
+// for its kind, then its faction's attitude. Toward a creature: the Mobs page's line for the two kinds, how its
+// faction stands to the other's, then the Mobs page's wider lines. Null wherever nothing says: its nature then.
 public final class FactionStands {
     // What a player earned with a faction and a standing pinned for them, as this side knows them.
     public interface Source {
@@ -59,17 +59,22 @@ public final class FactionStands {
         String own = team == null ? null : team.getName();
         return personal(faction, own, source.pin(player, faction.id()),
                 own == null ? null : FactionRules.relation(faction.id(), own),
+                own == null ? null : FactionRules.relation(own, faction.id()),
                 FactionRules.reputation() ? source.earned(player, faction.id()) : 0);
     }
 
+    // A faction the player's own is sworn against is hostile to them too, whatever it set toward theirs.
     @Nullable
     static Standing personal(Faction faction, @Nullable String team, @Nullable Standing pin,
-            @Nullable Standing toTeam, int earned) {
+            @Nullable Standing toTeam, @Nullable Standing fromTeam, int earned) {
         if (faction.id().equals(team)) {
             return Standing.FRIENDLY;
         }
         if (pin != null) {
             return pin;
+        }
+        if (toTeam == Standing.HOSTILE || fromTeam == Standing.HOSTILE) {
+            return Standing.HOSTILE;
         }
         if (toTeam != null) {
             return toTeam;
@@ -78,8 +83,7 @@ public final class FactionStands {
         return now != faction.zone(0) ? now : null;
     }
 
-    // How `faction` stands to `player` all told: null where each of its creatures does as the game has it.
-    @Nullable
+    // How `faction` stands to `player` all told.
     public static Standing toward(Faction faction, Player player, Source source) {
         Standing personal = personal(faction, player, source);
         return personal != null ? personal : faction.zone(0);

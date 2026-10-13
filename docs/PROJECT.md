@@ -200,34 +200,48 @@ powers go after by themselves; what they hit is anything in the way.
 
 ### Creatures have factions too
 
-Every creature belongs to a faction, and a player can join one. A world starts with eleven:
+Every creature belongs to a faction, and a player can join one. Factions are peoples with a story of their own,
+not kinds of monster. A world starts with fifteen:
 
-| Faction | Who is in it |
-|---|---|
-| **Villagers** | villagers, wandering traders and their llamas, iron and snow golems |
-| **Illagers** | pillagers, vindicators, evokers, illusioners, ravagers, vexes |
-| **Undead** | zombies, skeletons, phantoms, the Wither, and this mod's zombies |
-| **Piglins** | piglins, piglin brutes, zombified piglins |
-| **Nether Dwellers** | blazes, ghasts, magma cubes, hoglins, zoglins, striders |
-| **Endfolk** | endermen, endermites, shulkers, the Ender Dragon |
-| **Monsters** | creepers, spiders, slimes, witches, the Warden, guardians, the Stalker |
-| **Wildlife** | wolves, foxes, bears, bees, and this mod's wild animals |
-| **Farm Animals** | cows, pigs, sheep, chickens, horses, cats |
-| **Sea Life** | fish, squid, dolphins, turtles, axolotls, crabs |
-| **The Arcane** | the Wizard |
+| Faction | Toward players | Who is in it |
+|---|---|---|
+| **The Hearthbound Accord** | neutral | villagers, wandering traders and their llamas, iron and snow golems |
+| **The Exiled Covenant** | hostile | pillagers, vindicators, evokers, illusioners, ravagers, vexes, witches |
+| **The Hollow Legion** | hostile | zombies, husks, drowned, skeletons, strays, phantoms, the Wither, undead horses |
+| **The Rotborn Blight** | hostile | this mod's zombies: the Brute, Bloater, Lurker, Screamer, Feral, Rustbound |
+| **The Gilded Horde** | hostile | piglins, piglin brutes |
+| **The Cinder Court** | hostile | blazes, ghasts, magma cubes, wither skeletons, hoglins, zoglins |
+| **The Wanderers Between** | neutral | endermen, zombified piglins, striders |
+| **The Endwatch** | hostile | shulkers, endermites, the Ender Dragon |
+| **The Creeping Dark** | hostile | creepers, spiders, silverfish, slimes, breezes, the Warden, the Stalker |
+| **The Abyssal Throne** | hostile | guardians, elder guardians |
+| **The Wild Kin** | neutral | wolves, foxes, bears, bees, and this mod's wild animals |
+| **The Meadowfolk** | friendly | cows, pigs, sheep, chickens, horses, llamas, camels, cats |
+| **The Tidefolk** | neutral | fish, squid, dolphins, turtles, axolotls, crabs |
+| **The Arcane Conclave** | hostile | the Wizard |
+| **The Ironfang Syndicate** | neutral | no creatures: monster-hunters and sellswords, for players to join |
 
-Any other creature, from another mod too, joins Monsters, Wildlife or Sea Life by what it is.
+Any other creature, from another mod too, joins The Creeping Dark, The Wild Kin or The Tidefolk by what it is.
 
-- A faction has a **name, description, lore and colour**, a way it **starts toward players** (friendly, neutral,
-  hostile, or "as in the game") and a **standing toward every other faction**. Friendly never attacks, neutral only
-  hits back, hostile attacks on sight.
-- **Nothing changes by itself:** every starting faction is "as in the game", so creatures act as they always did
-  until your reputation or the host changes it.
-- **Members help each other** (Villagers, Illagers, Piglins, and any faction the host turns it on for): hit one and
-  those nearby that can fight come for you.
+- A faction has a **name, description, lore and colour**, a way it **starts toward players** (friendly, neutral or
+  hostile) and a **standing toward every other faction**. Friendly never attacks, neutral only hits back, hostile
+  attacks on sight.
+- **The undead and the monsters are hostile to players**, and the Legion, the Blight and the Covenant are at war
+  with the Hearthbound; the animals are left to their own nature toward each other, so wolves still hunt sheep and
+  zombies do not wipe out the farms.
+- **A player takes their faction's side:** one who joins the Covenant is hunted by iron golems on sight; one who
+  joins the Ironfang Syndicate is a friend of the Hearthbound and an enemy of the Covenant and the monsters.
+- **Members help each other** (the Hearthbound, the Covenant, the Legion, the Blight, the Horde, the Abyssal Throne,
+  the Ironfang Syndicate, and any faction the host turns it on for): hit one and those nearby that can fight come for
+  you.
 - **One creature can differ:** the host can give a single creature a faction or a behaviour of its own.
 - A creature that is **friendly** to you never harms you, not by a blast or a stray arrow either, and a shy one
   (a deer, a squirrel) no longer runs from you.
+- **Faction over heads:** every creature and player near shows its faction in small see-through letters over its
+  head, above its name where a name shows (client setting Faction over heads).
+- **The Faction Book** (a book, an ink sac and a gold nugget, or the creative tab): right click to read every
+  faction of the world, how it stands to you, its creatures with a turning model, its story, its allies and sworn
+  enemies, the named creatures near you that belong to it, and its players with their own skins.
 
 ### Reputation
 
@@ -245,11 +259,11 @@ faction that starts hostile or friendly).
 | Each day | 2 back toward where you started |
 
 - At **-30 or lower** a faction turns **hostile** to you; at **30 or higher** it turns **friendly**; between them it
-  is **neutral** (or as in the game). Each faction can have its own thresholds.
+  is **neutral**. Each faction can have its own thresholds.
 - A line at the left edge of the screen shows every change, and a chime says when a faction turns.
 - A faction that turns hostile to one of its own members casts them out.
 - Fighting back costs nothing: only creatures that had left you alone count. Creative and spectator players earn
-  and lose nothing. Farm Animals and Sea Life keep no score.
+  and lose nothing. The Meadowfolk and the Tidefolk keep no score.
 - The host can change every number, or switch reputation off.
 
 ### The Factions page
@@ -259,8 +273,9 @@ faction that starts hostile or friendly).
 - The list shows each faction with how many kinds of creature and players it has, how it stands to you and your
   reputation on a bar. Search by a faction's or a creature's name.
 - Click a faction for its **Overview** (name, description, lore, colour, how it starts, whether members help each
-  other, whether anyone may join), **Members** (its creatures, each with a turning model), **Relations** (toward
-  itself and every other faction) and **Reputation** (yours, and where it turns hostile or friendly).
+  other, whether anyone may join), **Members** (its creatures, each with a turning model, and its players with
+  their own skins), **Relations** (toward itself and every other faction) and **Reputation** (yours, and where it
+  turns hostile or friendly).
 - **Join** a faction that anyone may join, or **Leave** yours, with one button.
 - The host (and operators, where the world lets them) can make a **New faction**, change everything, pick creatures
   from a searchable list that shows each one's model, what it is, its health and attack, **Undo** the last 25

@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.faction.mob.client;
 
+import com.mojang.authlib.GameProfile;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -14,9 +15,12 @@ import javax.annotation.Nullable;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.multiplayer.PlayerInfo;
+import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -161,6 +165,7 @@ public final class MobPreview {
 
     private final Map<EntityType<?>, LivingEntity> made = new HashMap<>();
     private final Set<EntityType<?>> broken = new HashSet<>();
+    private final Map<String, LivingEntity> players = new HashMap<>();
     private final RandomSource random = RandomSource.create();
     private float yaw = 200.0F;
     private long last = Util.getMillis();
@@ -215,9 +220,30 @@ public final class MobPreview {
     // Draws `type` standing in the box, as large as fits; whether it could.
     public boolean draw(GuiGraphics graphics, EntityType<?> type, int x, int y, int width, int height) {
         LivingEntity living = this.of(type);
-        if (living == null) {
-            return false;
+        return living != null && this.draw(graphics, type, living, x, y, width, height);
+    }
+
+    // Draws the player of that name in their own skin (the plain one while they are not on), as a creature is.
+    public boolean drawPlayer(GuiGraphics graphics, String name, int x, int y, int width, int height) {
+        LivingEntity living = this.player(name);
+        return living != null && this.draw(graphics, EntityType.PLAYER, living, x, y, width, height);
+    }
+
+    @Nullable
+    private LivingEntity player(String name) {
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.level == null) {
+            return null;
         }
+        return this.players.computeIfAbsent(name, key -> {
+            PlayerInfo info = minecraft.getConnection() == null ? null : minecraft.getConnection().getPlayerInfo(key);
+            return new RemotePlayer(minecraft.level, info != null ? info.getProfile()
+                    : new GameProfile(UUIDUtil.createOfflinePlayerUUID(key), key));
+        });
+    }
+
+    private boolean draw(GuiGraphics graphics, EntityType<?> type, LivingEntity living, int x, int y, int width,
+            int height) {
         long now = Util.getMillis();
         if (!this.held) {
             this.yaw += TURN * Math.min(100L, now - this.last) / 16.0F;
@@ -256,7 +282,9 @@ public final class MobPreview {
             }
         } catch (RuntimeException e) {
             MultiversePowers.LOGGER.debug("Could not draw a {}", type, e);
-            this.broken.add(type);
+            if (type != EntityType.PLAYER) {
+                this.broken.add(type);
+            }
         } finally {
             EntityPass.inWorld(false);
             drawing = null;
@@ -314,6 +342,7 @@ public final class MobPreview {
         this.actor = null;
         this.acting = null;
         this.made.clear();
+        this.players.clear();
         this.broken.clear();
     }
 }

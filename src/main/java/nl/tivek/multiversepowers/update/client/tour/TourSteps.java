@@ -8,12 +8,10 @@ import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import nl.tivek.multiversepowers.bugreport.client.BugReportScreen;
 import nl.tivek.multiversepowers.character.AbilitySlot;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
 import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 import nl.tivek.multiversepowers.faction.client.page.FactionsScreen;
-import nl.tivek.multiversepowers.update.client.ManagerScreen;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Kind;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 
@@ -25,7 +23,7 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.9.11-alpha";
+    static final String VERSION = "0.9.12-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
     // The card every release with a new character (`GameCharacter.newIn` = VERSION) shows: hold the wheel key, where
@@ -33,16 +31,13 @@ final class TourSteps {
     static final String NEW_CHARACTER = "new_character";
 
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "factions", Kind.NEW, Place.SETTINGS).at("nav.factions").covers("Factions:",
-                    "Reputation:", "Helping:", "/faction commands:"),
-            step(VERSION, "factions_page", Kind.NEW, Place.SETTINGS).at("factions.list")
-                    .prepare(TourSteps::factions).covers("Factions page:", "One creature:", "Creature list:"),
-            step(VERSION, "faction_idea", Kind.NEW, Place.FEEDBACK).at("report.form")
-                    .prepare(() -> feedback(true)).covers("New faction idea:"));
+            step(VERSION, "faction_lore", Kind.CHANGED, Place.SETTINGS).at("factions.list")
+                    .prepare(TourSteps::factions).covers("Lore factions:", "Faction standings:", "Faction sides:"),
+            step(VERSION, "faction_tags", Kind.NEW, Place.GAME).covers("Faction over heads:"),
+            step(VERSION, "faction_book", Kind.NEW, Place.GAME).covers("Faction Book:"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of("Feedback forms:", "New mob idea:", "Mobs page:",
-            "Friendly creatures:", "Old factions:");
+    static final List<String> SMALL = List.of("Old worlds:", "Faction players:", "Factions page numbers:");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);
@@ -57,14 +52,6 @@ final class TourSteps {
             .key(key(() -> AbilityKeys.SPELL_WHEEL));
 
     private TourSteps() {
-    }
-
-    // Opens the feedback page's idea part, or its bug part, for a step on it.
-    private static void feedback(boolean idea) {
-        if (!BugReportScreen.showing(idea)) {
-            ManagerScreen.open(ManagerScreen.rootOf(Minecraft.getInstance().screen),
-                    idea ? ManagerScreen.IDEA : ManagerScreen.BUG);
-        }
     }
 
     // Opens the settings window's Factions page, which only a world has.

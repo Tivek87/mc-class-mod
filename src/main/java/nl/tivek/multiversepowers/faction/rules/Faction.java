@@ -1,13 +1,12 @@
 package nl.tivek.multiversepowers.faction.rules;
 
-import javax.annotation.Nullable;
 import nl.tivek.multiversepowers.faction.Standing;
 
-// One faction as the world defines it: its words, how it starts toward players (`attitude`, null for as each of its
-// creatures is in the game), and its reputation: a player's standing with it runs from -100 to 100, hostile at
-// `hostileAt` and under, friendly at `friendlyAt` and over, and between them neutral (or as in the game). A player
-// starts in the zone of its attitude; what they earn or lose is counted from there.
-public record Faction(String id, String name, String description, String lore, int color, @Nullable Standing attitude,
+// One faction as the world defines it: its words, how it starts toward players (`attitude`), and its reputation: a
+// player's standing with it runs from -100 to 100, hostile at `hostileAt` and under, friendly at `friendlyAt` and
+// over, and between them neutral. A player starts in the zone of its attitude; what they earn or lose is counted from
+// there.
+public record Faction(String id, String name, String description, String lore, int color, Standing attitude,
         boolean reputation, int hostileAt, int friendlyAt, boolean help, boolean open) {
     public static final int LOWEST = -100;
     public static final int HIGHEST = 100;
@@ -29,8 +28,7 @@ public record Faction(String id, String name, String description, String lore, i
         return Math.max(LOWEST, Math.min(HIGHEST, this.start() + (this.reputation ? earned : 0)));
     }
 
-    // How it stands to a player who earned `earned`; null between the thresholds of one that goes by the game.
-    @Nullable
+    // How it stands to a player who earned `earned`.
     public Standing zone(int earned) {
         int now = this.reputation(earned);
         if (now <= this.hostileAt) {
@@ -39,7 +37,7 @@ public record Faction(String id, String name, String description, String lore, i
         if (now >= this.friendlyAt) {
             return Standing.FRIENDLY;
         }
-        return this.attitude == null ? null : Standing.NEUTRAL;
+        return Standing.NEUTRAL;
     }
 
     // What `earned` may be at most and at least, so the reputation stays on the scale.

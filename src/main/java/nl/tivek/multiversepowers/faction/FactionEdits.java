@@ -168,7 +168,7 @@ public final class FactionEdits {
             }
             case "attitude" -> {
                 kept = value;
-                if (!value.equals(FactionTable.GAME) && FactionTable.standing(value) == null) {
+                if (FactionTable.standing(value) == null) {
                     return false;
                 }
             }

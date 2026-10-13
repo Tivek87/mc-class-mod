@@ -31,10 +31,10 @@ import nl.tivek.multiversepowers.faction.Standing;
 
 // Holds creatures to how they stand (`FactionStands`: their faction, a player's reputation with it, the Mobs page):
 // one that is friendly never takes the target, not even struck by it by accident (its anger and the grudge in its
-// memory are let go too) and does it no harm, one that is neutral only when it was hit by it, and one that is hostile
-// hunts it (every creature carries a goal for that, idle until something sets a hunt for its kind or faction, and one
-// that can strike but has no attack of its own a melee attack beside it). A target no longer allowed, the world's
-// settings or a reputation changed meanwhile, is let go. One helping a friend (`FactionHelp`) keeps its target.
+// memory are let go too) and does it no harm, one that is neutral never hunts it unless provoked, and one that is
+// hostile hunts it (every creature carries a goal for that, idle until something sets a hunt for its kind or faction,
+// and one that can strike but has no attack of its own a melee attack beside it). A target no longer allowed, the
+// world's settings or a reputation changed meanwhile, is let go. One helping a friend (`FactionHelp`) keeps its target.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class MobTargets {
     private MobTargets() {
@@ -135,15 +135,23 @@ public final class MobTargets {
     }
 
     // A Green Lantern summon goes by its owner's fight, never by these rules. Asked too as a creature looks for
-    // someone to attack or to run from (`mixin/TargetingConditionsMixin`).
+    // someone to attack or to run from (`mixin/TargetingConditionsMixin`). Neutral holds back a creature that would
+    // hunt the target by its nature until it is provoked; one that is neutral by nature (an enderman, a wolf, a
+    // golem) keeps its own triggers.
     public static boolean forbidden(LivingEntity actor, LivingEntity target) {
         if (Summons.owned(actor)) {
             return false;
         }
         Standing set = stand(actor, target);
-        return set == Standing.FRIENDLY || set == Standing.NEUTRAL && actor.getLastHurtByMob() != target
-                && target.getLastHurtMob() != actor && !(target instanceof Mob mob && mob.getTarget() == actor)
-                && !FactionHelp.helping(actor, target);
+        return set == Standing.FRIENDLY || set == Standing.NEUTRAL && hunter(actor, target)
+                && actor.getLastHurtByMob() != target && target.getLastHurtMob() != actor
+                && !(target instanceof Mob mob && mob.getTarget() == actor) && !FactionHelp.helping(actor, target);
+    }
+
+    // Whether `actor` attacks `target`'s kind on sight by its nature: the game's own target goals.
+    private static boolean hunter(LivingEntity actor, LivingEntity target) {
+        return actor.level() instanceof ServerLevel level
+                && MobDefaults.of(level, actor.getType(), target.getType()) == Standing.HOSTILE;
     }
 
     @SubscribeEvent
@@ -175,7 +183,7 @@ public final class MobTargets {
 
     private static final class Hunt extends NearestAttackableTargetGoal<LivingEntity> {
         private Hunt(Mob mob) {
-            super(mob, LivingEntity.class, 10, true, false, target -> hostile(mob, target));
+            super(mob, LivingEntity.class, 10, true, false, target -> hostile(mob, target) && !hunter(mob, target));
         }
 
         @Override

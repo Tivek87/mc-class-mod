@@ -32,7 +32,7 @@ class FactionTableTest {
         assertTrue(bandits.reputation());
         Faction plain = table.get("plain");
         assertEquals("plain", plain.name(), "a faction with no name goes by its id");
-        assertNull(plain.attitude(), "no attitude leaves each creature as the game has it");
+        assertEquals(Standing.NEUTRAL, plain.attitude(), "no attitude, or an old \"game\", is neutral");
         assertFalse(plain.open());
         assertEquals("Old", plain.lore());
         assertNull(table.get("nobody"));
@@ -110,7 +110,7 @@ class FactionTableTest {
     void textIsKeptToOneShortLine() {
         assertEquals("Two words", FactionTable.clean("  Two\n\twords  ", 40));
         assertEquals("abcde", FactionTable.clean("abcdefgh", 5));
-        assertEquals("game", FactionTable.name(null));
+        assertEquals("natural", FactionTable.name(null));
         assertEquals(Standing.NEUTRAL, FactionTable.standing("neutral"));
         assertNull(FactionTable.standing("game"));
     }
@@ -131,26 +131,33 @@ class FactionTableTest {
         for (String id : FactionDefaults.ids()) {
             Faction faction = table.get(id);
             assertNotNull(faction, id);
-            assertNull(faction.attitude(), id + " leaves its creatures as the game has them");
-            assertNull(faction.zone(0), id + " changes nothing for a player new to it");
+            assertNotNull(faction.attitude(), id);
+            assertEquals(faction.attitude(), faction.zone(0), id + " starts a player in the zone of its attitude");
+            assertFalse(faction.description().isBlank() || faction.lore().isBlank(), id + " has its story");
+            assertTrue(faction.name().length() <= FactionTable.NAME, id);
         }
         for (String line : FactionDefaults.members()) {
             String faction = line.substring(line.indexOf('=') + 1);
             assertTrue(faction.isEmpty() || table.get(faction) != null, line);
         }
-        assertEquals("undead", table.member("minecraft:zombie"));
-        assertEquals(Standing.HOSTILE, table.relation("illagers", "villagers"));
+        assertEquals("legion", table.member("minecraft:zombie"));
+        assertEquals(Standing.HOSTILE, table.relation("covenant", "hearthbound"));
+        assertEquals(Standing.HOSTILE, table.relation("hearthbound", "covenant"));
+        assertEquals(Standing.HOSTILE, table.get("legion").attitude());
+        assertEquals(Standing.NEUTRAL, table.get("wanderers").attitude());
+        assertTrue(table.kinds("ironfang").isEmpty(), "a faction for players");
+        assertTrue(table.get("ironfang").open());
     }
 
     @Test
     void reputationPutsAPlayerInAZone() {
-        Faction game = table(List.of("g|name=G"), List.of(), List.of()).get("g");
-        assertEquals(0, game.start());
-        assertNull(game.zone(0));
-        assertNull(game.zone(29));
-        assertEquals(Standing.FRIENDLY, game.zone(30));
-        assertEquals(Standing.HOSTILE, game.zone(-30));
-        assertNull(game.zone(-29));
+        Faction plain = table(List.of("g|name=G"), List.of(), List.of()).get("g");
+        assertEquals(0, plain.start());
+        assertEquals(Standing.NEUTRAL, plain.zone(0));
+        assertEquals(Standing.NEUTRAL, plain.zone(29));
+        assertEquals(Standing.FRIENDLY, plain.zone(30));
+        assertEquals(Standing.HOSTILE, plain.zone(-30));
+        assertEquals(Standing.NEUTRAL, plain.zone(-29));
 
         Faction neutral = table(List.of("n|attitude=neutral"), List.of(), List.of()).get("n");
         assertEquals(Standing.NEUTRAL, neutral.zone(0));

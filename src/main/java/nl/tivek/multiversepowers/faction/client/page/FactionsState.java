@@ -8,11 +8,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
+import net.minecraft.Util;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.scores.PlayerTeam;
@@ -22,6 +24,7 @@ import nl.tivek.multiversepowers.config.client.SettingsPages;
 import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
 import nl.tivek.multiversepowers.engine.client.gui.ScrollArea;
 import nl.tivek.multiversepowers.faction.Standing;
+import nl.tivek.multiversepowers.faction.client.ClientFactions;
 import nl.tivek.multiversepowers.faction.client.pick.MobInfo;
 import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 import nl.tivek.multiversepowers.faction.net.FactionEditPayload;
@@ -45,6 +48,7 @@ abstract class FactionsState extends NavScreen {
     static final int RELATIONS = 2;
     static final int REPUTATION = 3;
     static final String NEW = "new";
+    private static final long PENDING_MS = 3000L;
 
     // One row of a list: draws itself at `y`, and returns what to tell while the pointer is on it.
     @FunctionalInterface
@@ -59,9 +63,16 @@ abstract class FactionsState extends NavScreen {
     record Option(Component label, int rgb, boolean lit, Runnable choose) {
     }
 
+    // A number just set here that the server has not answered yet: `from` is what it was.
+    private record Pending(int value, int from, long at) {
+    }
+
     final ScrollArea area = new ScrollArea();
     final MobPreview preview = new MobPreview();
     private final Map<String, List<MobInfo.Info>> members = new HashMap<>();
+    // Numbers set here, by faction and key, shown at once and stepped on from, so quick clicks add up while the
+    // server's answer is on its way.
+    private final Map<String, Pending> pending = new HashMap<>();
     private int membersStamp;
     int listX;
     int listWidth;
@@ -74,6 +85,9 @@ abstract class FactionsState extends NavScreen {
     String query = "";
     @Nullable
     EntityType<?> shownKind;
+    // The player of the faction shown on its card instead of a creature.
+    @Nullable
+    String shownPlayer;
     // The creature the player stood before when the page opened, to give a faction or a way of its own.
     @Nullable
     Mob looked;
@@ -132,13 +146,21 @@ abstract class FactionsState extends NavScreen {
         return names;
     }
 
+    void face(GuiGraphics graphics, String player, int x, int y, int size) {
+        ClientFactions.face(graphics, player, x, y, size);
+    }
+
+    boolean online(String player) {
+        return ClientFactions.online(player);
+    }
+
     static MutableComponent name(Faction faction) {
         return Component.literal(faction.name()).withColor(faction.color());
     }
 
-    // How a faction stands, in its colour; null is each creature as the game has it.
+    // How a faction stands, in its colour; null is each creature as its nature has it.
     static MutableComponent stand(@Nullable Standing standing) {
-        return Component.translatable(WORD + "stand." + (standing == null ? "game"
+        return Component.translatable(WORD + "stand." + (standing == null ? FactionTable.NATURAL
                 : standing.name().toLowerCase(Locale.ROOT))).withColor(standing == null ? 0xC8C8C8 : standing.rgb());
     }
 
@@ -320,7 +342,7 @@ abstract class FactionsState extends NavScreen {
         return left;
     }
 
-    // Friendly, neutral and hostile, and before them `first` (null: none) for neither: as the game has it, or as
+    // Friendly, neutral and hostile, and before them `first` (null: none) for neither: as its nature has it, or as
     // its faction does.
     List<Option> stances(@Nullable Standing now, @Nullable String first, Consumer<Standing> choose) {
         List<Option> options = new ArrayList<>();
@@ -342,15 +364,49 @@ abstract class FactionsState extends NavScreen {
                 new Option(Component.translatable(KEY + "pill.no"), 0xFF3A30, !now, () -> choose.accept(false)));
     }
 
+    // The number as last set here until the server has it (or a few seconds went by), else as the server has it.
+    int shown(String key, int server) {
+        Pending set = this.pending.get(key);
+        if (set == null) {
+            return server;
+        }
+        if (server == set.value() || server != set.from() || Util.getMillis() - set.at() > PENDING_MS) {
+            this.pending.remove(key);
+            return server;
+        }
+        return set.value();
+    }
+
+    void expect(String key, int server, int value) {
+        this.pending.put(key, new Pending(value, server, Util.getMillis()));
+    }
+
+    // The player's reputation with `faction`, a change just asked for shown at once.
+    int reputation(Faction faction) {
+        return this.shown("rep|" + faction.id(), ClientFactions.reputation(faction));
+    }
+
+    void changeReputation(Faction faction, String how, int number) {
+        int now = ClientFactions.reputation(faction);
+        int to = how.equals("set") ? number : this.reputation(faction) + number;
+        this.expect("rep|" + faction.id(), now, Mth.clamp(to, Faction.LOWEST, Faction.HIGHEST));
+        this.send(FactionEditPayload.REPUTATION, faction.id(), how, String.valueOf(number));
+    }
+
     // - value + right-aligned to `right`; a step is 5, 1 with shift held. Returns its left edge.
-    int stepper(GuiGraphics graphics, int value, int least, int most, int step, int right, int y, int mouseX,
-            int mouseY, Consumer<Integer> set) {
+    int stepper(GuiGraphics graphics, String key, int server, int least, int most, int step, int right, int y,
+            int mouseX, int mouseY, Consumer<Integer> set) {
         boolean editable = this.editable();
+        int value = this.shown(key, server);
         int by = hasShiftDown() ? 1 : step;
+        Consumer<Integer> change = to -> {
+            this.expect(key, server, to);
+            set.accept(to);
+        };
         Component plus = Component.literal("+");
         right -= this.font.width(plus) + 6;
         this.button(graphics, plus, right, y + 4, mouseX, mouseY, editable && value < most,
-                () -> set.accept(Math.min(most, value + by)));
+                () -> change.accept(Math.min(most, value + by)));
         String shown = String.valueOf(value);
         right -= 30;
         graphics.fill(right, y + 3, right + 28, y + 15, 0xFF161616);
@@ -358,7 +414,7 @@ abstract class FactionsState extends NavScreen {
         Component minus = Component.literal("-");
         right -= this.font.width(minus) + 8;
         this.button(graphics, minus, right, y + 4, mouseX, mouseY, editable && value > least,
-                () -> set.accept(Math.max(least, value - by)));
+                () -> change.accept(Math.max(least, value - by)));
         return right;
     }
 }
