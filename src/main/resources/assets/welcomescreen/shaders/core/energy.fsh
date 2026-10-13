@@ -124,31 +124,36 @@ vec2 ring(vec2 p, float t, float s) {
     return vec2(rim + wake, rim * 0.5);
 }
 
+// Painted as the game paints its particles: in square pixels (kind.y above its low byte: how many of the game's
+// pixels lie from the middle to an edge), a few flat shades with a hard edge, and about ten frames a second.
 void main() {
-    float t = GameTime * 1200.0;
-    float s = float(kind.y) * 1.618;
+    float t = floor(GameTime * 1200.0 * 10.0) / 10.0;
+    float s = float(kind.y & 255) * 1.618;
+    float px = float(max(kind.y >> 8, 1));
+    bool round = kind.x != 5 && kind.x != 6;
+    vec2 cell = round ? vec2(px) : vec2(px * 2.0, px);
+    vec2 p = (floor(uv * cell) + 0.5) / cell;
     vec2 e;
-    bool round = true;
     if (kind.x == 0) {
-        e = flame(uv, t, s);
+        e = flame(p, t, s);
     } else if (kind.x == 1) {
-        e = frost(uv, t, s);
+        e = frost(p, t, s);
     } else if (kind.x == 2) {
-        e = spark(uv, t, s);
+        e = spark(p, t, s);
     } else if (kind.x == 3) {
-        e = gust(uv, t, s);
+        e = gust(p, t, s);
     } else if (kind.x == 4) {
-        e = dust(uv, t, s);
+        e = dust(p, t, s);
     } else if (kind.x == 5) {
-        e = stream(uv, t, s);
-        round = false;
+        e = stream(p, t, s);
     } else if (kind.x == 6) {
-        e = bolt(uv, t, s);
-        round = false;
+        e = bolt(p, t, s);
     } else {
-        e = ring(uv, t, s);
+        e = ring(p, t, s);
     }
-    float edge = round ? smoothstep(1.0, 0.86, length(uv)) : 1.0;
-    vec3 colour = mix(tint.rgb, vec3(1.0), clamp(e.y, 0.0, 1.0) * 0.32);
-    fragColor = vec4(colour * e.x * edge * tint.a * 0.85, 1.0);
+    float edge = round ? step(length(p), 1.0) : 1.0;
+    float shade = floor(clamp(e.x, 0.0, 1.0) * 4.0 + 0.35) / 4.0;
+    float hot = step(0.6, e.y);
+    vec3 colour = mix(tint.rgb, vec3(1.0), hot * 0.35);
+    fragColor = vec4(colour * shade * edge * tint.a * 0.85, 1.0);
 }

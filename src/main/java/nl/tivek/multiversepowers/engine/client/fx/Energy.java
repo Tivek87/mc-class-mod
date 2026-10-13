@@ -17,8 +17,9 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import org.joml.Quaternionf;
 
 // Living energy painted by a shader of its own, added to the picture as light: a quad is given a pattern and a colour,
-// and the shader paints that pattern moving on it, with no texture. Round patterns fill a square (turned to the eye or
-// lying flat), the two bands run from one point to another.
+// and the shader paints that pattern moving on it, with no texture, in square pixels the size of the game's own, a few
+// flat shades and a few frames a second, so it sits beside the game's particles. Round patterns fill a square (turned
+// to the eye or lying flat), the two bands run from one point to another.
 public final class Energy {
     public static final int FLAME = 0;
     public static final int FROST = 1;
@@ -28,6 +29,7 @@ public final class Energy {
     public static final int STREAM = 5;
     public static final int BOLT = 6;
     public static final int RING = 7;
+    private static final float PIXELS = 16.0F;
     @Nullable
     private static ShaderInstance shader;
     private static final RenderType TYPE = RenderType.create("welcomescreen_energy", DefaultVertexFormat.PARTICLE,
@@ -54,10 +56,10 @@ public final class Energy {
         pose.translate(at.x, at.y, at.z);
         pose.mulPose(facing);
         PoseStack.Pose last = pose.last();
-        vertex(last, buffer, -half, -half, 0.0F, -1.0F, -1.0F, pattern, colour, strength, seed);
-        vertex(last, buffer, half, -half, 0.0F, 1.0F, -1.0F, pattern, colour, strength, seed);
-        vertex(last, buffer, half, half, 0.0F, 1.0F, 1.0F, pattern, colour, strength, seed);
-        vertex(last, buffer, -half, half, 0.0F, -1.0F, 1.0F, pattern, colour, strength, seed);
+        vertex(last, buffer, -half, -half, 0.0F, -1.0F, -1.0F, pattern, colour, strength, tag(seed, half));
+        vertex(last, buffer, half, -half, 0.0F, 1.0F, -1.0F, pattern, colour, strength, tag(seed, half));
+        vertex(last, buffer, half, half, 0.0F, 1.0F, 1.0F, pattern, colour, strength, tag(seed, half));
+        vertex(last, buffer, -half, half, 0.0F, -1.0F, 1.0F, pattern, colour, strength, tag(seed, half));
         pose.popPose();
     }
 
@@ -67,10 +69,10 @@ public final class Energy {
         float x = (float) at.x;
         float y = (float) at.y;
         float z = (float) at.z;
-        vertex(pose, buffer, x - half, y, z - half, -1.0F, -1.0F, pattern, colour, strength, seed);
-        vertex(pose, buffer, x + half, y, z - half, 1.0F, -1.0F, pattern, colour, strength, seed);
-        vertex(pose, buffer, x + half, y, z + half, 1.0F, 1.0F, pattern, colour, strength, seed);
-        vertex(pose, buffer, x - half, y, z + half, -1.0F, 1.0F, pattern, colour, strength, seed);
+        vertex(pose, buffer, x - half, y, z - half, -1.0F, -1.0F, pattern, colour, strength, tag(seed, half));
+        vertex(pose, buffer, x + half, y, z - half, 1.0F, -1.0F, pattern, colour, strength, tag(seed, half));
+        vertex(pose, buffer, x + half, y, z + half, 1.0F, 1.0F, pattern, colour, strength, tag(seed, half));
+        vertex(pose, buffer, x - half, y, z + half, -1.0F, 1.0F, pattern, colour, strength, tag(seed, half));
     }
 
     // A band of STREAM or BOLT from `from` to `to`, `half` to either side, its face turned to `eye`.
@@ -84,10 +86,10 @@ public final class Energy {
         }
         side = side.normalize().scale(half);
         float along = (float) (length / half * 0.5);
-        vertex(pose, buffer, from.add(side), 0.0F, 1.0F, pattern, colour, strength, seed);
-        vertex(pose, buffer, to.add(side), along, 1.0F, pattern, colour, strength, seed);
-        vertex(pose, buffer, to.subtract(side), along, -1.0F, pattern, colour, strength, seed);
-        vertex(pose, buffer, from.subtract(side), 0.0F, -1.0F, pattern, colour, strength, seed);
+        vertex(pose, buffer, from.add(side), 0.0F, 1.0F, pattern, colour, strength, tag(seed, half));
+        vertex(pose, buffer, to.add(side), along, 1.0F, pattern, colour, strength, tag(seed, half));
+        vertex(pose, buffer, to.subtract(side), along, -1.0F, pattern, colour, strength, tag(seed, half));
+        vertex(pose, buffer, from.subtract(side), 0.0F, -1.0F, pattern, colour, strength, tag(seed, half));
     }
 
     private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, Vec3 at, float u, float v, int pattern,
@@ -98,7 +100,13 @@ public final class Energy {
     private static void vertex(PoseStack.Pose pose, VertexConsumer buffer, float x, float y, float z, float u, float v,
             int pattern, int colour, float strength, int seed) {
         buffer.addVertex(pose, x, y, z).setUv(u, v).setColor(colour >> 16 & 255, colour >> 8 & 255, colour & 255,
-                Math.round(Mth.clamp(strength, 0.0F, 1.0F) * 255.0F)).setUv2(pattern, seed & 255);
+                Math.round(Mth.clamp(strength, 0.0F, 1.0F) * 255.0F)).setUv2(pattern, seed);
+    }
+
+    // The seed in the low byte, and above it how many of the game's pixels (16 a block) lie in `half`: the shader
+    // paints the pattern in pixels that size, as the game's own textures are.
+    private static int tag(int seed, float half) {
+        return seed & 255 | Mth.clamp(Math.round(half * PIXELS), 1, 120) << 8;
     }
 
     public static void onRegisterShaders(RegisterShadersEvent event) {

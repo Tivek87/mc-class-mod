@@ -40,7 +40,7 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 public final class ElementalStaff extends Item {
     private static final String ELEMENT = "Element";
     private static final int FROST_LIFE = 16;
-    private static final int LIFT = 8;
+    private static final int LIFT = 14;
     private static final double SEEK_CONE = 0.97;
 
     public ElementalStaff(Properties properties) {
@@ -71,22 +71,33 @@ public final class ElementalStaff extends Item {
                     SoundSource.PLAYERS, 1.0F, 0.8F + next.ordinal() * 0.15F);
             return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
         }
+        player.getCooldowns().addCooldown(this, element.staffCooldown);
         if (player instanceof ServerPlayer caster && level instanceof ServerLevel server) {
-            cast(server, caster, element);
+            if (!cast(server, caster, element)) {
+                // No ground to tear up: nothing spent, and the holder's game drops the cooldown it set itself.
+                caster.getCooldowns().removeCooldown(this);
+                caster.displayClientMessage(Component.translatable("item." + MultiversePowers.MODID
+                        + ".elemental_staff.no_ground"), true);
+                return InteractionResultHolder.fail(stack);
+            }
             stack.hurtAndBreak(1, caster, LivingEntity.getSlotForHand(hand));
         }
-        player.getCooldowns().addCooldown(this, element.staffCooldown);
         player.awardStat(Stats.ITEM_USED.get(this));
         player.swing(hand);
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
     }
 
-    private static void cast(ServerLevel level, ServerPlayer player, Element element) {
+    // False where the cast could not be made (no ground for a stone).
+    private static boolean cast(ServerLevel level, ServerPlayer player, Element element) {
+        if (element == Element.EARTH && !BlazeCasts.heave(level, player, LIFT)) {
+            return false;
+        }
         Vec3 tip = BlazeCasts.tip(player, 1.0F);
         ParticleFx.send(level, ParticleFx.dust(element.light, 0.5F), tip.x, tip.y, tip.z, 4, 0.08, 0.08, 0.08, 0.0);
         switch (element) {
             case ICE -> BlazeCasts.frost(level, player, FROST_LIFE);
-            case EARTH -> BlazeCasts.heave(level, player, LIFT);
+            case EARTH -> {
+            }
             case FIRE -> BlazeCasts.scorch(level, player);
             case WIND -> BlazeCasts.gale(level, player);
             case STORM -> {
@@ -98,6 +109,7 @@ public final class ElementalStaff extends Item {
             }
         }
         level.playSound(null, tip.x, tip.y, tip.z, SoundEvents.BLAZE_AMBIENT, SoundSource.PLAYERS, 0.5F, 1.6F);
+        return true;
     }
 
     // What the staff's lightning strikes first: what the holder looks straight at, else the nearest foe of theirs

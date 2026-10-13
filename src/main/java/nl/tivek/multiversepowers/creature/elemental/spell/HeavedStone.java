@@ -30,14 +30,18 @@ import nl.tivek.multiversepowers.creature.elemental.ElementalBlaze;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
 import org.joml.Vector3f;
 
-// Stone Heave: a rock of the ground's own stone that the earth rod tears up out of the ground (the ground itself stays
-// whole) and lifts, grinding and shedding dirt, until it hangs before its caster; then it is hurled, falling a little
-// as it flies, and bursts on whatever it strikes, throwing it back. While it rises every game works out the same path
-// from where it broke loose and its caster, so it moves smoothly; drawn by client/HeavedStoneRenderer as its block.
+// Stone Heave: a block of the ground itself that the earth rod tears out of the world (BlazeCasts.heave): it grinds
+// slowly up out of its hole, shaking and shedding dirt, then swings up until it hangs before its caster; then it is
+// hurled, falling a little as it flies, and bursts on whatever it strikes, throwing it back. While it rises every game
+// works out the same path from its hole and its caster, so it moves smoothly; drawn by client/HeavedStoneRenderer as
+// its block.
 public final class HeavedStone extends ThrowableProjectile {
     // How far to the side of a player theirs rises and hangs, clear of what they look at.
     public static final double BESIDE = 1.3;
     private static final double SPEED = 1.25;
+    // The share of its lift spent working out of its hole, and how far over the hole's floor it is then.
+    private static final double OUT = 0.45;
+    private static final double CLEAR = 1.1;
     private static final EntityDataAccessor<BlockState> ROCK = SynchedEntityData.defineId(HeavedStone.class,
             EntityDataSerializers.BLOCK_STATE);
     private static final EntityDataAccessor<Vector3f> GROUND = SynchedEntityData.defineId(HeavedStone.class,
@@ -117,8 +121,19 @@ public final class HeavedStone extends ThrowableProjectile {
             this.tickCount++;
             Vec3 ground = new Vec3(this.entityData.get(GROUND));
             double s = Math.min(1.0, this.tickCount / (double) lift);
-            double eased = s * s * (3.0 - 2.0 * s);
-            Vec3 up = ground.lerp(hold(holder), eased).add(0.0, Math.sin(Math.PI * s) * 0.5, 0.0);
+            Vec3 up;
+            if (s < OUT) {
+                // Slow at first, then faster, as a block wrenched loose; it shakes as it grinds against the hole.
+                double p = s / OUT;
+                double shake = 0.04 * (1.0 - p);
+                up = ground.add(Math.sin(this.tickCount * 2.7) * shake, CLEAR * p * p,
+                        Math.cos(this.tickCount * 3.1) * shake);
+            } else {
+                double p = (s - OUT) / (1.0 - OUT);
+                double eased = p * p * (3.0 - 2.0 * p);
+                up = ground.add(0.0, CLEAR, 0.0).lerp(hold(holder), eased).add(0.0, Math.sin(Math.PI * p) * 0.4,
+                        0.0);
+            }
             this.setPos(up);
             this.setDeltaMovement(Vec3.ZERO);
             if (this.level().isClientSide) {

@@ -96,7 +96,7 @@ public final class Wizard extends MovingMonster {
     // From his second phase: whether he is up in the air or fighting on his feet for a while (WizardMoves).
     private static final EntityDataAccessor<Boolean> ALOFT = SynchedEntityData.defineId(Wizard.class,
             EntityDataSerializers.BOOLEAN);
-    // His staff out of his hand (staff/WizardStaff): thrown, planted, leaned, fighting on its own or broken.
+    // His staff out of his hand (staff/WizardStaff): thrown, planted, leaned or sat on.
     private static final EntityDataAccessor<Boolean> STAFF_OUT = SynchedEntityData.defineId(Wizard.class,
             EntityDataSerializers.BOOLEAN);
     private static final ResourceLocation PHASE_SPEED = ResourceLocation.fromNamespaceAndPath(MultiversePowers.MODID,

@@ -47,7 +47,7 @@ final class WizardSteps {
     // The moves whose release is done here.
     static boolean takes(int kind) {
         return switch (kind) {
-            case WizardMove.STAFF_THROW, WizardMove.STAFF_CALL, WizardMove.STAFF_FREE, WizardMove.FLICKER,
+            case WizardMove.STAFF_THROW, WizardMove.STAFF_CALL, WizardMove.FLICKER,
                     WizardMove.RIFT_STEP, WizardMove.VEIL, WizardMove.RIFT_VOLLEY -> true;
             default -> false;
         };
@@ -62,7 +62,6 @@ final class WizardSteps {
                     staff.call();
                 }
             }
-            case WizardMove.STAFF_FREE -> WizardStaff.free(level, this.wizard);
             case WizardMove.FLICKER -> this.hop(level, target);
             case WizardMove.RIFT_STEP -> this.stepIn(level);
             case WizardMove.VEIL -> this.vanish(level);

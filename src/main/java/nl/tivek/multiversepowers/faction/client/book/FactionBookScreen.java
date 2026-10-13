@@ -26,7 +26,6 @@ import net.minecraft.world.scores.PlayerTeam;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.faction.Standing;
 import nl.tivek.multiversepowers.faction.client.ClientFactions;
-import nl.tivek.multiversepowers.faction.client.FactionTags;
 import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 import nl.tivek.multiversepowers.faction.rules.Faction;
 import nl.tivek.multiversepowers.faction.rules.FactionRules;
@@ -485,7 +484,7 @@ public final class FactionBookScreen extends Screen {
         for (Entity entity : minecraft.level.entitiesForRendering()) {
             if (entity instanceof LivingEntity living && !(living instanceof Player) && living.hasCustomName()
                     && living.isAlive()) {
-                Faction of = FactionTags.of(living);
+                Faction of = ClientFactions.of(living);
                 if (of != null && of.id().equals(faction.id())) {
                     found.add(living);
                 }

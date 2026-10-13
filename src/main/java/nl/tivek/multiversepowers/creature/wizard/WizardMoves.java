@@ -36,9 +36,7 @@ final class WizardMoves extends WizardPicks {
     // How long he stays up in the air, and down on his feet, before the other (ticks, at least and more at random).
     private static final int ALOFT_FOR = 400;
     private static final int GROUND_FOR = 240;
-    // His staff out fighting this long before he may call it home, and back in his hand this long (and as much again
-    // at random) before it leaves it once more.
-    private static final int FREE_FOR = 500;
+    // His staff back in his hand this long (and as much again at random) before it leaves it once more.
     private static final int STAFF_HOME = 200;
 
     private final WizardFlight flight;
@@ -266,13 +264,6 @@ final class WizardMoves extends WizardPicks {
         if (staff != null) {
             int mode = staff.mode();
             if (mode == WizardStaff.STUCK && staff.inMode() > this.leftFor) {
-                if (random.nextInt(5) < 2) {
-                    staff.wake();
-                } else {
-                    this.begin(WizardMove.STAFF_CALL, target);
-                    return true;
-                }
-            } else if (mode == WizardStaff.FREE && staff.inMode() > FREE_FOR && random.nextInt(120) == 0) {
                 this.begin(WizardMove.STAFF_CALL, target);
                 return true;
             }

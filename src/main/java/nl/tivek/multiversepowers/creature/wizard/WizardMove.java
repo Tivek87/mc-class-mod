@@ -69,7 +69,6 @@ public final class WizardMove {
     public static final int WATCH = 56;
     public static final int STAFF_THROW = 57;
     public static final int STAFF_CALL = 58;
-    public static final int STAFF_FREE = 59;
     public static final int FLICKER = 60;
     public static final int RIFT_STEP = 61;
     public static final int VEIL = 62;
@@ -216,7 +215,6 @@ public final class WizardMove {
         move(WATCH, 40, 0, 100, 1, 0.0);
         big(STAFF_THROW, 26, 14, 100, 1, 1.4);
         move(STAFF_CALL, 24, 6, 0, NEVER, 0.9);
-        big(STAFF_FREE, 30, 18, 100, 1, 0.5);
         move(FLICKER, 24, 6, 100, 2, 0.0);
         move(RIFT_STEP, 40, 20, 100, 1, 0.0);
         move(VEIL, 40, 8, 100, 3, 1.3);

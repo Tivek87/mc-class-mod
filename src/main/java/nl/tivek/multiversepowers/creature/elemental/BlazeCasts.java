@@ -22,19 +22,20 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.event.EventHooks;
 import nl.tivek.multiversepowers.creature.MonsterBlows;
 import nl.tivek.multiversepowers.creature.elemental.spell.FrostRay;
 import nl.tivek.multiversepowers.creature.elemental.spell.HeavedStone;
 import nl.tivek.multiversepowers.creature.elemental.spell.ScorchBall;
 import nl.tivek.multiversepowers.creature.elemental.spell.StormArc;
 import nl.tivek.multiversepowers.engine.fx.ParticleFx;
+import nl.tivek.multiversepowers.engine.world.BlockRules;
 import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 import nl.tivek.multiversepowers.faction.Factions;
 
@@ -139,35 +140,42 @@ public final class BlazeCasts {
                 SoundSource.HOSTILE, 1.4F, 1.5F);
     }
 
-    // A rock torn up out of the ground below and before it, lifted for `lift` ticks and then hurled.
-    public static void heave(ServerLevel level, LivingEntity caster, int lift) {
+    // The block of ground under the Blaze, or beside and before a player, torn up out of the world in one piece and
+    // lifted for `lift` ticks, then hurled; its hole stays. Where the caster may not break blocks (mobGriefing, a
+    // protected spot) the stone is the same block but the ground stays whole. False where no ground below is a whole
+    // block that can be torn up.
+    public static boolean heave(ServerLevel level, LivingEntity caster, int lift) {
         Vec3 ahead = caster instanceof ElementalBlaze ? MonsterBlows.ahead((Mob) caster)
                 : caster.getLookAngle().multiply(1.0, 0.0, 1.0).normalize();
-        // A player's comes up beside them, out of their view.
-        Vec3 over = caster instanceof ElementalBlaze ? caster.position().add(ahead.scale(1.5))
+        // A player's comes up beside them, out of their view, and they do not fall into its hole.
+        Vec3 over = caster instanceof ElementalBlaze ? caster.position()
                 : caster.position().add(ahead.scale(2.2)).add(side(caster, ahead).scale(HeavedStone.BESIDE));
-        BlockHitResult down = LoadedWorld.clip(level, new ClipContext(over.add(0.0, 1.0, 0.0), over.add(0.0, -10.0,
+        BlockHitResult down = LoadedWorld.clip(level, new ClipContext(over.add(0.0, 1.0, 0.0), over.add(0.0, -12.0,
                 0.0), ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, caster));
-        Vec3 ground = down.getType() == HitResult.Type.MISS ? caster.position().add(ahead) : down.getLocation();
-        BlockState rock = down.getType() == HitResult.Type.MISS ? null : rock(level, down.getBlockPos());
-        if (rock == null) {
-            rock = ground.y < 0.0 ? Blocks.COBBLED_DEEPSLATE.defaultBlockState()
-                    : Blocks.COBBLESTONE.defaultBlockState();
+        if (down.getType() == HitResult.Type.MISS) {
+            return false;
         }
-        HeavedStone.raise(level, caster, ground.add(0.0, -0.6, 0.0), rock, lift);
-        BlockPos at = BlockPos.containing(ground);
-        level.playSound(null, at, SoundEvents.ROOTED_DIRT_BREAK, SoundSource.HOSTILE, 1.6F, 0.5F);
-        level.playSound(null, at, SoundEvents.GRINDSTONE_USE, SoundSource.HOSTILE, 1.2F, 0.45F);
+        BlockPos pos = down.getBlockPos();
+        BlockState rock = level.getBlockState(pos);
+        if (!liftable(level, pos, rock)) {
+            return false;
+        }
+        if (caster instanceof ServerPlayer player ? BlockRules.mayBreak(level, player, pos, rock)
+                : EventHooks.canEntityGrief(level, caster)) {
+            level.destroyBlock(pos, false, caster);
+        }
+        HeavedStone.raise(level, caster, Vec3.atBottomCenterOf(pos), rock, lift);
+        level.playSound(null, pos, SoundEvents.ROOTED_DIRT_BREAK, SoundSource.HOSTILE, 1.6F, 0.5F);
+        level.playSound(null, pos, SoundEvents.GRINDSTONE_USE, SoundSource.HOSTILE, 1.2F, 0.45F);
+        return true;
     }
 
-    // What the stone is made of: the ground it comes from where that is a whole block of plain rock or earth (null
-    // else: then stone, or deepslate deep down). The ground itself stays as it was.
-    @Nullable
-    private static BlockState rock(ServerLevel level, BlockPos pos) {
-        BlockState ground = level.getBlockState(pos);
+    // Whether the ground at `pos` can be torn up whole: a full block holding nothing, neither unbreakable nor as hard
+    // as obsidian.
+    private static boolean liftable(ServerLevel level, BlockPos pos, BlockState ground) {
         float hardness = ground.getDestroySpeed(level, pos);
         return ground.isCollisionShapeFullBlock(level, pos) && !ground.hasBlockEntity() && hardness >= 0.0F
-                && hardness < 10.0F ? ground : null;
+                && hardness < 10.0F;
     }
 
     // Lightning from `from` to `first` (or into `miss` when nothing stands there), leaping on to up to three more.

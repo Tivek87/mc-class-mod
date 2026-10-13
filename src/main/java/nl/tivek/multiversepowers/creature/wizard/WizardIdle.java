@@ -57,7 +57,7 @@ final class WizardIdle extends Goal {
             return false;
         }
         int mode = staff.mode();
-        return mode == WizardStaff.STUCK || mode == WizardStaff.FREE || mode == WizardStaff.THROWN
+        return mode == WizardStaff.STUCK || mode == WizardStaff.THROWN
                 || mode >= WizardStaff.PLANTED && this.kind == 0;
     }
 

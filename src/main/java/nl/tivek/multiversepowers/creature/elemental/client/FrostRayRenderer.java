@@ -57,17 +57,10 @@ final class FrostRayRenderer extends EntityRenderer<FrostRay> {
             return;
         }
         float width = strength * (1.0F + 0.06F * Mth.sin(age * 1.9F));
-        Additive.ribbon(at, buffer, from, to, eye, 1.1F * width, Additive.rgb(ice, 0.2F * strength),
-                Additive.rgb(ice, 0.14F * strength));
         Additive.ribbon(at, buffer, from, to, eye, 0.14F * width, Additive.rgb(0xFFFFFF, 0.9F * strength),
                 Additive.rgb(frost, 0.8F * strength));
         this.rings(at, buffer, from, to, age, strength);
         var facing = this.entityRenderDispatcher.cameraOrientation();
-        if (!ElementalClient.own(caster)) {
-            Additive.glow(pose, buffer, from, 0.5F * width + 0.15F, Additive.rgb(0xFFFFFF, 0.8F * strength), facing);
-        }
-        Additive.glow(pose, buffer, to, 1.3F * width, Additive.rgb(ice, 0.8F * strength), facing);
-        Additive.glow(pose, buffer, to, 0.5F * width, Additive.rgb(0xFFFFFF, 0.9F * strength), facing);
         for (int i = 0; i < 3; i++) {
             pose.pushPose();
             pose.translate(to.x, to.y, to.z);

@@ -21,16 +21,15 @@ import nl.tivek.multiversepowers.creature.elemental.BlazeTimeline;
 import nl.tivek.multiversepowers.creature.elemental.Element;
 import nl.tivek.multiversepowers.creature.elemental.ElementalBlaze;
 import nl.tivek.multiversepowers.creature.elemental.RodOrbit;
-import nl.tivek.multiversepowers.creature.wizard.client.fx.Additive;
 import nl.tivek.multiversepowers.engine.client.fx.Energy;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
 
-// The Elemental Blaze, never drawn darker than a dim light of its own: its own model, then its rods' own glow (the fire rod's flame,
-// the storm rod's sparks, the ice rod's shine), its eyes lit in the colour of the element it uses, and the rods of the
-// element it casts burning brighter as they swing round, a soft light gathering at the leading rod. Its heart burns in
-// the colour of its element, the crown's shard of the element it casts lights up, and the element itself plays round
-// it (`energy`).
+// The Elemental Blaze, never drawn darker than a dim light of its own: its own model, then its rods' own glow (the
+// fire rod's flame, the storm rod's sparks, the ice rod's shine), its eyes lit in the colour of the element it uses,
+// and the rods of the element it casts burning brighter as they swing round. Its heart burns in the colour of its
+// element, the crown's shard of the element it casts lights up, and the element itself plays round it in pixels, as
+// the game's particles do (`energy`).
 public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, ElementalBlazeModel> {
     static final ModelLayerLocation LAYER = new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(
             MultiversePowers.MODID, "elemental_blaze"), "main");
@@ -38,9 +37,8 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
     private static final RenderType GLOW = RenderType.eyes(texture("elemental_blaze_glow"));
     private static final RenderType EYES = RenderType.eyes(texture("elemental_blaze_eyes"));
     private static final RenderType BRIGHT = RenderType.eyes(TEXTURE);
-    // The awakening's rings of light: how many ticks they race out, and how many sides they are drawn with.
-    private static final float WAVE = 12.0F;
-    private static final int RING = 28;
+    // How many ticks the awakening's rings race out.
+    private static final float WAVE = 18.0F;
     // The energy each element is painted as, in the elements' order.
     private static final int[] PATTERN = { Energy.DUST, Energy.FLAME, Energy.FROST, Energy.GUST, Energy.SPARK };
     // How high over its feet its heart hangs, how many ticks a cast's ring of force runs out, and how far it leans
@@ -82,32 +80,10 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
         }
         RodOrbit.State state = blaze.orbit(partialTick);
         Element element = blaze.element();
-        VertexConsumer buffer = buffers.getBuffer(Additive.TYPE);
         var facing = this.entityRenderDispatcher.cameraOrientation();
-        float flicker = 0.85F + 0.15F * Mth.sin(state.age() * 0.7F);
         float body = Mth.rotLerp(partialTick, blaze.yBodyRotO, blaze.yBodyRot);
         RodOrbit.place(state, RodOrbit.leader(element), this.place);
         Vec3 lead = RodOrbit.world(this.place, Vec3.ZERO, body);
-        float glow = RodOrbit.glow(state, element, 0);
-        if (glow > 0.02F && blaze.move() != BlazeTimeline.AWAKEN) {
-            Additive.glow(pose, buffer, lead, 0.3F + 0.25F * glow, Additive.rgb(element.light, 0.45F * glow * flicker),
-                    facing);
-        }
-        if (blaze.move() == BlazeTimeline.AWAKEN) {
-            float burst = (float) Ease.bump((state.moveAge() - BlazeTimeline.BURST) / 10.0);
-            for (Element each : Element.ALL) {
-                Additive.glow(pose, buffer, new Vec3(0.0, 1.0, 0.0), 0.8F + 2.6F * burst * (1.0F + each.ordinal()
-                        * 0.12F), Additive.rgb(each.colour, 0.14F * burst), facing);
-            }
-            float out = (state.moveAge() - BlazeTimeline.BURST) / WAVE;
-            if (out >= 0.0F && out < 1.0F) {
-                float reach = 1.0F - (1.0F - out) * (1.0F - out);
-                for (Element each : Element.ALL) {
-                    ring(pose.last(), buffer, 0.9F + each.ordinal() * 0.08F, 0.5F + (3.6F + each.ordinal() * 0.6F)
-                            * reach, 0.25F + 0.5F * out, Additive.rgb(each.light, 0.45F * (1.0F - out)));
-                }
-            }
-        }
         VertexConsumer energy = Energy.buffer(buffers);
         if (energy != null) {
             this.energy(blaze, state, element, lead, body, partialTick, pose, energy, facing);
@@ -129,7 +105,7 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
         Energy.puff(pose, energy, heart, 0.5F + 0.2F * brace + 0.6F * release, facing, pattern, element.colour,
                 smoulder, seed);
         if (state.move() == BlazeTimeline.AWAKEN) {
-            float out = (state.moveAge() - BlazeTimeline.BURST) / (WAVE * 1.5F);
+            float out = (state.moveAge() - BlazeTimeline.BURST) / WAVE;
             for (Element each : Element.ALL) {
                 float gather = (float) Ease.smooth(state.moveAge() / BlazeTimeline.BURST) * (out < 0.0F ? 1.0F : 0.0F);
                 float turn = state.age() * 0.21F + each.ordinal() * Mth.TWO_PI / Element.ALL.length;
@@ -220,29 +196,6 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
         pose.mulPose(Axis.XP.rotation(-Mth.clamp(forward * LEAN, -0.3F, 0.3F)));
         pose.mulPose(Axis.ZP.rotation(-Mth.clamp(side * LEAN, -0.3F, 0.3F)));
         pose.translate(0.0F, -HEART, 0.0F);
-    }
-
-    // A flat ring of light `radius` wide round its middle, fading to nothing `width` to either side, seen from above
-    // and below.
-    private static void ring(PoseStack.Pose at, VertexConsumer buffer, float y, float radius, float width,
-            float[] colour) {
-        float[] none = Additive.rgb(0, 0.0F);
-        for (int i = 0; i < RING; i++) {
-            float a0 = i * Mth.TWO_PI / RING;
-            float a1 = (i + 1) * Mth.TWO_PI / RING;
-            float[] m0 = rim(a0, radius, y);
-            float[] m1 = rim(a1, radius, y);
-            for (float side : new float[] {-width, width}) {
-                float[] e0 = rim(a0, radius + side, y);
-                float[] e1 = rim(a1, radius + side, y);
-                Additive.quad(at, buffer, m0, m1, e1, e0, colour, colour, none, none);
-                Additive.quad(at, buffer, e0, e1, m1, m0, none, none, colour, colour);
-            }
-        }
-    }
-
-    private static float[] rim(float angle, float radius, float y) {
-        return new float[] {Mth.cos(angle) * radius, y, Mth.sin(angle) * radius};
     }
 
     // The rods' own glow and the eyes over the body in full light, then the rods of the element it casts once more,

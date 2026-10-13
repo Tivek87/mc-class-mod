@@ -17,7 +17,8 @@ import nl.tivek.multiversepowers.engine.client.fx.Energy;
 
 // A heaved stone: its block, a little smaller than a whole one, turning slowly as it rises and tumbling as it flies.
 final class HeavedStoneRenderer extends EntityRenderer<HeavedStone> {
-    private static final float SIZE = 0.85F;
+    // A shade under a whole block, so it never flickers against the sides of its hole.
+    private static final float SIZE = 0.96F;
 
     HeavedStoneRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -28,10 +29,11 @@ final class HeavedStoneRenderer extends EntityRenderer<HeavedStone> {
     public void render(HeavedStone stone, float yaw, float partialTick, PoseStack pose, MultiBufferSource buffers,
             int light) {
         float age = stone.tickCount + partialTick;
-        float spin = stone.rising() ? age * 3.0F : age * 17.0F;
+        // Still in its hole it only shakes; it turns once it is out, and tumbles as it flies.
+        float spin = stone.rising() ? Math.max(0.0F, age - 4.0F) * 3.0F : age * 17.0F;
         pose.pushPose();
         pose.translate(0.0F, SIZE * 0.5F, 0.0F);
-        pose.mulPose(Axis.YP.rotationDegrees(spin + stone.getId() * 37.0F));
+        pose.mulPose(Axis.YP.rotationDegrees(spin));
         pose.mulPose(Axis.XP.rotationDegrees(spin * 0.7F));
         pose.scale(SIZE, SIZE, SIZE);
         pose.translate(-0.5F, -0.5F, -0.5F);

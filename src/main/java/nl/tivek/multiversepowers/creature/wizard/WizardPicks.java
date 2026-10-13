@@ -251,7 +251,7 @@ abstract class WizardPicks extends Goal {
             return opening;
         }
         if (this.wizard.tickCount >= this.nextStaff) {
-            int staff = this.staff(far, random);
+            int staff = this.staff(far);
             if (staff != 0) {
                 return staff;
             }
@@ -267,14 +267,10 @@ abstract class WizardPicks extends Goal {
         return kind;
     }
 
-    // His staff out of his hand: hurled as a spear or set free to fight on its own, whichever fits.
-    private int staff(double far, RandomSource random) {
-        boolean hurl = this.ready(WizardMove.STAFF_THROW) && this.fits(WizardMove.STAFF_THROW, far);
-        boolean free = this.ready(WizardMove.STAFF_FREE) && this.fits(WizardMove.STAFF_FREE, far);
-        if (hurl && free) {
-            return random.nextInt(5) < 3 ? WizardMove.STAFF_THROW : WizardMove.STAFF_FREE;
-        }
-        return hurl ? WizardMove.STAFF_THROW : free ? WizardMove.STAFF_FREE : 0;
+    // His staff out of his hand, hurled as a spear, where that fits.
+    private int staff(double far) {
+        return this.ready(WizardMove.STAFF_THROW) && this.fits(WizardMove.STAFF_THROW, far) ? WizardMove.STAFF_THROW
+                : 0;
     }
 
     // One of the big spells still to come this round, by weight. 0 for none.
@@ -283,8 +279,8 @@ abstract class WizardPicks extends Goal {
         double[] weight = new double[WizardMove.KINDS + 1];
         double total = 0.0;
         for (int kind = 1; kind <= WizardMove.KINDS; kind++) {
-            if (!WizardMove.big(kind) || kind == WizardMove.STAFF_THROW || kind == WizardMove.STAFF_FREE
-                    || this.spent[kind] || kind == this.lastBig || !this.ready(kind) || !this.fits(kind, far)
+            if (!WizardMove.big(kind) || kind == WizardMove.STAFF_THROW || this.spent[kind] || kind == this.lastBig
+                    || !this.ready(kind) || !this.fits(kind, far)
                     || WizardMove.ultimate(kind) && now < this.nextUltimate) {
                 continue;
             }
@@ -352,7 +348,6 @@ abstract class WizardPicks extends Goal {
             case WizardMove.PILLARS -> far < 24.0;
             case WizardMove.SENTRY -> RuneSentry.owned(this.wizard) < MOST_SENTRIES;
             case WizardMove.STAFF_THROW -> staff && far > 5.0 && far < 22.0;
-            case WizardMove.STAFF_FREE -> staff && far < 24.0;
             case WizardMove.RIFT_VOLLEY -> far < 22.0;
             default -> false;
         };

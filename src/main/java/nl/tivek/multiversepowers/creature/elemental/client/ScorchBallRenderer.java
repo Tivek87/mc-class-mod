@@ -15,7 +15,7 @@ import nl.tivek.multiversepowers.creature.elemental.spell.ScorchBall;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.Additive;
 import nl.tivek.multiversepowers.engine.client.fx.Energy;
 
-// A scorch ball: a small hot heart in a ball of living flame, and a tail of flames each smaller than the last, torn
+// A scorch ball: a ball of living flame, and a tail of flames each smaller than the last, torn
 // off behind it along the way it flies.
 final class ScorchBallRenderer extends EntityRenderer<ScorchBall> {
     private static final int TAIL = 5;
@@ -41,8 +41,6 @@ final class ScorchBallRenderer extends EntityRenderer<ScorchBall> {
         float age = ball.tickCount + partialTick;
         Vec3 middle = new Vec3(0.0, ball.getBbHeight() * 0.5, 0.0);
         float grown = Math.min(1.0F, age / 3.0F);
-        Additive.glow(pose, buffers.getBuffer(Additive.TYPE), middle, 0.22F * grown,
-                Additive.rgb(Element.FIRE.light, 0.8F), facing);
         VertexConsumer energy = Energy.buffer(buffers);
         if (energy == null) {
             return;

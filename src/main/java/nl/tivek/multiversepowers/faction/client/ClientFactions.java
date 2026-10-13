@@ -10,6 +10,8 @@ import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.core.UUIDUtil;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.PlayerTeam;
 import net.neoforged.api.distmarker.Dist;
@@ -119,6 +121,16 @@ public final class ClientFactions {
         LocalPlayer player = Minecraft.getInstance().player;
         PlayerTeam team = player == null ? null : player.getTeam();
         return team == null ? null : FactionRules.get(team.getName());
+    }
+
+    // A player's faction is their team's; a creature's its own or its kind's, none for a pet or a summon.
+    @Nullable
+    public static Faction of(LivingEntity entity) {
+        if (entity instanceof Player player) {
+            PlayerTeam team = player.getTeam();
+            return team == null ? null : FactionRules.get(team.getName());
+        }
+        return entity instanceof Mob mob && MobFactions.free(mob) ? MobFactions.of(mob) : null;
     }
 
     @SubscribeEvent

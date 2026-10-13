@@ -243,8 +243,6 @@ Any other creature, from another mod too, joins The Dark Dwellers, The Wild Beas
 - **One creature can differ:** the host can give a single creature a faction or a behaviour of its own.
 - A creature that is **friendly** to you never harms you, not by a blast or a stray arrow either, and a shy one
   (a deer, a squirrel) no longer runs from you.
-- **Faction over heads:** every creature and player near shows its faction in small see-through letters over its
-  head, above its name where a name shows (client setting Faction over heads).
 - **The Faction Book** (a book, an ink sac and a gold nugget, or the creative tab): right click to read every
   faction of the world, how it stands to you, its creatures with a turning model, its story, its allies and sworn
   enemies, the named creatures near you that belong to it, and its players with their own skins.

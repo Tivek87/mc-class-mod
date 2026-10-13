@@ -8,18 +8,13 @@ import javax.annotation.Nullable;
 import net.minecraft.core.particles.ItemParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.server.level.ServerBossEvent;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
-import net.minecraft.world.BossEvent;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -41,19 +36,15 @@ import nl.tivek.multiversepowers.engine.world.LoadedWorld;
 
 // The Wizard's staff out of his hand. Hurled as a spear (THROWN) it flies crystal first, piercing whoever it meets,
 // and sticks fast where it strikes (STUCK) until he calls it home (RETURNING), spinning back through anyone in its way
-// into his hand. Set free (FREE) it fights on its own beside him with a boss bar of its own: it circles his foe and
-// casts or strikes (StaffActs) until he calls it back, its time runs out, or it is broken (BROKEN: it shatters, and
-// reforms in his hand a while later). At rest he plants it (PLANTED), leans it on a wall (LEANED) or sits on it in
-// the air (SEAT), placed by WizardPastimes. While it is out he casts from his bare hands (Wizard.staffOut).
+// into his hand. At rest he plants it (PLANTED), leans it on a wall (LEANED) or sits on it in the air (SEAT), placed
+// by WizardPastimes. While it is out he casts from his bare hands (Wizard.staffOut). It never acts on its own.
 public final class WizardStaff extends Entity {
     public static final int THROWN = 0;
     public static final int STUCK = 1;
     public static final int RETURNING = 2;
-    public static final int FREE = 3;
-    public static final int BROKEN = 4;
-    public static final int PLANTED = 5;
-    public static final int LEANED = 6;
-    public static final int SEAT = 7;
+    public static final int PLANTED = 3;
+    public static final int LEANED = 4;
+    public static final int SEAT = 5;
     // Its middle is this high over its feet (the box is upright whatever way it points); its crystal and its foot this
     // far from its middle along it.
     public static final double MIDDLE = 1.2;
@@ -63,10 +54,6 @@ public final class WizardStaff extends Entity {
     private static final double FALL = 0.025;
     private static final double REACH = 0.6;
     private static final int FLIGHT = 80;
-    private static final int FREE_LIFE = 900;
-    private static final int REFORM = 100;
-    private static final float HEALTH = 40.0F;
-    private static final float HEALTH_PER_PHASE = 18.0F;
     private static final Map<Wizard, WizardStaff> OUT = new WeakHashMap<>();
     private static final EntityDataAccessor<Integer> OWNER = SynchedEntityData.defineId(WizardStaff.class,
             EntityDataSerializers.INT);
@@ -74,29 +61,14 @@ public final class WizardStaff extends Entity {
             EntityDataSerializers.INT);
     private static final EntityDataAccessor<Integer> PHASE = SynchedEntityData.defineId(WizardStaff.class,
             EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> ACT = SynchedEntityData.defineId(WizardStaff.class,
-            EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> ACT_AT = SynchedEntityData.defineId(WizardStaff.class,
-            EntityDataSerializers.INT);
-    private static final EntityDataAccessor<Integer> HURT_AT = SynchedEntityData.defineId(WizardStaff.class,
-            EntityDataSerializers.INT);
-    private final ServerBossEvent bar = new ServerBossEvent(Component.translatable("entity.welcomescreen.wizard_staff"),
-            BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.NOTCHED_10);
     private final Set<Integer> struck = new HashSet<>();
     @Nullable
     private Wizard wizard;
-    private float health;
-    private float most;
     private int modeAt;
-    private int nextAct = 30;
-    private double circle;
-    // Where its ray points now, following its foe slowly (StaffActs).
-    Vec3 aim = Vec3.ZERO;
 
     public WizardStaff(EntityType<? extends WizardStaff> type, Level level) {
         super(type, level);
         this.noPhysics = true;
-        this.bar.setVisible(false);
     }
 
     // His staff while it is out of his hand, on the server.
@@ -148,38 +120,6 @@ public final class WizardStaff extends Entity {
                 1.4F);
     }
 
-    // Set free to fight on its own: it leaps out of his hand into the air over him.
-    public static void free(ServerLevel level, Wizard wizard) {
-        WizardStaff staff = make(level, wizard, FREE, wizard.at(0.45, 1.8, 0.6));
-        staff.point(new Vec3(0.0, 1.0, 0.0));
-        staff.setDeltaMovement(0.0, 0.5, 0.0);
-        staff.arm(level, wizard);
-    }
-
-    // Stuck fast where he hurled it, it wrenches itself out to fight on its own.
-    public void wake() {
-        if (this.mode() != STUCK || this.wizard == null || !(this.level() instanceof ServerLevel level)) {
-            return;
-        }
-        this.setDeltaMovement(this.way().scale(-0.4).add(0.0, 0.3, 0.0));
-        this.setMode(FREE);
-        this.arm(level, this.wizard);
-    }
-
-    // Whole and awake as it starts to fight on its own.
-    private void arm(ServerLevel level, Wizard wizard) {
-        this.most = HEALTH + HEALTH_PER_PHASE * wizard.phase();
-        this.health = this.most;
-        this.nextAct = this.tickCount + 30;
-        this.bar.setProgress(1.0F);
-        this.bar.setVisible(true);
-        Vec3 at = this.middle();
-        ParticleFx.sphereOut(level, Wizard.dust(Wizard.light(wizard.phase()), 1.6F), at, 40, 0.3);
-        ParticleFx.send(level, ParticleTypes.END_ROD, at.x, at.y, at.z, 16, 0.2, 0.6, 0.2, 0.08);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.EVOKER_PREPARE_SUMMON, SoundSource.HOSTILE, 1.8F, 1.3F);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.HOSTILE, 2.0F, 0.6F);
-    }
-
     // Laid out of his hand to stand by itself at rest (PLANTED, LEANED, SEAT), its middle at `middle` pointing `way`.
     public static WizardStaff lay(ServerLevel level, Wizard wizard, int mode, Vec3 middle, Vec3 way) {
         WizardStaff staff = make(level, wizard, mode, middle);
@@ -195,7 +135,6 @@ public final class WizardStaff extends Entity {
         this.entityData.set(MODE, mode);
         this.modeAt = this.tickCount;
         this.struck.clear();
-        this.bar.setVisible(mode == FREE);
     }
 
     // Ticks in its mode now.
@@ -205,19 +144,6 @@ public final class WizardStaff extends Entity {
 
     public int phase() {
         return this.entityData.get(PHASE);
-    }
-
-    public int act() {
-        return this.entityData.get(ACT);
-    }
-
-    // Ticks into its act, on any side.
-    public float actAge(float partialTick) {
-        return this.tickCount + partialTick - this.entityData.get(ACT_AT);
-    }
-
-    public int hurtAt() {
-        return this.entityData.get(HURT_AT);
     }
 
     @Nullable
@@ -255,10 +181,9 @@ public final class WizardStaff extends Entity {
     // Called home: it flies back into his hand.
     public void call() {
         int mode = this.mode();
-        if (mode == RETURNING || mode == BROKEN) {
+        if (mode == RETURNING) {
             return;
         }
-        this.setAct(0);
         this.setMode(RETURNING);
         Vec3 at = this.middle();
         this.level().playSound(null, at.x, at.y, at.z, SoundEvents.TRIDENT_RETURN, SoundSource.HOSTILE, 1.6F, 0.8F);
@@ -273,19 +198,11 @@ public final class WizardStaff extends Entity {
         this.discard();
     }
 
-    void setAct(int act) {
-        this.entityData.set(ACT, act);
-        this.entityData.set(ACT_AT, this.tickCount);
-    }
-
     @Override
     protected void defineSynchedData(SynchedEntityData.Builder builder) {
         builder.define(OWNER, -1);
         builder.define(MODE, THROWN);
         builder.define(PHASE, 1);
-        builder.define(ACT, 0);
-        builder.define(ACT_AT, 0);
-        builder.define(HURT_AT, -100);
     }
 
     @Override
@@ -303,13 +220,6 @@ public final class WizardStaff extends Entity {
         switch (this.mode()) {
             case THROWN -> this.fly(level, wizard);
             case RETURNING -> this.home(level, wizard);
-            case FREE -> this.fight(level, wizard);
-            case BROKEN -> {
-                this.setMiddle(wizard.at(0.45, 1.4, 0.5));
-                if (this.inMode() >= REFORM) {
-                    this.reform(level, wizard);
-                }
-            }
             default -> {
             }
         }
@@ -400,142 +310,21 @@ public final class WizardStaff extends Entity {
         this.putAway();
     }
 
-    // Free: circling his foe and casting or striking, until its time runs out or he has no foe.
-    private void fight(ServerLevel level, Wizard wizard) {
-        LivingEntity target = wizard.getTarget();
-        if (target == null || !target.isAlive() || this.inMode() > FREE_LIFE) {
-            this.call();
-            return;
-        }
-        int act = this.act();
-        if (act != 0) {
-            int t = (int) this.actAge(0.0F);
-            if (t >= StaffActs.length(act)) {
-                this.setAct(0);
-                this.nextAct = this.tickCount + 14 + this.random.nextInt(18);
-            } else {
-                StaffActs.tick(level, this, wizard, target, act, t);
-                return;
-            }
-        }
-        this.circle += 0.045;
-        Vec3 round = new Vec3(Math.cos(this.circle) * 4.5, 2.2 + 0.4 * Math.sin(this.circle * 2.3),
-                Math.sin(this.circle) * 4.5);
-        this.steer(target.position().add(round), 0.45);
-        this.point(new Vec3(0.0, 1.0, 0.0).add(target.getBoundingBox().getCenter().subtract(this.middle())
-                .normalize().scale(0.45)));
-        if (this.tickCount >= this.nextAct) {
-            double far = this.middle().distanceTo(target.getBoundingBox().getCenter());
-            this.setAct(StaffActs.pick(this.random, far));
-            this.aim = target.getBoundingBox().getCenter();
-        }
-    }
-
-    // Glides its middle towards `to`, at most `speed` a tick, easing in.
-    void steer(Vec3 to, double speed) {
-        Vec3 at = this.middle();
-        Vec3 way = to.subtract(at);
-        double far = way.length();
-        if (far < 1.0E-4) {
-            return;
-        }
-        Vec3 want = way.scale(Math.min(speed, far * 0.3) / far);
-        Vec3 v = this.getDeltaMovement().scale(0.6).add(want.scale(0.4));
-        this.setDeltaMovement(v);
-        this.setMiddle(at.add(v));
-    }
-
-    @Override
-    public boolean isPickable() {
-        return this.mode() == FREE;
-    }
-
-    @Override
-    public boolean hurt(DamageSource source, float amount) {
-        if (!(this.level() instanceof ServerLevel level) || this.mode() != FREE || this.isRemoved()) {
-            return false;
-        }
-        Entity by = source.getEntity();
-        if (by != null && Wizard.ally(by) || this.isInvulnerableTo(source)) {
-            return false;
-        }
-        if (this.tickCount - this.hurtAt() < 8) {
-            return false;
-        }
-        this.entityData.set(HURT_AT, this.tickCount);
-        this.health -= amount;
-        this.bar.setProgress(Math.max(0.0F, this.health / this.most));
-        Vec3 at = this.middle();
-        ParticleFx.send(level, ParticleTypes.CRIT, at.x, at.y, at.z, 10, 0.2, 0.6, 0.2, 0.2);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_BLOCK_HIT, SoundSource.HOSTILE, 1.4F, 0.6F);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.WOOD_HIT, SoundSource.HOSTILE, 1.2F, 0.7F);
-        if (by != null) {
-            Vec3 away = at.subtract(by.position()).multiply(1.0, 0.0, 1.0);
-            if (away.lengthSqr() > 1.0E-4) {
-                this.setDeltaMovement(this.getDeltaMovement().add(away.normalize().scale(0.6)).add(0.0, 0.2, 0.0));
-            }
-        }
-        if (this.health <= 0.0F) {
-            this.shatter(level);
-        }
-        return true;
-    }
-
-    // Broken: it bursts into splinters and shards, and reforms in his hand a while later.
-    private void shatter(ServerLevel level) {
-        Vec3 at = this.middle();
-        ParticleFx.send(level, new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(Items.STICK)), at.x, at.y,
-                at.z, 30, 0.2, 0.9, 0.2, 0.2);
-        ParticleFx.send(level, new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(Items.AMETHYST_SHARD)), at.x,
-                at.y, at.z, 30, 0.2, 0.6, 0.2, 0.25);
-        ParticleFx.sphereOut(level, Wizard.dust(Wizard.light(this.phase()), 1.8F), at, 40, 0.4);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.ITEM_BREAK, SoundSource.HOSTILE, 2.0F, 0.6F);
-        level.playSound(null, at.x, at.y, at.z, SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.HOSTILE, 2.0F, 0.7F);
-        this.setAct(0);
-        this.setDeltaMovement(Vec3.ZERO);
-        this.setMode(BROKEN);
-    }
-
-    // Grown again in his hand out of motes of light.
-    private void reform(ServerLevel level, Wizard wizard) {
-        Vec3 hand = wizard.at(0.45, 1.4, 0.5);
-        ParticleFx.implosion(level, Wizard.dust(Wizard.light(wizard.phase()), 1.4F), hand.add(0.0, 0.6, 0.0), 2.0,
-                30, 0.3);
-        level.playSound(null, hand.x, hand.y, hand.z, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.HOSTILE, 1.6F,
-                1.2F);
-        this.putAway();
-    }
-
     // Its Wizard gone: it falls apart where it is.
     private void crumble(ServerLevel level) {
         Vec3 at = this.middle();
-        if (this.mode() != BROKEN) {
-            ParticleFx.send(level, new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(Items.STICK)), at.x,
-                    at.y, at.z, 20, 0.2, 0.8, 0.2, 0.1);
-            ParticleFx.send(level, ParticleTypes.END_ROD, at.x, at.y, at.z, 10, 0.2, 0.6, 0.2, 0.05);
-        }
+        ParticleFx.send(level, new ItemParticleOption(ParticleTypes.ITEM, new ItemStack(Items.STICK)), at.x, at.y,
+                at.z, 20, 0.2, 0.8, 0.2, 0.1);
+        ParticleFx.send(level, ParticleTypes.END_ROD, at.x, at.y, at.z, 10, 0.2, 0.6, 0.2, 0.05);
         this.discard();
     }
 
     @Override
     public void remove(RemovalReason reason) {
         super.remove(reason);
-        this.bar.removeAllPlayers();
         if (this.wizard != null) {
             OUT.remove(this.wizard, this);
         }
-    }
-
-    @Override
-    public void startSeenByPlayer(ServerPlayer player) {
-        super.startSeenByPlayer(player);
-        this.bar.addPlayer(player);
-    }
-
-    @Override
-    public void stopSeenByPlayer(ServerPlayer player) {
-        super.stopSeenByPlayer(player);
-        this.bar.removePlayer(player);
     }
 
     @Override

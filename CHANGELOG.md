@@ -3,6 +3,21 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.16-alpha] - 2026-10-13
+
+### Changed
+- **Stone Heave:** the Elemental Blaze and the Elemental Staff now tear the real block of ground out of the world
+  (under the Blaze, beside you with the staff); it grinds up out of its hole before it flies, and the hole stays.
+  Where blocks may not be broken (mobGriefing off, a protected spot) the stone is the same block but the ground
+  stays whole; with no ground below the staff casts nothing and spends nothing.
+- **Pixel effects:** the Elemental Blaze's effects are drawn in square pixels, flat shades and a few frames a second,
+  as the game's own particles are, and its soft glows are gone.
+
+### Removed
+- **Faction over heads:** the faction name over every creature and player, and its client setting.
+- **Wizard's staff:** it no longer breaks free to fight on its own (with its own boss bar); he still throws it and
+  calls it back.
+
 ## [0.9.15-alpha] - 2026-10-13
 
 ### Changed

@@ -1,7 +1,6 @@
 package nl.tivek.multiversepowers.creature.wizard.client;
 
 import static nl.tivek.multiversepowers.creature.wizard.client.WizardKeys.*;
-
 import nl.tivek.multiversepowers.creature.wizard.WizardMove;
 import nl.tivek.multiversepowers.engine.math.Keyframes.Key;
 
@@ -58,16 +57,6 @@ final class WizardKeysSteps {
                 k(WizardMove.CALL_CATCH + 1, R_ARM, -1.0F, R_ELBOW, 0.6F, R_OUT, 0.2F, SINK, 1.0F, LEAN, -0.1F,
                         STAFF, 0.4F, GLOW, 1.4F),
                 k(24) };
-        // The staff raised overhead and set spinning, then tossed up free, both his arms flung up to send it.
-        moves[WizardMove.STAFF_FREE] = new Key[] { k(0),
-                k(8, R_ARM, -2.7F, R_ELBOW, 0.3F, STAFF, -0.2F, L_ARM, -1.0F, L_OUT, 0.6F, NOD, -0.3F, GLOW, 1.2F,
-                        SPIN, 2.0F),
-                hold(16, R_ARM, -2.9F, R_ELBOW, 0.2F, L_ARM, -1.2F, L_OUT, 0.7F, NOD, -0.35F, GLOW, 1.6F, SPIN, 6.0F,
-                        LIFT, 0.3F),
-                k(19, R_ARM, -2.4F, R_OUT, 0.9F, R_ELBOW, 0.0F, L_ARM, -2.4F, L_OUT, 0.9F, NOD, -0.4F, FLARE, 1.0F,
-                        HAND, 1.0F),
-                hold(26, R_ARM, -1.3F, R_OUT, 0.8F, L_ARM, -1.3F, L_OUT, 0.8F, NOD, -0.1F, HAND, 0.6F),
-                k(30) };
         // Three quick hops, each landing in a crouch with a flick of the staff at them.
         moves[WizardMove.FLICKER] = new Key[] { k(0),
                 k(4, SINK, 0.8F, LEAN, 0.2F, R_ARM, -0.6F, STAFF, 0.6F, GLOW, 0.8F),
