@@ -8,16 +8,31 @@ import java.util.Map;
 import java.util.Set;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.ServerScoreboard;
+import net.minecraft.server.players.GameProfileCache;
 import net.minecraft.world.scores.PlayerTeam;
+import nl.tivek.multiversepowers.faction.rules.Faction;
 import nl.tivek.multiversepowers.faction.rules.FactionDefaults;
 import nl.tivek.multiversepowers.faction.rules.FactionRules;
 
 // A world made with the first factions (Villagers, Undead and the rest, each going by the game) gets the peoples of
 // today in their place, once: their players, reputation and pinned standings move to the faction that took over,
 // creatures and relations a player set on factions of their own stay, and an attitude of "game" becomes neutral. Each
-// raise of VERSION also gives the kinds of creature added since (the Elemental Blaze) their faction.
+// raise of VERSION also gives the kinds of creature added since (the Elemental Blaze) their faction, a faction still
+// called as it was before a renaming today's name, and every member the standing a member starts with.
 final class FactionUpgrade {
-    static final int VERSION = 3;
+    static final int VERSION = 4;
+    // A faction's earlier name, and a phrase of the lore that called it so, by the start of its line.
+    private static final Map<String, String> EARLIER = Map.ofEntries(
+            Map.entry("hearthbound|name=", "The Hearthbound Accord"),
+            Map.entry("covenant|name=", "The Exiled Covenant"),
+            Map.entry("legion|name=", "The Hollow Legion"), Map.entry("blight|name=", "The Rotborn Blight"),
+            Map.entry("horde|name=", "The Gilded Horde"), Map.entry("cinder|name=", "The Cinder Court"),
+            Map.entry("wanderers|name=", "The Wanderers Between"), Map.entry("endwatch|name=", "The Endwatch"),
+            Map.entry("creeping|name=", "The Creeping Dark"), Map.entry("abyssal|name=", "The Abyssal Throne"),
+            Map.entry("wildkin|name=", "The Wild Kin"), Map.entry("meadowfolk|name=", "The Meadowfolk"),
+            Map.entry("tidefolk|name=", "The Tidefolk"), Map.entry("conclave|name=", "The Arcane Conclave"),
+            Map.entry("ironfang|name=", "The Ironfang Syndicate"), Map.entry("blight|lore=", "The Blight does"),
+            Map.entry("wildkin|lore=", "the Kin let"), Map.entry("creeping|lore=", "The Dark has no banner"));
     private static final String GAME = "|attitude=game";
     private static final Map<String, String> RENAMED = Map.ofEntries(Map.entry("villagers", "hearthbound"),
             Map.entry("illagers", "covenant"), Map.entry("undead", "legion"), Map.entry("piglins", "horde"),
@@ -55,6 +70,8 @@ final class FactionUpgrade {
             RENAMED.forEach(data::rename);
         }
         joinNew();
+        retell(kept);
+        liftMembers(server, data);
         if (!kept.equals(factions)) {
             FactionRules.FACTIONS.set(kept);
         }
@@ -140,6 +157,45 @@ final class FactionUpgrade {
         }
         if (added) {
             FactionRules.MEMBERS.set(members);
+        }
+    }
+
+    // A name no one changed, and lore that still uses it, become today's; words a player wrote stay.
+    static void retell(List<String> lines) {
+        List<String> today = FactionDefaults.factions();
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            int is = line.indexOf('=');
+            String start = is < 0 ? line : line.substring(0, is + 1);
+            String earlier = EARLIER.get(start);
+            if (earlier == null || (start.endsWith("|name=") ? !line.equals(start + earlier)
+                    : !line.contains(earlier))) {
+                continue;
+            }
+            for (String now : today) {
+                if (now.startsWith(start)) {
+                    lines.set(i, now);
+                }
+            }
+        }
+    }
+
+    // Whoever joined a faction before members were given a start of their own gets it now, or the first blow to one
+    // of their own would still cast them out.
+    private static void liftMembers(MinecraftServer server, FactionData data) {
+        GameProfileCache profiles = server.getProfileCache();
+        if (profiles == null) {
+            return;
+        }
+        for (PlayerTeam team : server.getScoreboard().getPlayerTeams()) {
+            Faction faction = FactionRules.get(team.getName());
+            for (String player : faction == null ? List.<String>of() : List.copyOf(team.getPlayers())) {
+                profiles.get(player).ifPresent(profile -> {
+                    if (data.earned(profile.getId(), faction.id()) < faction.member()) {
+                        data.earned(profile.getId(), faction.id(), faction.member());
+                    }
+                });
+            }
         }
     }
 

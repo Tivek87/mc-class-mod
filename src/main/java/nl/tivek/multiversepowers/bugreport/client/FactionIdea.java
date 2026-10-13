@@ -26,8 +26,8 @@ final class FactionIdea {
             FeedbackForms.category(),
             Section.of("faction.basics",
                     text("faction.name", 40).required(),
-                    area("faction.description", 750, 5).required(),
-                    area("faction.lore", 500, 4),
+                    area("faction.description", 2500, 5).required(),
+                    area("faction.lore", 2500, 4),
                     FeedbackForms.priority("faction.priority")),
             Section.of("faction.standing",
                     stand("faction.attitude").fallback("neutral").required(),
@@ -43,7 +43,7 @@ final class FactionIdea {
                     text("faction.reputation_other", 150).when(FactionIdea::reputation)),
             Section.of("faction.members",
                     mobs("faction.mobs"),
-                    area("faction.new_mobs", 400, 3).requiredWhen(v -> v.get("faction.mobs").isBlank()),
+                    area("faction.new_mobs", 2500, 3).requiredWhen(v -> v.get("faction.mobs").isBlank()),
                     stand("faction.among").fallback("friendly"),
                     yesNo("faction.help", "yes"),
                     yesNo("faction.joinable", "yes"),
@@ -58,9 +58,9 @@ final class FactionIdea {
                     text("faction.leader", 60)),
             Section.optional("faction.extra",
                     text("faction.color", 30),
-                    area("faction.looks", 300, 3),
+                    area("faction.looks", 2500, 3),
                     text("faction.like", 60),
-                    area("faction.notes", 500, 4))));
+                    area("faction.notes", 2500, 4))));
 
     private FactionIdea() {
     }

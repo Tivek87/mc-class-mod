@@ -37,8 +37,8 @@ final class MobIdea {
             FeedbackForms.category(),
             Section.of("mob.basics",
                     text("mob.name", 40).required(),
-                    area("mob.description", 750, 5).required(),
-                    area("mob.lore", 500, 4),
+                    area("mob.description", 2500, 5).required(),
+                    area("mob.lore", 2500, 4),
                     FeedbackForms.priority("mob.priority")),
             Section.of("mob.nature",
                     choice("mob.tier", "entity", "elite", "mini_boss", "boss", "world_boss").fallback("entity")
@@ -82,7 +82,7 @@ final class MobIdea {
                     choice("mob.rarity", "common", "uncommon", "rare", "very_rare").fallback("common")
                             .when(MobIdea::spawns),
                     number("mob.group", 1, 12, Unit.COUNT, 1).when(MobIdea::spawns),
-                    area("mob.appears", 300, 3).when(v -> !spawns(v))
+                    area("mob.appears", 2500, 3).when(v -> !spawns(v))
                             .requiredWhen(v -> v.is("mob.tier", "boss", "world_boss"))),
             Section.of("mob.drops",
                     yesNo("mob.drops", "yes"),
@@ -92,24 +92,24 @@ final class MobIdea {
                     number("mob.ability_count", 2, 28, Unit.COUNT, 2).range(MobIdea::abilityRange).unreported(),
                     list("mob.abilities", "mob.ability_count", 40, 300).required()),
             Section.of("mob.boss",
-                    area("mob.arena", 300, 3).when(MobIdea::boss).requiredWhen(v -> v.is("mob.tier", "boss",
+                    area("mob.arena", 2500, 3).when(MobIdea::boss).requiredWhen(v -> v.is("mob.tier", "boss",
                             "world_boss")),
                     number("mob.phases", 1, 10, Unit.COUNT, 1).when(MobIdea::boss),
                     yesNo("mob.voice", "no").when(v -> v.is("mob.tier", "boss", "world_boss")),
-                    area("mob.voice_lines", 300, 3).when(v -> v.is("mob.tier", "boss", "world_boss")
+                    area("mob.voice_lines", 2500, 3).when(v -> v.is("mob.tier", "boss", "world_boss")
                             && v.is("mob.voice", "yes")),
-                    area("mob.loot", 300, 3).when(MobIdea::boss)
+                    area("mob.loot", 2500, 3).when(MobIdea::boss)
                             .requiredWhen(v -> v.is("mob.tier", "world_boss")),
                     choice("mob.rematch", "never", "special").fallback("never")
                             .when(v -> v.is("mob.tier", "world_boss")),
                     text("mob.rematch_how", 200).required()
                             .when(v -> v.is("mob.tier", "world_boss") && v.is("mob.rematch", "special")),
-                    area("mob.lore_impact", 300, 3).when(v -> v.is("mob.tier", "world_boss"))),
+                    area("mob.lore_impact", 2500, 3).when(v -> v.is("mob.tier", "world_boss"))),
             Section.optional("mob.extra",
-                    area("mob.looks", 300, 3),
+                    area("mob.looks", 2500, 3),
                     text("mob.sounds", 150),
                     text("mob.like", 60),
-                    area("mob.notes", 500, 4))));
+                    area("mob.notes", 2500, 4))));
 
     private MobIdea() {
     }

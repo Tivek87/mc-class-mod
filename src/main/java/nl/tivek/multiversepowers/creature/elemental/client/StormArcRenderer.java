@@ -2,6 +2,8 @@ package nl.tivek.multiversepowers.creature.elemental.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -15,6 +17,7 @@ import nl.tivek.multiversepowers.creature.elemental.BlazeCasts;
 import nl.tivek.multiversepowers.creature.elemental.Element;
 import nl.tivek.multiversepowers.creature.elemental.spell.StormArc;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.Additive;
+import nl.tivek.multiversepowers.engine.client.fx.Energy;
 
 // Chain lightning in the storm rod's yellow: a jagged bolt with a white-hot core from the rod to the first struck and
 // on from each to the next, new jags every tick, forks splitting off; each leap flashes as it strikes and flickers out.
@@ -51,16 +54,20 @@ final class StormArcRenderer extends EntityRenderer<StormArc> {
         PoseStack.Pose at = pose.last();
         RandomSource random = RandomSource.create(arc.getId() * 31L + arc.tickCount);
         var facing = this.entityRenderDispatcher.cameraOrientation();
+        // Every leg of the chain that still burns: from, to and how strongly, for the energy drawn over the bolts.
+        List<Vec3> legs = new ArrayList<>();
+        List<Float> strengths = new ArrayList<>();
         if (first == null) {
             float strength = Mth.clamp(1.0F - age / FADE, 0.0F, 1.0F);
             if (strength > 0.0F) {
                 Vec3 to = arc.miss().subtract(origin);
                 this.bolt(at, buffer, from, to, eye, strength, random, true);
-                Additive.glow(pose, buffer, to, 0.9F * strength, Additive.rgb(Element.STORM.light, strength), facing);
+                legs.add(from);
+                legs.add(to);
+                strengths.add(strength);
             }
-            return;
         }
-        for (int i = 0; i < StormArc.MOST; i++) {
+        for (int i = 0; i < StormArc.MOST && first != null; i++) {
             Entity struck = arc.struck(i);
             if (struck == null) {
                 break;
@@ -73,10 +80,20 @@ final class StormArcRenderer extends EntityRenderer<StormArc> {
             float strength = Mth.clamp(1.0F - since / FADE, 0.0F, 1.0F) * (0.75F + 0.25F * random.nextFloat());
             if (strength > 0.0F) {
                 this.bolt(at, buffer, from, to, eye, strength, random, true);
-                Additive.glow(pose, buffer, to, 0.8F * strength, Additive.rgb(Element.STORM.light, strength),
-                        facing);
+                legs.add(from);
+                legs.add(to);
+                strengths.add(strength);
             }
             from = to;
+        }
+        VertexConsumer energy = Energy.buffer(buffers);
+        for (int i = 0; i < strengths.size() && energy != null; i++) {
+            Vec3 to = legs.get(i * 2 + 1);
+            float strength = strengths.get(i);
+            Energy.band(at, energy, legs.get(i * 2), to, eye, 0.5F, Energy.BOLT, Element.STORM.colour, strength,
+                    arc.getId() + i);
+            Energy.puff(pose, energy, to, 1.1F * strength, facing, Energy.SPARK, Element.STORM.colour, strength,
+                    arc.getId() + i);
         }
     }
 
@@ -93,9 +110,9 @@ final class StormArcRenderer extends EntityRenderer<StormArc> {
                 next = next.add((random.nextDouble() - 0.5) * jag * 2.0, (random.nextDouble() - 0.5) * jag * 2.0,
                         (random.nextDouble() - 0.5) * jag * 2.0);
             }
-            Additive.ribbon(at, buffer, previous, next, eye, 0.4F, Additive.rgb(Element.STORM.colour,
-                    0.5F * strength), Additive.rgb(Element.STORM.colour, 0.5F * strength));
-            Additive.ribbon(at, buffer, previous, next, eye, 0.1F, Additive.rgb(0xFFFFFF, strength),
+            Additive.ribbon(at, buffer, previous, next, eye, 0.3F, Additive.rgb(Element.STORM.colour,
+                    0.3F * strength), Additive.rgb(Element.STORM.colour, 0.3F * strength));
+            Additive.ribbon(at, buffer, previous, next, eye, 0.08F, Additive.rgb(0xFFFFFF, strength),
                     Additive.rgb(Element.STORM.light, strength));
             if (forks && k > 1 && k < JAGS - 1 && random.nextInt(4) == 0) {
                 Vec3 off = new Vec3(random.nextDouble() - 0.5, random.nextDouble() - 0.6, random.nextDouble() - 0.5)

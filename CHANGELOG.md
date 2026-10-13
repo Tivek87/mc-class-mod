@@ -3,6 +3,33 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.14-alpha] - 2026-10-13
+
+### Changed
+- **Faction names:** every faction has a plainer name that says who is in it: The Village Alliance, The Illager
+  Clans, The Undead Legion, The Infected, The Piglin Horde, The Nether Court, The World Wanderers, The End Watchers,
+  The Dark Dwellers, The Ocean Guardians, The Wild Beasts, The Farm Animals, The Sea Creatures, The Wizard's Conclave
+  and The Ironfang Hunters. Worlds made before get the new names; a name you changed yourself stays.
+- **Joining makes enemies:** join a faction and you at once lose all reputation with every faction it is at war
+  with, however well you stood with them; the chat names them.
+- **Members start in good standing:** whoever joins a faction stands with it at least half-way between its
+  thresholds, also with one that hates strangers; leaving takes that head start away again.
+- **Cast out only at a low reputation:** hitting one of your own now only costs reputation. Within 10 of the hostile
+  threshold your faction warns you in the chat; at the threshold it casts you out.
+- **Creatures finish their fight:** a creature that is fighting someone no longer drops that fight because a player
+  walks by. It still turns on whoever hits it, and picks a new target once its fight is over.
+- **Faction help:** members now also come when a shield or armour stops the blow, need to see only their friend or
+  the attacker, and join in when a player of their faction strikes something that can fight.
+- **Elemental Blaze:** a crown of five shards on its head and a crystal heart under it that burns in the colour of
+  the element in use; its rings tilt and breathe, its rods spin, it braces before a cast, jolts as the spell leaves
+  and leans into its flight. A shader of its own paints every element: fire drawn in, a star of frost, clods torn
+  up, a whirl that breaks into gusts, sparks leaping to its rods, a ring of force at each cast, and new looks for
+  the Scorch Ball, the Frost Ray, Chain Lightning and the heaved stone.
+- **Feedback forms:** every text box of a bug report or an idea now takes up to 2,500 characters.
+
+### Fixed
+- Skeletons, and any creature helping a friend, kept aiming at a target that had died or left, shooting at nothing.
+
 ## [0.9.13-alpha] - 2026-10-13
 
 ### Added

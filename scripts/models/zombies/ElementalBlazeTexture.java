@@ -45,6 +45,10 @@ public final class ElementalBlazeTexture {
             rods(p, glow, e, false);
             rods(p, glow, e, true);
         }
+        core(p, glow);
+        for (int e = 0; e < 5; e++) {
+            crown(p, glow, e);
+        }
         p.save(entity, "elemental_blaze");
         glow.save(entity, "elemental_blaze_glow");
         eyes.save(entity, "elemental_blaze_eyes");
@@ -184,6 +188,49 @@ public final class ElementalBlazeTexture {
             default -> {
                 piece(p, glow, new Paint.Box(u, w, 1, 2, 1), TONES[4][3], new int[] { 255, 240, 120 });
                 piece(p, glow, new Paint.Box(u + 4, w, 1, 2, 1), TONES[4][3], new int[] { 255, 240, 120 });
+            }
+        }
+    }
+
+    // The heart under the head: a pale crystal, darker along its edges, with bright veins that glow. Pale, so the
+    // colour of the element in use shows on it.
+    private static void core(Paint p, Paint glow) {
+        Paint.Box core = new Paint.Box(32, 0, 4, 6, 4);
+        int[] pale = { 208, 210, 224 };
+        int[] edge = { 140, 142, 164 };
+        for (Paint.Face face : Paint.Face.values()) {
+            int[] f = core.face(face);
+            p.fill(f, pale, 8);
+            p.row(f, 0, edge);
+            p.row(f, f[3] - 1, edge);
+            p.column(f, 0, edge);
+            p.column(f, f[2] - 1, edge);
+            for (int k = 0; k < 3; k++) {
+                int x = 1 + p.random.nextInt(f[2] - 2);
+                int y = 1 + p.random.nextInt(f[3] - 2);
+                p.dot(f, x, y, WHITE);
+                glow.dot(f, x, y, WHITE);
+            }
+        }
+    }
+
+    // A shard of the crown: its element's colours, dark at the foot, light at the tip, where it glows.
+    private static void crown(Paint p, Paint glow, int e) {
+        Paint.Box shard = new Paint.Box(e * 8, 50, 2, 5, 2);
+        int[][] tone = TONES[e];
+        for (Paint.Face face : Paint.Face.values()) {
+            int[] f = shard.face(face);
+            if (face == Paint.Face.TOP) {
+                p.fill(f, tone[2], 6);
+                glow.fill(f, tone[3], 6);
+            } else if (face == Paint.Face.BOTTOM) {
+                p.fill(f, tone[1], 6);
+            } else {
+                p.fill(f, tone[0], 8);
+                p.row(f, 0, tone[2]);
+                p.row(f, f[3] - 1, tone[1]);
+                glow.row(f, 0, tone[3]);
+                glow.dot(f, p.random.nextInt(f[2]), 1, tone[3]);
             }
         }
     }

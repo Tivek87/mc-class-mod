@@ -19,7 +19,7 @@ import nl.tivek.multiversepowers.faction.Standing;
 
 // The world's factions: a world setting of its own file, the three lists `FactionTable` reads and the numbers of
 // reputation. Every kind of creature is in one faction: the one its line names, else the one for its sort (a monster
-// of a mod no list knows joins the Creeping Dark), else none. Both sides read it: the server sends every player its
+// of a mod no list knows joins the Dark Dwellers), else none. Both sides read it: the server sends every player its
 // copy.
 public final class FactionRules {
     public static final String FILE = ModConfigs.file("factions");
@@ -115,7 +115,7 @@ public final class FactionRules {
                 + " or false: its creatures come to the aid of members and friends) and open (true or false: players"
                 + " may join without an invite).")
                 .defineListAllowEmpty("factions", FactionDefaults.factions(),
-                        () -> "ironfang|name=The Ironfang Syndicate", FactionTable::validFaction);
+                        () -> "ironfang|name=The Ironfang Hunters", FactionTable::validFaction);
         MEMBERS = builder.comment("Which faction each kind of creature is in: \"<creature>=<faction>\", nothing after"
                 + " the = for none. A creature with no line joins the faction of its sort (creeping, wildkin,"
                 + " tidefolk).")

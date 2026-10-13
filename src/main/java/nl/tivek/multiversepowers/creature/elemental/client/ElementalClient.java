@@ -13,7 +13,6 @@ import nl.tivek.multiversepowers.creature.elemental.BlazeTimeline;
 import nl.tivek.multiversepowers.creature.elemental.Element;
 import nl.tivek.multiversepowers.creature.elemental.ElementalBlaze;
 import nl.tivek.multiversepowers.creature.elemental.ElementalStaff;
-import nl.tivek.multiversepowers.creature.wizard.client.fx.OrbRenderer;
 import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 
 // The Elemental Blaze's renderers and model, its spells', the moves the Mobs page plays on it, and the staff's look for
@@ -29,8 +28,7 @@ public final class ElementalClient {
         event.registerEntityRenderer(ElementalBlaze.FROST_RAY.get(), FrostRayRenderer::new);
         event.registerEntityRenderer(ElementalBlaze.HEAVED_STONE.get(), HeavedStoneRenderer::new);
         event.registerEntityRenderer(ElementalBlaze.STORM_ARC.get(), StormArcRenderer::new);
-        event.registerEntityRenderer(ElementalBlaze.SCORCH_BALL.get(),
-                context -> new OrbRenderer<>(context, 0xFF7A1A, 0.6F, 1.6F));
+        event.registerEntityRenderer(ElementalBlaze.SCORCH_BALL.get(), ScorchBallRenderer::new);
         for (Element element : Element.ALL) {
             int kind = BlazeTimeline.kind(element, false);
             MobPreview.move(ElementalBlaze.TYPE.get(), BlazeTimeline.length(kind) + 10, blaze -> blaze.play(kind),

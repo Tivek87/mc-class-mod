@@ -290,13 +290,22 @@ public final class FactionEdits {
             team.setAllowFriendlyFire(false);
             team.setSeeFriendlyInvisibles(true);
         }
+        Faction old = Factions.of(player);
+        if (old != null && !old.id().equals(faction.id())) {
+            Reputation.left(player, old);
+        }
         scoreboard.addPlayerToTeam(player.getScoreboardName(), team);
+        Reputation.joined(player, faction);
         Factions.changed(player.server);
     }
 
     public static boolean leave(ServerPlayer player) {
+        Faction old = Factions.of(player);
         boolean left = player.server.getScoreboard().removePlayerFromTeam(player.getScoreboardName());
         if (left) {
+            if (old != null) {
+                Reputation.left(player, old);
+            }
             Factions.changed(player.server);
         }
         return left;

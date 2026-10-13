@@ -1,14 +1,17 @@
 package nl.tivek.multiversepowers.faction;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -40,11 +43,15 @@ import nl.tivek.multiversepowers.faction.rules.FactionRules;
 // hostile to you, not come for you) costs reputation with its faction, and a share of it with the factions friendly
 // to that one; killing a foe of a faction, or what hunts its members, earns some with it; a trade, a tamed or a bred
 // animal earns a little. Every day in the game it
-// drifts back toward where it started. A member whose own faction turns hostile to them is put out of it.
+// drifts back toward where it started. One who joins a faction stands with it where a member starts at least, and
+// loses all they had with the factions it is sworn against; a member who goes on wronging their own is warned, and
+// put out once the faction would be hostile to them.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Reputation {
     private static final String KEY = "faction." + MultiversePowers.MODID + ".";
     private static final int HIT_EVERY = 40;
+    // How far above being cast out a member is warned.
+    private static final int WARNED = 10;
     private static final int DAY = 24000;
     private static final int REMEMBERED = 2048;
     // The player who struck a creature before it had come for them, by creature.
@@ -110,8 +117,45 @@ public final class Reputation {
         }
     }
 
+    // As a player joins `faction`: they stand with it at least where a member starts, and lose all they had with
+    // every faction it is sworn against.
+    static void joined(ServerPlayer player, Faction faction) {
+        FactionData data = FactionData.get(player.server);
+        UUID id = player.getUUID();
+        if (data.earned(id, faction.id()) < faction.member()) {
+            data.earned(id, faction.id(), faction.member());
+        }
+        List<Component> foes = new ArrayList<>();
+        for (Faction other : FactionRules.all()) {
+            boolean sworn = FactionRules.relation(faction.id(), other.id()) == Standing.HOSTILE
+                    || FactionRules.relation(other.id(), faction.id()) == Standing.HOSTILE;
+            int lowest = other.clamp(Faction.LOWEST - other.start());
+            if (!other.id().equals(faction.id()) && sworn && other.reputation()
+                    && data.earned(id, other.id()) > lowest) {
+                data.earned(id, other.id(), lowest);
+                foes.add(name(other));
+            }
+        }
+        if (!foes.isEmpty() && FactionRules.reputation()) {
+            player.sendSystemMessage(Component.translatable(KEY + "sworn", name(faction),
+                    ComponentUtils.formatList(foes, Component.literal(", "))));
+        }
+    }
+
+    // As a player leaves `faction` of their own will: what joining gave them goes again, what they earned past it
+    // stays.
+    static void left(ServerPlayer player, Faction faction) {
+        FactionData data = FactionData.get(player.server);
+        int earned = data.earned(player.getUUID(), faction.id());
+        if (faction.member() > 0 && earned > 0) {
+            data.earned(player.getUUID(), faction.id(), Math.max(0, earned - faction.member()));
+        }
+    }
+
     private static void change(ServerPlayer player, Faction faction, int delta, boolean forced) {
         FactionData data = FactionData.get(player.server);
+        PlayerTeam team = player.getTeam();
+        boolean member = !forced && team != null && team.getName().equals(faction.id());
         int before = data.earned(player.getUUID(), faction.id());
         int after = faction.clamp(before + delta);
         if (after == before) {
@@ -127,10 +171,12 @@ public final class Reputation {
             player.sendSystemMessage(Component.translatable(KEY + "turned." + now.name().toLowerCase(Locale.ROOT),
                     name(faction)));
         }
-        PlayerTeam team = player.getTeam();
-        if (!forced && team != null && team.getName().equals(faction.id()) && faction.zone(after) == Standing.HOSTILE) {
+        int edge = faction.hostileAt() + WARNED;
+        if (member && faction.zone(after) == Standing.HOSTILE) {
             player.server.getScoreboard().removePlayerFromTeam(player.getScoreboardName());
             player.sendSystemMessage(Component.translatable(KEY + "expelled", name(faction)));
+        } else if (member && faction.reputation(after) <= edge && faction.reputation(before) > edge) {
+            player.sendSystemMessage(Component.translatable(KEY + "warned", name(faction)));
         }
         Factions.told(player);
     }
@@ -286,9 +332,14 @@ public final class Reputation {
             return;
         }
         for (UUID player : data.players()) {
+            ServerPlayer online = server.getPlayerList().getPlayer(player);
+            Faction own = online == null ? null : Factions.of(online);
             for (Map.Entry<String, Integer> entry : Map.copyOf(data.earned(player)).entrySet()) {
                 int now = entry.getValue();
-                data.earned(player, entry.getKey(), now > 0 ? Math.max(0, now - drift) : Math.min(0, now + drift));
+                int rest = now > 0 ? Math.max(0, now - drift) : Math.min(0, now + drift);
+                // With their own faction a member never drifts under where a member starts.
+                data.earned(player, entry.getKey(), own != null && own.id().equals(entry.getKey())
+                        ? Math.max(rest, Math.min(now, own.member())) : rest);
             }
         }
         Factions.changed(server);

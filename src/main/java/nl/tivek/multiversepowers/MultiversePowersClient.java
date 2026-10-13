@@ -66,6 +66,7 @@ import nl.tivek.multiversepowers.engine.client.ragdoll.RagdollProfiles;
 import nl.tivek.multiversepowers.engine.client.ragdoll.Ragdolls;
 import nl.tivek.multiversepowers.engine.client.fx.Cinematic;
 import nl.tivek.multiversepowers.engine.client.fx.Cosmos;
+import nl.tivek.multiversepowers.engine.client.fx.Energy;
 import nl.tivek.multiversepowers.engine.client.fx.Lens;
 import nl.tivek.multiversepowers.engine.client.fx.Singularity;
 import nl.tivek.multiversepowers.engine.client.render.entity.TornBlockRenderer;
@@ -128,6 +129,7 @@ public final class MultiversePowersClient {
         modEventBus.addListener(Singularity::onRegisterShaders);
         modEventBus.addListener(SoftGlow::onRegisterShaders);
         modEventBus.addListener(Cosmos::onRegisterShaders);
+        modEventBus.addListener(Energy::onRegisterShaders);
         modEventBus.addListener(MechPainter::onClientSetup);
         modEventBus.addListener(SpaceView::onTransitionScreens);
         modEventBus.addListener(SpaceView::onEffects);

@@ -15,6 +15,7 @@ import nl.tivek.multiversepowers.creature.elemental.BlazeCasts;
 import nl.tivek.multiversepowers.creature.elemental.Element;
 import nl.tivek.multiversepowers.creature.elemental.spell.FrostRay;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.Additive;
+import nl.tivek.multiversepowers.engine.client.fx.Energy;
 
 // The frost ray: a thin flicker as it starts, then a beam of cold light from the ice rod to where it ends, a white core
 // in a pale blue haze, six-sided rings of frost turning as they race along it, and a burst of light and spinning
@@ -56,12 +57,10 @@ final class FrostRayRenderer extends EntityRenderer<FrostRay> {
             return;
         }
         float width = strength * (1.0F + 0.06F * Mth.sin(age * 1.9F));
-        Additive.ribbon(at, buffer, from, to, eye, 1.1F * width, Additive.rgb(ice, 0.25F * strength),
-                Additive.rgb(ice, 0.18F * strength));
-        Additive.ribbon(at, buffer, from, to, eye, 0.55F * width, Additive.rgb(ice, 0.7F * strength),
-                Additive.rgb(ice, 0.55F * strength));
-        Additive.ribbon(at, buffer, from, to, eye, 0.2F * width, Additive.rgb(0xFFFFFF, strength),
-                Additive.rgb(frost, 0.9F * strength));
+        Additive.ribbon(at, buffer, from, to, eye, 1.1F * width, Additive.rgb(ice, 0.2F * strength),
+                Additive.rgb(ice, 0.14F * strength));
+        Additive.ribbon(at, buffer, from, to, eye, 0.14F * width, Additive.rgb(0xFFFFFF, 0.9F * strength),
+                Additive.rgb(frost, 0.8F * strength));
         this.rings(at, buffer, from, to, age, strength);
         var facing = this.entityRenderDispatcher.cameraOrientation();
         if (!ElementalClient.own(caster)) {
@@ -77,6 +76,13 @@ final class FrostRayRenderer extends EntityRenderer<FrostRay> {
             Additive.spindle(pose.last(), buffer, 0.7F * width, 0.08F * width, 0.5F, 4, Additive.rgb(frost,
                     0.8F * strength), Additive.rgb(ice, 0.2F * strength));
             pose.popPose();
+        }
+        // Over the beam's light: the cold itself streaming down it, and a star of frost where it strikes.
+        VertexConsumer energy = Energy.buffer(buffers);
+        if (energy != null) {
+            Energy.band(pose.last(), energy, from, to, eye, 0.55F * width, Energy.STREAM, ice, 0.9F * strength,
+                    ray.getId());
+            Energy.puff(pose, energy, to, 1.5F * width, facing, Energy.FROST, ice, strength, ray.getId());
         }
     }
 

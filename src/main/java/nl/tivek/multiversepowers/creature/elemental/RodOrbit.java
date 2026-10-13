@@ -17,6 +17,8 @@ public final class RodOrbit {
     private static final float[] RADIUS = { 9.0F, 7.0F, 5.0F };
     private static final float[] HEIGHT = { 2.0F, 6.0F, 14.0F };
     private static final float[] SPEED = { -0.1F * Mth.PI, 0.03F * Mth.PI, -0.05F * Mth.PI };
+    private static final float[] TILT = { 0.22F, 0.16F, 0.1F };
+    private static final float[] SWAY = { 0.021F, -0.033F, 0.027F };
     private static final float FRONT = 11.0F;
     // Tipped so the rod's lower end points ahead.
     private static final float POINT = -Mth.HALF_PI * 0.9F;
@@ -48,6 +50,11 @@ public final class RodOrbit {
         float y = HEIGHT[ring] + Mth.cos((i * 2 + s.age()) * 0.25F) * (ring == 2 ? 0.6F : 1.0F);
         float xRot = 0.0F;
         float zRot = 0.0F;
+        // Each ring breathes and lies tilted, its tilt slowly turning round, so no two rods ever move alike.
+        radius *= 1.0F + 0.05F * Mth.sin(s.age() * 0.11F + ring * 2.1F);
+        float tilt = TILT[ring] * Mth.sin(angle - s.age() * SWAY[ring] + ring * 1.9F);
+        y += tilt * radius;
+        zRot += tilt * 0.7F;
         if (s.awake() >= 0.0F) {
             angle += Math.signum(SPEED[ring]) * s.awake() * 0.06F;
             float fierce = (float) Ease.smooth(s.awake() / BlazeTimeline.AWAKEN_END);
@@ -68,6 +75,13 @@ public final class RodOrbit {
         } else if (casting != null) {
             float c = t - BlazeTimeline.shift(s.move());
             float into = c / BlazeTimeline.cast(casting);
+            if (own != casting) {
+                // The other elements draw in and bow away, making room for the one that casts.
+                float brace = brace(s);
+                radius *= 1.0F - 0.12F * brace;
+                zRot -= 0.22F * brace;
+                y += 1.2F * brace * (ring == 2 ? -1.0F : 1.0F);
+            }
             switch (casting) {
                 case FIRE -> {
                     float gather = c < 0.0F ? 0.0F : (float) Ease.smooth(into);
@@ -137,8 +151,30 @@ public final class RodOrbit {
         out[1] = y;
         out[2] = z;
         out[3] = xRot;
-        out[4] = -angle - Mth.HALF_PI;
+        // Turning about its own length too, faster as it wakes; the rod that points at the foe holds still.
+        float spin = s.age() * (ring == 1 ? -0.07F : 0.05F) * (s.awake() >= 0.0F ? 1.8F : 1.0F);
+        out[4] = -angle - Mth.HALF_PI + spin * (1.0F - front);
         out[5] = zRot;
+    }
+
+    // How far it is braced for the cast to come (0 to 1): drawn in while the rod shifts, let go as it casts.
+    public static float brace(State s) {
+        if (BlazeTimeline.element(s.move()) == null) {
+            return 0.0F;
+        }
+        float shift = BlazeTimeline.shift(s.move());
+        float c = s.moveAge() - shift;
+        return c < 0.0F ? (float) Ease.smooth(s.moveAge() / shift) : 1.0F - (float) Ease.smooth(c / 5.0);
+    }
+
+    // The jolt of the cast itself (0 to 1): whole as the spell leaves, gone a few ticks on.
+    public static float release(State s) {
+        Element casting = BlazeTimeline.element(s.move());
+        if (s.move() == BlazeTimeline.AWAKEN) {
+            return (float) Ease.jolt((s.moveAge() - BlazeTimeline.BURST) / 10.0);
+        }
+        return casting == null ? 0.0F
+                : (float) Ease.jolt((s.moveAge() - BlazeTimeline.shift(s.move()) - BlazeTimeline.cast(casting)) / 8.0);
     }
 
     // How far the move's rod is swung to the front (0 to 1): round while it shifts, held while it casts, back in its

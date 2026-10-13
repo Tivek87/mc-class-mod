@@ -12,6 +12,7 @@ import net.minecraft.world.entity.ai.goal.MeleeAttackGoal;
 import net.minecraft.world.entity.ai.goal.WrappedGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.memory.MemoryModuleType;
+import net.minecraft.world.entity.ai.memory.MemoryStatus;
 import net.minecraft.world.entity.monster.RangedAttackMob;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -19,6 +20,7 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
@@ -34,7 +36,9 @@ import nl.tivek.multiversepowers.faction.Standing;
 // memory are let go too) and does it no harm, one that is neutral never hunts it unless provoked, and one that is
 // hostile hunts it (every creature carries a goal for that, idle until something sets a hunt for its kind or faction,
 // and one that can strike but has no attack of its own a melee attack beside it). A target no longer allowed, the
-// world's settings or a reputation changed meanwhile, is let go. One helping a friend (`FactionHelp`) keeps its target.
+// world's settings or a reputation changed meanwhile, is let go, as is one that died or left. One helping a friend
+// (`FactionHelp`) keeps its target. A creature in a fight sees it out: it looks for no one else meanwhile, but turns
+// on whoever strikes it.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class MobTargets {
     private MobTargets() {
@@ -85,7 +89,9 @@ public final class MobTargets {
             calm(mob, angry);
         }
         LivingEntity target = mob.getTarget();
-        if (target != null && FactionHelp.done(mob, target)) {
+        // A target set past the goals (a friend's attacker) has no goal to let it go: a bow would go on shooting
+        // at where it died.
+        if (target != null && (gone(mob, target) || FactionHelp.done(mob, target))) {
             mob.setTarget(null);
             mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
             return;
@@ -96,6 +102,39 @@ public final class MobTargets {
             }
             mob.setTarget(null);
             mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+        }
+    }
+
+    private static boolean gone(Mob mob, LivingEntity target) {
+        return !target.isAlive() || target.isRemoved() || target.level() != mob.level() || !mob.canAttack(target);
+    }
+
+    // Whether `mob` is in a fight to see out: its target alive, in reach and still allowed. It then looks for no
+    // other (`mixin/NearestAttackableTargetGoalMixin`); whoever strikes it still draws it away.
+    public static boolean inFight(Mob mob) {
+        LivingEntity target = mob.getTarget();
+        if (target == null || mob.level().isClientSide() || Summons.owned(mob) || gone(mob, target)
+                || forbidden(mob, target)) {
+            return false;
+        }
+        double reach = mob.getAttributes().hasAttribute(Attributes.FOLLOW_RANGE)
+                ? mob.getAttributeValue(Attributes.FOLLOW_RANGE) : 16.0;
+        return mob.distanceToSqr(target) <= reach * reach;
+    }
+
+    // Struck by another in the middle of a fight, a creature turns on that one: a goal already running would keep
+    // its first target, whoever hit it since. One run by its brain answers a blow by itself.
+    @SubscribeEvent
+    public static void onDamaged(LivingDamageEvent.Post event) {
+        if (!(event.getEntity() instanceof Mob mob) || mob.level().isClientSide() || event.getNewDamage() <= 0.0F
+                || !(event.getSource().getEntity() instanceof LivingEntity attacker)) {
+            return;
+        }
+        LivingEntity target = mob.getTarget();
+        if (target != null && target != attacker && attacker != mob && attacker.isAlive() && !Summons.owned(mob)
+                && !mob.getBrain().checkMemory(MemoryModuleType.ATTACK_TARGET, MemoryStatus.REGISTERED)
+                && mob.canAttack(attacker) && !mob.isAlliedTo(attacker) && !friendly(mob, attacker)) {
+            mob.setTarget(attacker);
         }
     }
 
@@ -194,7 +233,8 @@ public final class MobTargets {
         @Override
         public boolean canContinueToUse() {
             LivingEntity target = this.mob.getTarget();
-            return target != null && hostile(this.mob, target) && super.canContinueToUse();
+            return target != null && (hostile(this.mob, target) || this.mob.getLastHurtByMob() == target)
+                    && super.canContinueToUse();
         }
 
         // Let go as the world no longer sets it hostile, it holds no grudge of its own from the hunt either.

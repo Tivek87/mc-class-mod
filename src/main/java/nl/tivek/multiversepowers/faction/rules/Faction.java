@@ -23,6 +23,11 @@ public record Faction(String id, String name, String description, String lore, i
         return this.attitude == Standing.FRIENDLY ? Math.min(HIGHEST, this.friendlyAt + INSIDE) : 0;
     }
 
+    // What a member has earned at least: enough to stand half-way between its thresholds, clear of being cast out.
+    public int member() {
+        return this.clamp((this.hostileAt + this.friendlyAt) / 2 - this.start());
+    }
+
     // A player's reputation with it, having earned (or lost) `earned` since the start.
     public int reputation(int earned) {
         return Math.max(LOWEST, Math.min(HIGHEST, this.start() + (this.reputation ? earned : 0)));

@@ -2,6 +2,7 @@ package nl.tivek.multiversepowers.creature.elemental.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import com.mojang.math.Axis;
 import net.minecraft.client.model.geom.ModelLayerLocation;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -21,12 +22,15 @@ import nl.tivek.multiversepowers.creature.elemental.Element;
 import nl.tivek.multiversepowers.creature.elemental.ElementalBlaze;
 import nl.tivek.multiversepowers.creature.elemental.RodOrbit;
 import nl.tivek.multiversepowers.creature.wizard.client.fx.Additive;
+import nl.tivek.multiversepowers.engine.client.fx.Energy;
 import nl.tivek.multiversepowers.engine.math.Ease;
+import org.joml.Quaternionf;
 
 // The Elemental Blaze drawn in full light as a blaze is: its own model, then its rods' own glow (the fire rod's flame,
 // the storm rod's sparks, the ice rod's shine), its eyes lit in the colour of the element it uses, and the rods of the
-// element it casts burning brighter as they swing round, a soft light gathering at the leading rod. Awake, a haze of
-// its element's colour hangs round it.
+// element it casts burning brighter as they swing round, a soft light gathering at the leading rod. Its heart burns in
+// the colour of its element, the crown's shard of the element it casts lights up, and the element itself plays round
+// it (`energy`).
 public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, ElementalBlazeModel> {
     static final ModelLayerLocation LAYER = new ModelLayerLocation(ResourceLocation.fromNamespaceAndPath(
             MultiversePowers.MODID, "elemental_blaze"), "main");
@@ -37,6 +41,13 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
     // The awakening's rings of light: how many ticks they race out, and how many sides they are drawn with.
     private static final float WAVE = 12.0F;
     private static final int RING = 28;
+    // The energy each element is painted as, in the elements' order.
+    private static final int[] PATTERN = { Energy.DUST, Energy.FLAME, Energy.FROST, Energy.GUST, Energy.SPARK };
+    // How high over its feet its heart hangs, how many ticks a cast's ring of force runs out, and how far it leans
+    // (radians per block a tick).
+    private static final float HEART = 0.88F;
+    private static final float SHOCK = 9.0F;
+    private static final float LEAN = 0.9F;
     private final float[] place = new float[6];
 
     ElementalBlazeRenderer(EntityRendererProvider.Context context) {
@@ -70,35 +81,141 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
         VertexConsumer buffer = buffers.getBuffer(Additive.TYPE);
         var facing = this.entityRenderDispatcher.cameraOrientation();
         float flicker = 0.85F + 0.15F * Mth.sin(state.age() * 0.7F);
-        int lead = RodOrbit.leader(element);
+        float body = Mth.rotLerp(partialTick, blaze.yBodyRotO, blaze.yBodyRot);
+        RodOrbit.place(state, RodOrbit.leader(element), this.place);
+        Vec3 lead = RodOrbit.world(this.place, Vec3.ZERO, body);
         float glow = RodOrbit.glow(state, element, 0);
         if (glow > 0.02F && blaze.move() != BlazeTimeline.AWAKEN) {
-            RodOrbit.place(state, lead, this.place);
-            float body = Mth.rotLerp(partialTick, blaze.yBodyRotO, blaze.yBodyRot);
-            Vec3 at = RodOrbit.world(this.place, Vec3.ZERO, body);
-            Additive.glow(pose, buffer, at, 0.45F + 0.35F * glow, Additive.rgb(element.light, 0.9F * glow * flicker),
+            Additive.glow(pose, buffer, lead, 0.3F + 0.25F * glow, Additive.rgb(element.light, 0.45F * glow * flicker),
                     facing);
-            Additive.glow(pose, buffer, at, 1.1F * glow, Additive.rgb(element.colour, 0.5F * glow), facing);
         }
         if (blaze.move() == BlazeTimeline.AWAKEN) {
             float burst = (float) Ease.bump((state.moveAge() - BlazeTimeline.BURST) / 10.0);
             for (Element each : Element.ALL) {
                 Additive.glow(pose, buffer, new Vec3(0.0, 1.0, 0.0), 0.8F + 2.6F * burst * (1.0F + each.ordinal()
-                        * 0.12F), Additive.rgb(each.colour, 0.35F * burst), facing);
+                        * 0.12F), Additive.rgb(each.colour, 0.14F * burst), facing);
             }
             float out = (state.moveAge() - BlazeTimeline.BURST) / WAVE;
             if (out >= 0.0F && out < 1.0F) {
                 float reach = 1.0F - (1.0F - out) * (1.0F - out);
                 for (Element each : Element.ALL) {
                     ring(pose.last(), buffer, 0.9F + each.ordinal() * 0.08F, 0.5F + (3.6F + each.ordinal() * 0.6F)
-                            * reach, 0.25F + 0.5F * out, Additive.rgb(each.light, 0.8F * (1.0F - out)));
+                            * reach, 0.25F + 0.5F * out, Additive.rgb(each.light, 0.45F * (1.0F - out)));
                 }
             }
         }
-        if (state.awake() >= 0.0F) {
-            Additive.glow(pose, buffer, new Vec3(0.0, 1.0, 0.0), 1.6F, Additive.rgb(element.colour, 0.22F * flicker),
-                    facing);
+        VertexConsumer energy = Energy.buffer(buffers);
+        if (energy != null) {
+            this.energy(blaze, state, element, lead, body, partialTick, pose, energy, facing);
         }
+    }
+
+    // Its element alive round it, painted by the engine's energy shader: smouldering at its heart, gathering at the rod
+    // that points, and each cast in its own way: fire drawn in from all sides, a star of frost, clods torn up under
+    // it, a whirl that breaks into gusts racing at its foe, sparks leaping from its heart to its rods. As a spell
+    // leaves, a ring of force runs out from it.
+    private void energy(ElementalBlaze blaze, RodOrbit.State state, Element element, Vec3 lead, float body,
+            float partialTick, PoseStack pose, VertexConsumer energy, Quaternionf facing) {
+        int seed = blaze.getId();
+        int pattern = PATTERN[element.ordinal()];
+        float brace = RodOrbit.brace(state);
+        float release = RodOrbit.release(state);
+        Vec3 heart = new Vec3(0.0, HEART, 0.0);
+        float smoulder = (state.awake() >= 0.0F ? 0.38F : 0.24F) + 0.35F * brace;
+        Energy.puff(pose, energy, heart, 0.5F + 0.2F * brace + 0.6F * release, facing, pattern, element.colour,
+                smoulder, seed);
+        if (state.move() == BlazeTimeline.AWAKEN) {
+            float out = (state.moveAge() - BlazeTimeline.BURST) / (WAVE * 1.5F);
+            for (Element each : Element.ALL) {
+                float gather = (float) Ease.smooth(state.moveAge() / BlazeTimeline.BURST) * (out < 0.0F ? 1.0F : 0.0F);
+                float turn = state.age() * 0.21F + each.ordinal() * Mth.TWO_PI / Element.ALL.length;
+                float away = 2.2F * (1.0F - gather) + 0.3F;
+                Energy.puff(pose, energy, heart.add(Mth.cos(turn) * away, 0.3 * Mth.sin(turn * 2.0F), Mth.sin(turn)
+                        * away), 0.5F + 0.4F * gather, facing, PATTERN[each.ordinal()], each.colour, 0.6F * gather,
+                        seed + each.ordinal());
+                if (out >= 0.0F && out < 1.0F) {
+                    Energy.flat(pose.last(), energy, heart.add(0.0, (each.ordinal() - 2) * 0.22, 0.0), 1.0F
+                            + (5.0F + each.ordinal() * 0.7F) * out, Energy.RING, each.colour, 0.6F * (1.0F - out), seed
+                                    + each.ordinal());
+                }
+            }
+            return;
+        }
+        Element casting = BlazeTimeline.element(state.move());
+        if (casting == null) {
+            return;
+        }
+        float glow = RodOrbit.glow(state, casting, 0);
+        Energy.puff(pose, energy, lead, 0.25F + 0.35F * glow, facing, pattern, casting.colour, 0.65F * glow, seed + 1);
+        float c = state.moveAge() - BlazeTimeline.shift(state.move());
+        float since = c - BlazeTimeline.cast(casting);
+        if (since >= 0.0F && since < SHOCK) {
+            float out = since / SHOCK;
+            Energy.flat(pose.last(), energy, heart, 0.7F + 3.0F * (1.0F - (1.0F - out) * (1.0F - out)), Energy.RING,
+                    casting.colour, 0.9F * (1.0F - out), seed + 2);
+        }
+        Vec3 eye = this.entityRenderDispatcher.camera.getPosition().subtract(blaze.getPosition(partialTick));
+        switch (casting) {
+            case FIRE -> {
+                for (int k = 0; k < 5 && since < 0.0F; k++) {
+                    float turn = state.age() * 0.45F + k * Mth.TWO_PI / 5.0F;
+                    float away = 1.3F * (1.0F - brace) + 0.25F;
+                    Energy.puff(pose, energy, lead.add(Mth.cos(turn) * away, Mth.sin(turn * 1.3F) * away * 0.5,
+                            Mth.sin(turn) * away), 0.22F + 0.12F * brace, facing, Energy.FLAME, casting.colour,
+                            0.6F * brace, seed + 3 + k);
+                }
+            }
+            case ICE -> {
+                float held = c < 0.0F ? brace * 0.5F : c < BlazeTimeline.BEAM ? 1.0F : 0.0F;
+                Energy.puff(pose, energy, lead, 0.9F + 0.1F * Mth.sin(state.age() * 0.8F), facing, Energy.FROST,
+                        casting.colour, 0.6F * held, seed + 3);
+            }
+            case EARTH -> {
+                float lift = c < 0.0F ? brace * 0.4F : c < BlazeTimeline.LIFT ? 1.0F : Math.max(0.0F, 1.0F - (c
+                        - BlazeTimeline.LIFT) / 6.0F);
+                Energy.flat(pose.last(), energy, new Vec3(0.0, 0.15, 0.0), 1.9F, Energy.DUST, casting.colour,
+                        0.9F * lift, seed + 3);
+                Energy.puff(pose, energy, new Vec3(0.0, 0.5, 0.0), 1.2F, facing, Energy.DUST, casting.colour,
+                        0.6F * lift, seed + 4);
+            }
+            case WIND -> {
+                Energy.flat(pose.last(), energy, heart, 1.6F + 0.5F * brace, Energy.GUST, casting.light,
+                        0.6F * Math.max(brace, since >= 0.0F ? 1.0F - since / 10.0F : 0.0F), seed + 3);
+                Vec3 look = blaze.getViewVector(partialTick);
+                float run = BlazeTimeline.end(casting) - BlazeTimeline.cast(casting);
+                for (int k = 0; k < 4 && since >= 0.0F; k++) {
+                    float along = since / run + k * 0.14F;
+                    if (along < 1.0F) {
+                        Energy.puff(pose, energy, heart.add(look.scale(0.8 + 8.0 * along)), 0.7F + 1.6F * along,
+                                facing, Energy.GUST, casting.light, 0.7F * (1.0F - along), seed + 4 + k);
+                    }
+                }
+            }
+            case STORM -> {
+                float charge = since < 0.0F ? brace : Math.max(0.0F, 1.0F - since / 6.0F);
+                for (int i = 0; i < Element.ALL.length && charge > 0.02F; i++) {
+                    RodOrbit.place(state, i, this.place);
+                    Energy.band(pose.last(), energy, heart, RodOrbit.world(this.place, Vec3.ZERO, body), eye, 0.16F,
+                            Energy.BOLT, casting.colour, 0.6F * charge, seed + 3 + i);
+                }
+            }
+        }
+    }
+
+    // It leans into the way it flies.
+    @Override
+    protected void setupRotations(ElementalBlaze blaze, PoseStack pose, float bob, float yBodyRot, float partialTick,
+            float scale) {
+        super.setupRotations(blaze, pose, bob, yBodyRot, partialTick, scale);
+        float turn = (180.0F - yBodyRot) * Mth.DEG_TO_RAD;
+        float wx = (float) (blaze.getX() - blaze.xo);
+        float wz = (float) (blaze.getZ() - blaze.zo);
+        float forward = -(wx * Mth.sin(turn) + wz * Mth.cos(turn));
+        float side = wx * Mth.cos(turn) - wz * Mth.sin(turn);
+        pose.translate(0.0F, HEART, 0.0F);
+        pose.mulPose(Axis.XP.rotation(-Mth.clamp(forward * LEAN, -0.3F, 0.3F)));
+        pose.mulPose(Axis.ZP.rotation(-Mth.clamp(side * LEAN, -0.3F, 0.3F)));
+        pose.translate(0.0F, -HEART, 0.0F);
     }
 
     // A flat ring of light `radius` wide round its middle, fading to nothing `width` to either side, seen from above
@@ -154,6 +271,19 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
                             grey(model.glow[i] * dim));
                 }
             }
+            float heart = model.coreGlow * dim * flicker;
+            model.core.render(pose, bright, 0xF000F0, OverlayTexture.NO_OVERLAY, FastColor.ARGB32.color(255,
+                    Math.round((element.colour >> 16 & 255) * heart), Math.round((element.colour >> 8 & 255) * heart),
+                    Math.round((element.colour & 255) * heart)));
+            pose.pushPose();
+            model.head.translateAndRotate(pose);
+            for (int e = 0; e < model.crown.length; e++) {
+                if (model.crownGlow[e] > 0.02F) {
+                    model.crown[e].render(pose, bright, 0xF000F0, OverlayTexture.NO_OVERLAY,
+                            grey(model.crownGlow[e] * dim));
+                }
+            }
+            pose.popPose();
         }
 
         private static int grey(float strength) {
