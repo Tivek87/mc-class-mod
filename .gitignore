@@ -43,3 +43,7 @@ CLAUDE.local.md
 
 # A private chat kept as notes: never public
 docs/copilot chat bonesxragdoll and systems.txt
+
+# Python caches and local Blockbench models (never pushed)
+__pycache__/
+/models/

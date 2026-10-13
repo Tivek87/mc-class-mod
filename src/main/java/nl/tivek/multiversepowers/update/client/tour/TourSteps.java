@@ -20,19 +20,14 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.9.8-alpha";
+    static final String VERSION = "0.9.9-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
     // The card every release with a new character (`GameCharacter.newIn` = VERSION) shows: hold the wheel key, where
     // the newest is marked NEW.
     static final String NEW_CHARACTER = "new_character";
 
-    // Twelve more wild animals, in the game: six to a card.
-    static final List<TourStep> ALL = List.of(
-            step(VERSION, "more_animals", Kind.NEW, Place.GAME).covers("Hedgehog", "Owl", "Squirrel", "Snake", "Crab:",
-                    "Moose", "Crab meat"),
-            step(VERSION, "safari_animals", Kind.NEW, Place.GAME).covers("Lynx", "Monkey", "Elephant", "Giraffe",
-                    "Duck:", "Crocodile", "Duck meat"));
+    static final List<TourStep> ALL = List.of();
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
     static final List<String> SMALL = List.of();

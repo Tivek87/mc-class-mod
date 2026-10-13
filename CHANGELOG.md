@@ -3,6 +3,11 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.9-alpha] - 2026-10-13
+
+### Changed
+- **Project:** the ideas list moved to `docs/ideas/`, and `.gitignore` leaves out Python caches and local models.
+
 ## [0.9.8-alpha] - 2026-10-13
 
 ### Added
