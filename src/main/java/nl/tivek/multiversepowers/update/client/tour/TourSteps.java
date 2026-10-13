@@ -6,9 +6,12 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import nl.tivek.multiversepowers.bugreport.client.BugReportScreen;
 import nl.tivek.multiversepowers.character.AbilitySlot;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
+import nl.tivek.multiversepowers.update.client.ManagerScreen;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Kind;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 
@@ -20,14 +23,18 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.9.9-alpha";
+    static final String VERSION = "0.9.10-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
     // The card every release with a new character (`GameCharacter.newIn` = VERSION) shows: hold the wheel key, where
     // the newest is marked NEW.
     static final String NEW_CHARACTER = "new_character";
 
-    static final List<TourStep> ALL = List.of();
+    static final List<TourStep> ALL = List.of(
+            step(VERSION, "feedback_forms", Kind.CHANGED, Place.FEEDBACK).at("report.form")
+                    .prepare(() -> feedback(false)).covers("Bug reports:", "Feedback:"),
+            step(VERSION, "idea_categories", Kind.NEW, Place.FEEDBACK).at("report.form")
+                    .prepare(() -> feedback(true)).covers("Idea categories:"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
     static final List<String> SMALL = List.of();
@@ -45,6 +52,14 @@ final class TourSteps {
             .key(key(() -> AbilityKeys.SPELL_WHEEL));
 
     private TourSteps() {
+    }
+
+    // Opens the feedback page's idea part, or its bug part, for a step on it.
+    private static void feedback(boolean idea) {
+        if (!BugReportScreen.showing(idea)) {
+            ManagerScreen.open(ManagerScreen.rootOf(Minecraft.getInstance().screen),
+                    idea ? ManagerScreen.IDEA : ManagerScreen.BUG);
+        }
     }
 
     @Nullable

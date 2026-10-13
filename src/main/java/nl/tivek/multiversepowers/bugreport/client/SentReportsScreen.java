@@ -126,6 +126,9 @@ final class SentReportsScreen extends ManagerScreen {
                 width - 34 - chip - 10), x + 24, y + 4, TEXT, false);
         Component line = BugReportScreen.words("history.line", DATE.format(Instant.ofEpochMilli(sent.time())),
                 BugReportScreen.words("priority." + sent.priority().id()).withColor(sent.priority().color));
+        if (!sent.category().isEmpty()) {
+            line = Component.literal(sent.category() + "  ·  ").withColor(IDEA_COLOR).append(line);
+        }
         if (!sent.title().isEmpty() && !sent.title().equals(sent.name())) {
             line = Component.empty().append(line).append(BugReportScreen.words("history.github", sent.title()));
         }

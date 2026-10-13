@@ -20,17 +20,20 @@ function Get-Prop([string]$name) {
     return $line.Substring($name.Length + 1).Trim()
 }
 
-# '0.1.9-alpha' -> number 19 and suffix '-alpha'
+# '0.9.10-alpha' -> its parts, the suffix '-alpha', and a number that sorts versions (0.9.10 after 0.9.9)
 function Split-Version([string]$version) {
-    if ($version -notmatch '^(\d)\.(\d)\.(\d)(-[0-9A-Za-z.]+)?$') {
-        throw "Version '$version' is not X.Y.Z with digits 0-9 (optional -suffix)"
+    if ($version -notmatch '^(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.]+)?$') {
+        throw "Version '$version' is not X.Y.Z (optional -suffix)"
     }
-    return @{ Number = [int]$Matches[1] * 100 + [int]$Matches[2] * 10 + [int]$Matches[3]; Suffix = [string]$Matches[4] }
+    $major = [int]$Matches[1]; $minor = [int]$Matches[2]; $patch = [int]$Matches[3]
+    return @{ Major = $major; Minor = $minor; Patch = $patch; Suffix = [string]$Matches[4]
+        Number = [long]$major * 1000000 + $minor * 1000 + $patch }
 }
 
-function Join-Version([int]$number, [string]$suffix) {
-    if ($number -gt 999) { throw 'Past 9.9.9: pick a new scheme first' }
-    return '{0}.{1}.{2}{3}' -f [math]::Floor($number / 100), ([math]::Floor($number / 10) % 10), ($number % 10), $suffix
+# One step on: the last number counts up (0.9.9 -> 0.9.10); a new major or minor version is set by hand.
+function Step-Version([string]$version) {
+    $v = Split-Version $version
+    return '{0}.{1}.{2}{3}' -f $v.Major, $v.Minor, ($v.Patch + 1), $v.Suffix
 }
 
 function Test-RemoteTag([string]$tag) {
@@ -91,8 +94,7 @@ if ($Step -eq 'check') {
 
 if ($Step -eq 'prepare') {
     if (Test-RemoteTag "v$version") {
-        $v = Split-Version $version
-        $next = Join-Version ($v.Number + 1) $v.Suffix
+        $next = Step-Version $version
         $text = [IO.File]::ReadAllText($Props, $Utf8)
         $text = $text -replace "(?m)^mod_version=.*$", "mod_version=$next"
         [IO.File]::WriteAllText($Props, $text, $Utf8)

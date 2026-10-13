@@ -1,24 +1,34 @@
 package nl.tivek.multiversepowers.bugreport.client;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
-import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.MultiLineEditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.util.FormattedCharSequence;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.bugreport.client.form.Field;
+import nl.tivek.multiversepowers.bugreport.client.form.Form;
+import nl.tivek.multiversepowers.bugreport.client.form.FormView;
+import nl.tivek.multiversepowers.bugreport.client.form.Values;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.update.client.ManagerScreen;
 import nl.tivek.multiversepowers.update.client.UpdateChecker;
 import org.lwjgl.glfw.GLFW;
 
-// The feedback page's part for a bug report or an idea: a name, a description and a priority, kept as a draft until
-// submitted, with what goes along (your name and version) said above Submit. Ctrl+Enter submits; Clear asks a second
+// The feedback page's part for a bug report or an idea: a form in folding sections (an idea's by its category), kept
+// as a draft until submitted. Check & submit shows the report as it will be sent first, and Submit there sends it;
+// what is still missing is said under the form, a click on it going there. Ctrl+Enter does either; Clear asks a second
 // click.
 public final class BugReportScreen extends ManagerScreen {
     static final int SENT_COLOR = 0x6EE7A0;
@@ -35,19 +45,30 @@ public final class BugReportScreen extends ManagerScreen {
     @Nullable
     private Button clear;
     @Nullable
-    private EditBox name;
+    private Button fold;
     @Nullable
-    private MultiLineEditBox description;
+    private FormView view;
+    @Nullable
+    private ReportPreview preview;
+    private Map<String, String> values = new LinkedHashMap<>();
+    private Form form = FeedbackForms.BUG;
+    private boolean previewing;
+    @Nullable
+    private Component sendTip;
     private long editedAt;
     private long clearAskedAt = -CLEAR_MS;
-    private int descriptionY;
-    private int priorityY;
     private int statusY;
 
     private BugReportScreen(@Nullable Screen root, BugReporter.Kind kind) {
         super(words(kind.key("title")), root, FEEDBACK);
         this.kind = kind;
         this.shown = ReportStore.result(kind);
+    }
+
+    // Whether the idea part (or else the bug part) is open now: where the tour's steps on them wait.
+    public static boolean showing(boolean idea) {
+        return Minecraft.getInstance().screen instanceof BugReportScreen screen
+                && screen.kind == (idea ? BugReporter.Kind.IDEA : BugReporter.Kind.BUG);
     }
 
     @Override
@@ -79,62 +100,114 @@ public final class BugReportScreen extends ManagerScreen {
     protected void initPage() {
         int x = this.contentX;
         int width = this.contentWidth;
-        ReportStore.Draft draft = this.draft();
-        int bottom = this.contentY + this.contentHeight;
-        int buttonsY = bottom - 20;
+        ReportStore.Draft draft = ReportStore.draft(this.kind);
+        this.values = new LinkedHashMap<>(draft.values());
+        this.form = this.kind == BugReporter.Kind.BUG ? FeedbackForms.BUG : FeedbackForms.idea(draft.category());
+        int buttonsY = this.contentY + this.contentHeight - 20;
         this.statusY = buttonsY - 13;
-        this.priorityY = this.statusY - 23;
-
-        this.name = new EditBox(this.font, x, this.contentY + 11, width, 20, words("name"));
-        this.name.setMaxLength(BugReporter.TITLE_MAX);
-        this.name.setHint(words(this.kind.key("name.hint")));
-        this.name.setValue(draft.name());
-        this.name.setResponder(value -> this.edited(this.draft().withName(value)));
-        this.addRenderableWidget(this.name);
-
-        this.descriptionY = this.contentY + 11 + 20 + 17;
-        this.description = new MultiLineEditBox(this.font, x, this.descriptionY, width,
-                Math.max(28, this.priorityY - 6 - this.descriptionY), words(this.kind.key("description.hint")),
-                words("description"));
-        // The box's own limit would draw a second counter under it, over the priority: the limit is kept here instead.
-        this.description.setValue(cap(draft.description()));
-        this.description.setValueListener(value -> {
-            if (value.length() > BugReporter.DESCRIPTION_MAX) {
-                this.description.setValue(cap(value));
-                return;
-            }
-            this.edited(this.draft().withDescription(value));
-        });
-        this.addRenderableWidget(this.description);
-
-        int label = this.font.width(words("priority")) + 8;
-        this.addRenderableWidget(new PriorityPicker(this.font, x + label, this.priorityY, width - label, 18,
-                draft.priority(), priority -> this.edited(this.draft().withPriority(priority))));
-
+        int boxHeight = this.statusY - 5 - this.contentY;
+        this.view = null;
+        this.preview = null;
+        this.sendTip = null;
+        if (this.previewing) {
+            this.preview = new ReportPreview(this.font, this.submission(), x, this.contentY, width, boxHeight);
+            this.addRenderableWidget(Button.builder(words("preview.back"), button -> this.preview(false))
+                    .tooltip(tip(words("preview.back.tip"))).bounds(x, buttonsY, 76, 20).build());
+            this.send = this.addRenderableWidget(Button.builder(words("send"), button -> this.submit())
+                    .tooltip(tip(words("send.tip"))).bounds(x + width - 104, buttonsY, 104, 20).build());
+            this.clear = null;
+            this.fold = null;
+            this.refreshButtons();
+            return;
+        }
+        this.view = new FormView(this.form, this.values, this.font, new Host(), x, this.contentY, width, boxHeight);
         this.clear = this.addRenderableWidget(Button.builder(words("clear"), button -> this.clear())
-                .bounds(x, buttonsY, 76, 20).build());
-        this.send = this.addRenderableWidget(Button.builder(words("send"), button -> ReportStore.send(this.kind))
-                .tooltip(tip(words("send.tip"))).bounds(x + width - 104, buttonsY, 104, 20).build());
-        this.setInitialFocus(this.name);
+                .tooltip(tip(words("clear.tip"))).bounds(x, buttonsY, 64, 20).build());
+        this.fold = this.addRenderableWidget(Button.builder(words("fold_all"), button -> this.foldAll())
+                .tooltip(tip(words("fold_all.tip"))).bounds(x + 68, buttonsY, 72, 20).build());
+        this.send = this.addRenderableWidget(Button.builder(words("check"), button -> this.preview(true))
+                .bounds(x + width - 104, buttonsY, 104, 20).build());
         this.refreshButtons();
     }
 
-    private ReportStore.Draft draft() {
-        return ReportStore.draft(this.kind);
-    }
+    private final class Host implements FormView.Host {
+        @Override
+        public void add(AbstractWidget widget) {
+            BugReportScreen.this.addWidget(widget);
+        }
 
-    private static String cap(String text) {
-        return text.length() <= BugReporter.DESCRIPTION_MAX ? text : text.substring(0, BugReporter.DESCRIPTION_MAX);
-    }
+        @Nullable
+        @Override
+        public GuiEventListener focused() {
+            return BugReportScreen.this.getFocused();
+        }
 
-    private void edited(ReportStore.Draft draft) {
-        if (!draft.equals(this.draft())) {
-            ReportStore.draft(this.kind, draft);
-            this.editedAt = Util.getMillis();
+        @Override
+        public void focus(@Nullable GuiEventListener widget) {
+            BugReportScreen.this.setFocused(widget);
+        }
+
+        @Override
+        public void tooltip(List<FormattedCharSequence> lines) {
+            BugReportScreen.this.setTooltipForNextRenderPass(lines);
+        }
+
+        @Override
+        public void changed() {
+            BugReportScreen.this.changed();
         }
     }
 
-    // The first click asks, the second within a few seconds empties the name and description.
+    private Values answers() {
+        return this.view != null ? this.view.values() : new Values(this.form, this.values);
+    }
+
+    private String category() {
+        return this.kind == BugReporter.Kind.IDEA ? this.values.getOrDefault(FeedbackForms.CATEGORY, "") : "";
+    }
+
+    private BugReporter.Submission submission() {
+        Values answers = this.answers();
+        String category = this.category();
+        Field field = this.form.field(FeedbackForms.CATEGORY);
+        String categoryName = category.isEmpty() || field == null ? ""
+                : field.option(category).getString();
+        return new BugReporter.Submission(this.form.title(answers),
+                BugReporter.Priority.of(this.form.priority(answers)), category, categoryName,
+                this.form.blocks(answers));
+    }
+
+    // Keeps the draft, and on a new category opens its form with the category folded away.
+    private void changed() {
+        String before = ReportStore.draft(this.kind).category();
+        ReportStore.draft(this.kind, new ReportStore.Draft(this.category(), this.values));
+        this.editedAt = Util.getMillis();
+        this.clearAskedAt = -CLEAR_MS;
+        if (!this.category().equals(before)) {
+            Form next = FeedbackForms.idea(this.category());
+            FormView.fold(next, "idea.category", next != FeedbackForms.PICK);
+            this.rebuildWidgets();
+        }
+    }
+
+    private void foldAll() {
+        if (this.view != null) {
+            this.view.foldAll(this.view.allOpen());
+        }
+    }
+
+    private void preview(boolean open) {
+        this.previewing = open;
+        this.rebuildWidgets();
+    }
+
+    private void submit() {
+        if (this.send != null && this.send.active) {
+            ReportStore.send(this.kind, this.submission(), this.form);
+        }
+    }
+
+    // The first click asks, the second within a few seconds empties this form's answers (an idea keeps its category).
     private void clear() {
         long now = Util.getMillis();
         if (now - this.clearAskedAt > CLEAR_MS) {
@@ -142,9 +215,9 @@ public final class BugReportScreen extends ManagerScreen {
             return;
         }
         this.clearAskedAt = -CLEAR_MS;
-        this.name.setValue("");
-        this.description.setValue("");
-        this.setFocused(this.name);
+        this.values.keySet().removeIf(key -> this.form.owns(key) && !key.equals(FeedbackForms.CATEGORY));
+        ReportStore.draft(this.kind, new ReportStore.Draft(this.category(), this.values));
+        this.rebuildWidgets();
     }
 
     @Override
@@ -153,6 +226,7 @@ public final class BugReportScreen extends ManagerScreen {
         if (result != this.shown) {
             this.shown = result;
             if (result != null && result.outcome() == BugReporter.Outcome.SENT) {
+                this.previewing = false;
                 this.rebuildWidgets();
             }
         }
@@ -162,67 +236,134 @@ public final class BugReportScreen extends ManagerScreen {
 
     private void refreshButtons() {
         if (this.send != null) {
-            this.send.active = !ReportStore.sending(this.kind) && this.draft().ready();
+            Component why = this.why();
+            this.send.active = why == null;
+            Component tip = why != null ? why : words(this.previewing ? "send.tip" : "check.tip");
+            if (!tip.equals(this.sendTip)) {
+                this.sendTip = tip;
+                this.send.setTooltip(Tooltip.create(tip));
+            }
         }
         if (this.clear != null) {
             boolean asking = Util.getMillis() - this.clearAskedAt <= CLEAR_MS;
             this.clear.setMessage(words(asking ? "clear.sure" : "clear"));
-            this.clear.active = !this.draft().name().isEmpty() || !this.draft().description().isEmpty();
+            this.clear.active = this.values.entrySet().stream().anyMatch(entry -> this.form.owns(entry.getKey())
+                    && !entry.getKey().equals(FeedbackForms.CATEGORY) && !entry.getValue().isBlank());
         }
+        if (this.fold != null && this.view != null) {
+            this.fold.setMessage(words(this.view.allOpen() ? "fold_all" : "open_all"));
+        }
+    }
+
+    // Why the report cannot go yet, or null when it can.
+    @Nullable
+    private Component why() {
+        if (ReportStore.sending(this.kind)) {
+            return words("sending");
+        }
+        if (this.form == FeedbackForms.PICK) {
+            return words("send.pick");
+        }
+        List<Field> missing = this.form.missing(this.answers());
+        if (!missing.isEmpty()) {
+            StringBuilder names = new StringBuilder();
+            for (int i = 0; i < Math.min(4, missing.size()); i++) {
+                names.append(i == 0 ? "" : ", ").append(missing.get(i).label().getString());
+            }
+            if (missing.size() > 4) {
+                names.append(", ...");
+            }
+            return words("send.missing", names.toString());
+        }
+        return ReportStore.duplicate(this.kind, this.submission()) ? words("send.duplicate") : null;
     }
 
     @Override
     protected void renderPageBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        int x = this.contentX;
-        graphics.drawString(this.font, words("name"), x, this.contentY, BODY, false);
-        graphics.drawString(this.font, words("description"), x, this.descriptionY - 11, BODY, false);
-        graphics.drawString(this.font, words("priority"), x, this.priorityY + 5, BODY, false);
-        ScreenAnchors.report("report.form", x, this.contentY, this.contentWidth, this.contentHeight);
+        ScreenAnchors.report("report.form", this.contentX, this.contentY, this.contentWidth, this.contentHeight);
     }
 
     @Override
     protected void renderPage(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        int x = this.contentX;
-        int right = x + this.contentWidth;
-        int length = this.description == null ? 0 : this.description.getValue().length();
-        Component count = Component.literal(length + " / " + BugReporter.DESCRIPTION_MAX);
-        int countColor = length > BugReporter.DESCRIPTION_MAX * 9 / 10 ? 0xFF000000 | WARN : DIM;
-        graphics.drawString(this.font, count, right - this.font.width(count), this.descriptionY - 11, countColor, false);
+        if (this.preview != null) {
+            this.preview.render(graphics);
+        } else if (this.view != null) {
+            this.view.render(graphics, mouseX, mouseY, partialTick);
+        }
+        int right = this.contentX + this.contentWidth;
         long since = Util.getMillis() - this.editedAt;
+        int room = this.contentWidth;
         if (this.editedAt > 0 && since < SAVING_MS + SAVED_MS) {
             Component saved = words(since < SAVING_MS ? "draft.saving" : "draft.saved");
-            graphics.drawString(this.font, saved, right - this.font.width(saved), this.contentY, DIM, false);
+            graphics.drawString(this.font, saved, right - this.font.width(saved), this.statusY, DIM, false);
+            room -= this.font.width(saved) + 8;
         }
-        this.drawStatus(graphics, mouseX, mouseY, x, this.statusY);
+        this.drawStatus(graphics, mouseX, mouseY, this.contentX, this.statusY, room);
     }
 
-    private void drawStatus(GuiGraphics graphics, int mouseX, int mouseY, int x, int y) {
+    private void drawStatus(GuiGraphics graphics, int mouseX, int mouseY, int x, int y, int room) {
         if (ReportStore.sending(this.kind)) {
             PixelIcons.spinner(graphics, x, y - 1, 0xFFFFFF, Util.getMillis());
             graphics.drawString(this.font, words("sending"), x + 15, y, TEXT, false);
             return;
         }
         BugReporter.Result result = ReportStore.result(this.kind);
-        if (result == null) {
-            Component as = words("as", BugReporter.username(), UpdateChecker.installed());
-            graphics.drawString(this.font, this.fit(as, this.contentWidth), x, y, MUTED, false);
+        if (result != null) {
+            switch (result.outcome()) {
+                case SENT -> {
+                    Component sent = words(this.kind.key("sent"), result.issue());
+                    graphics.drawString(this.font, sent, x, y, 0xFF000000 | SENT_COLOR, false);
+                    this.link(graphics, words("see_reports"), x + this.font.width(sent) + 8, y, mouseX, mouseY,
+                            0xFF000000 | ACCENT, () -> open(this.root, REPORTS));
+                }
+                case LIMITED -> this.error(graphics, words(this.kind.key("error.limited")), x, y, room);
+                case REJECTED -> this.error(graphics, words("error.rejected"), x, y, room);
+                case FAILED -> this.error(graphics, words("error.network"), x, y, room);
+            }
             return;
         }
-        switch (result.outcome()) {
-            case SENT -> {
-                Component sent = words(this.kind.key("sent"), result.issue());
-                graphics.drawString(this.font, sent, x, y, 0xFF000000 | SENT_COLOR, false);
-                this.link(graphics, words("see_reports"), x + this.font.width(sent) + 8, y, mouseX, mouseY,
-                        0xFF000000 | ACCENT, () -> open(this.root, REPORTS));
-            }
-            case LIMITED -> this.error(graphics, words(this.kind.key("error.limited")), x, y);
-            case REJECTED -> this.error(graphics, words("error.rejected"), x, y);
-            case FAILED -> this.error(graphics, words("error.network"), x, y);
+        List<Field> missing = this.form.missing(this.answers());
+        if (this.previewing) {
+            graphics.drawString(this.font, this.fit(words("preview.status"), room), x, y, MUTED, false);
+        } else if (this.form == FeedbackForms.PICK) {
+            graphics.drawString(this.font, this.fit(words("status.pick"), room), x, y, 0xFF000000 | WARN, false);
+        } else if (!missing.isEmpty() && this.view != null) {
+            Component left = words("status.missing", missing.size());
+            graphics.drawString(this.font, left, x, y, 0xFF000000 | ERROR_COLOR, false);
+            FormView view = this.view;
+            this.link(graphics, words("status.show"), x + this.font.width(left) + 6, y, mouseX, mouseY,
+                    0xFF000000 | ACCENT, () -> view.reveal(missing.get(0)));
+        } else {
+            Component as = words("as", BugReporter.username(), UpdateChecker.installed());
+            graphics.drawString(this.font, this.fit(as, room), x, y, MUTED, false);
         }
     }
 
-    private void error(GuiGraphics graphics, Component text, int x, int y) {
-        graphics.drawString(this.font, this.fit(text, this.contentWidth), x, y, 0xFF000000 | ERROR_COLOR, false);
+    private void error(GuiGraphics graphics, Component text, int x, int y, int room) {
+        graphics.drawString(this.font, this.fit(text, room), x, y, 0xFF000000 | ERROR_COLOR, false);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (this.view != null) {
+            if (this.view.mouseClicked(mouseX, mouseY, button)) {
+                this.click(1.0F);
+                return true;
+            }
+            if (!this.view.inside(mouseX, mouseY)) {
+                this.view.hideWidgets();
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (this.preview != null && this.preview.mouseScrolled(mouseX, mouseY, scrollY)
+                || this.view != null && this.view.mouseScrolled(mouseX, mouseY, scrollY)) {
+            return true;
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     @Override
@@ -230,8 +371,16 @@ public final class BugReportScreen extends ManagerScreen {
         if ((keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) && hasControlDown()) {
             if (this.send != null && this.send.active) {
                 this.click(1.0F);
-                ReportStore.send(this.kind);
+                if (this.previewing) {
+                    this.submit();
+                } else {
+                    this.preview(true);
+                }
             }
+            return true;
+        }
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE && this.previewing) {
+            this.preview(false);
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);

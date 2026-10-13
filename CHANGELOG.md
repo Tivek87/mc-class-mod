@@ -3,6 +3,22 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.10-alpha] - 2026-10-13
+
+### Added
+- **Idea categories:** an idea starts with what it is about. New mob has a full form: tier with 2 to 28
+  abilities (each a name and what it does), attitude, kind, movement, health and damage in hearts, armour,
+  healing, spawning, drops and a boss fight; options appear or lock by your answers. No category is a plain idea;
+  the other nine categories show locked until their forms are ready.
+
+### Changed
+- **Bug reports:** a form in folding sections: kind of bug, how often, steps to repeat it, what you expected and
+  where it happened, a tooltip on everything.
+- **Feedback:** Check & submit first shows the report as it will be sent; what is still missing is named under the
+  form, Show next going there. The same report is never sent twice.
+- **Project:** the bug relay lays every report out as tables and sections on GitHub (and in `bugs/`); versions go
+  on as 0.9.10, 0.9.11 instead of 1.0.0.
+
 ## [0.9.9-alpha] - 2026-10-13
 
 ### Changed

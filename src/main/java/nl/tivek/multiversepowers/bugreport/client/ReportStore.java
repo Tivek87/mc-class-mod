@@ -16,12 +16,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
 import net.neoforged.fml.loading.FMLPaths;
+import nl.tivek.multiversepowers.bugreport.client.form.Form;
 import nl.tivek.multiversepowers.config.ModConfigs;
 import org.slf4j.Logger;
 
@@ -37,30 +39,20 @@ final class ReportStore {
     private static long dirtySince;
     private static long retryAt;
 
-    record Draft(String name, String description, BugReporter.Priority priority) {
-        static final Draft EMPTY = new Draft("", "", BugReporter.Priority.MEDIUM);
+    // An unsent report: an idea's category, and every answer typed or picked, of any form of its kind.
+    record Draft(String category, Map<String, String> values) {
+        static final Draft EMPTY = new Draft("", Map.of());
 
-        boolean ready() {
-            return !this.name.isBlank() && !this.description.isBlank();
-        }
-
-        Draft withName(String name) {
-            return new Draft(name, this.description, this.priority);
-        }
-
-        Draft withDescription(String description) {
-            return new Draft(this.name, description, this.priority);
-        }
-
-        Draft withPriority(BugReporter.Priority priority) {
-            return new Draft(this.name, this.description, priority);
+        Draft {
+            values = Map.copyOf(values);
         }
     }
 
     record Sent(int issue, String name, BugReporter.Priority priority, long time, BugReporter.State state,
-                String title, long checked) {
+                String title, long checked, String category) {
         Sent with(BugReporter.Status status, long now) {
-            return new Sent(this.issue, this.name, this.priority, this.time, status.state(), status.title(), now);
+            return new Sent(this.issue, this.name, this.priority, this.time, status.state(), status.title(), now,
+                    this.category);
         }
     }
 
@@ -69,6 +61,8 @@ final class ReportStore {
         final List<Sent> sent = new ArrayList<>();
         final Set<Integer> checking = new HashSet<>();
         boolean sending;
+        // The last report sent, as sent: the same one twice is refused.
+        String last = "";
         @Nullable
         BugReporter.Result result;
         boolean checkFailed;
@@ -112,19 +106,25 @@ final class ReportStore {
         return desk(kind).checkFailed;
     }
 
-    static void send(BugReporter.Kind kind) {
+    static boolean duplicate(BugReporter.Kind kind, BugReporter.Submission report) {
+        return desk(kind).last.equals(report.json().toString());
+    }
+
+    // Sends `report`, made from the draft by `form`; once sent, the draft loses that form's answers.
+    static void send(BugReporter.Kind kind, BugReporter.Submission report, Form form) {
         Desk desk = desk(kind);
         Draft draft = desk.draft;
-        if (desk.sending || !draft.ready()) {
+        if (desk.sending || duplicate(kind, report)) {
             return;
         }
         desk.sending = true;
         desk.result = null;
-        BugReporter.send(kind, draft.name(), draft.description(), draft.priority())
-                .thenAcceptAsync(result -> sent(kind, draft, result), Minecraft.getInstance());
+        BugReporter.send(kind, report)
+                .thenAcceptAsync(result -> sent(kind, draft, report, form, result), Minecraft.getInstance());
     }
 
-    private static void sent(BugReporter.Kind kind, Draft draft, BugReporter.Result result) {
+    private static void sent(BugReporter.Kind kind, Draft draft, BugReporter.Submission report, Form form,
+                             BugReporter.Result result) {
         Desk desk = desk(kind);
         desk.sending = false;
         desk.result = result;
@@ -132,11 +132,15 @@ final class ReportStore {
             return;
         }
         long now = System.currentTimeMillis();
-        String name = draft.name().strip();
-        desk.sent.add(0, new Sent(result.issue(), name, draft.priority(), now, BugReporter.State.OPEN, name, now));
+        String name = report.title().strip();
+        desk.sent.add(0, new Sent(result.issue(), name, report.priority(), now, BugReporter.State.OPEN, name, now,
+                report.categoryName()));
         trim(desk.sent);
+        desk.last = report.json().toString();
         if (desk.draft.equals(draft)) {
-            desk.draft = Draft.EMPTY;
+            Map<String, String> kept = new LinkedHashMap<>(draft.values());
+            kept.keySet().removeIf(form::owns);
+            desk.draft = new Draft(draft.category(), kept);
         }
         save();
     }
@@ -221,7 +225,7 @@ final class ReportStore {
             JsonObject root = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject();
             for (BugReporter.Kind kind : BugReporter.Kind.values()) {
                 if (root.get(kind.id()) instanceof JsonObject json) {
-                    read(DESKS.get(kind), json);
+                    read(kind, DESKS.get(kind), json);
                 }
             }
         } catch (IOException | RuntimeException e) {
@@ -229,11 +233,29 @@ final class ReportStore {
         }
     }
 
-    private static void read(Desk desk, JsonObject json) {
+    private static void read(BugReporter.Kind kind, Desk desk, JsonObject json) {
         if (json.get("draft") instanceof JsonObject draft) {
-            desk.draft = new Draft(BugReporter.string(draft, "name"), BugReporter.string(draft, "description"),
-                    priority(draft));
+            Map<String, String> values = new LinkedHashMap<>();
+            String category = BugReporter.string(draft, "category");
+            if (draft.get("values") instanceof JsonObject saved) {
+                saved.entrySet().forEach(entry -> {
+                    if (entry.getValue().isJsonPrimitive()) {
+                        values.put(entry.getKey(), entry.getValue().getAsString());
+                    }
+                });
+            } else {
+                // A draft from before the forms: its name, description and priority, an idea of no category.
+                String form = kind == BugReporter.Kind.BUG ? "bug." : "idea.";
+                values.put(form + "name", BugReporter.string(draft, "name"));
+                values.put(form + "description", BugReporter.string(draft, "description"));
+                values.put(form + "priority", priority(draft).id());
+                if (kind == BugReporter.Kind.IDEA && !values.values().stream().allMatch(String::isBlank)) {
+                    category = FeedbackForms.GLOBAL;
+                }
+            }
+            desk.draft = new Draft(category, values);
         }
+        desk.last = BugReporter.string(json, "last");
         if (json.get("sent") instanceof JsonArray sent) {
             for (JsonElement element : sent) {
                 JsonObject entry = element.getAsJsonObject();
@@ -241,14 +263,15 @@ final class ReportStore {
                         priority(entry), entry.get("time").getAsLong(),
                         named(BugReporter.State.class, BugReporter.string(entry, "state"), BugReporter.State.OPEN),
                         BugReporter.string(entry, "title"),
-                        entry.has("checked") ? entry.get("checked").getAsLong() : 0L));
+                        entry.has("checked") ? entry.get("checked").getAsLong() : 0L,
+                        BugReporter.string(entry, "category")));
             }
             trim(desk.sent);
         }
     }
 
     private static BugReporter.Priority priority(JsonObject json) {
-        return named(BugReporter.Priority.class, BugReporter.string(json, "priority"), Draft.EMPTY.priority());
+        return named(BugReporter.Priority.class, BugReporter.string(json, "priority"), BugReporter.Priority.MEDIUM);
     }
 
     private static void save() {
@@ -272,9 +295,10 @@ final class ReportStore {
 
     private static JsonObject json(Desk desk) {
         JsonObject draft = new JsonObject();
-        draft.addProperty("name", desk.draft.name());
-        draft.addProperty("description", desk.draft.description());
-        draft.addProperty("priority", desk.draft.priority().id());
+        draft.addProperty("category", desk.draft.category());
+        JsonObject values = new JsonObject();
+        desk.draft.values().forEach(values::addProperty);
+        draft.add("values", values);
         JsonArray sent = new JsonArray();
         for (Sent entry : desk.sent) {
             JsonObject json = new JsonObject();
@@ -285,11 +309,13 @@ final class ReportStore {
             json.addProperty("state", entry.state().id());
             json.addProperty("title", entry.title());
             json.addProperty("checked", entry.checked());
+            json.addProperty("category", entry.category());
             sent.add(json);
         }
         JsonObject json = new JsonObject();
         json.add("draft", draft);
         json.add("sent", sent);
+        json.addProperty("last", desk.last);
         return json;
     }
 

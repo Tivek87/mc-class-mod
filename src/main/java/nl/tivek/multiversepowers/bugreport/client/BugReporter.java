@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.bugreport.client;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -12,16 +13,19 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
+import nl.tivek.multiversepowers.bugreport.client.form.Block;
+import nl.tivek.multiversepowers.bugreport.client.form.Form;
 import nl.tivek.multiversepowers.update.client.UpdateChecker;
 import org.slf4j.Logger;
 
 final class BugReporter {
-    static final int TITLE_MAX = 80;
+    // What a relay from before blocks reads: the report as plain text.
     static final int DESCRIPTION_MAX = 2000;
     // Written by scripts/bugs.ps1 setup; a JVM property points tests at a local relay.
     private static final String RELAY_FILE = "relay.txt";
@@ -47,6 +51,15 @@ final class BugReporter {
 
         String id() {
             return this.name().toLowerCase(Locale.ROOT);
+        }
+
+        static Priority of(String id) {
+            for (Priority priority : values()) {
+                if (priority.id().equals(id)) {
+                    return priority;
+                }
+            }
+            return MEDIUM;
         }
     }
 
@@ -84,6 +97,24 @@ final class BugReporter {
     record Status(State state, String title) {
     }
 
+    // A report ready to send: its category's id and name are empty for a bug.
+    record Submission(String title, Priority priority, String category, String categoryName, List<Block> blocks) {
+        JsonObject json() {
+            JsonObject json = new JsonObject();
+            json.addProperty("title", this.title.strip());
+            json.addProperty("priority", this.priority.id());
+            if (!this.category.isEmpty()) {
+                json.addProperty("category", this.category);
+                json.addProperty("categoryName", this.categoryName);
+            }
+            JsonArray blocks = new JsonArray();
+            this.blocks.forEach(block -> blocks.add(block.json()));
+            json.add("blocks", blocks);
+            json.addProperty("description", Form.plain(this.blocks, DESCRIPTION_MAX));
+            return json;
+        }
+    }
+
     private BugReporter() {
     }
 
@@ -91,12 +122,9 @@ final class BugReporter {
         return Minecraft.getInstance().getUser().getName();
     }
 
-    static CompletableFuture<Result> send(Kind kind, String title, String description, Priority priority) {
-        JsonObject json = new JsonObject();
+    static CompletableFuture<Result> send(Kind kind, Submission report) {
+        JsonObject json = report.json();
         json.addProperty("kind", kind.id());
-        json.addProperty("title", title.strip());
-        json.addProperty("description", description.strip());
-        json.addProperty("priority", priority.id());
         json.addProperty("username", username());
         json.addProperty("modVersion", UpdateChecker.installed());
         json.addProperty("minecraftVersion", SharedConstants.getCurrentVersion().getName());
