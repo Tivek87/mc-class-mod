@@ -151,7 +151,7 @@ public final class ElementalBlazeModel extends HierarchicalModel<ElementalBlaze>
             shard.zRot = lean * Mth.cos(angle);
             shard.xRot = -lean * Mth.sin(angle);
             shard.yScale = 1.0F + 0.25F * fierce + 0.6F * lit;
-            this.crownGlow[e] = Mth.clamp(0.25F * fierce + lit, 0.0F, 1.0F);
+            this.crownGlow[e] = Mth.clamp(0.12F * fierce + 0.8F * lit, 0.0F, 1.0F);
         }
         // The heart turns under the head, bobbing against it; it spins up and shrinks as the cast is braced and
         // bursts wide as the spell leaves.
@@ -165,7 +165,7 @@ public final class ElementalBlazeModel extends HierarchicalModel<ElementalBlaze>
         this.core.xScale = size;
         this.core.yScale = size;
         this.core.zScale = size;
-        this.coreGlow = Mth.clamp(0.35F + 0.15F * fierce + 0.5F * brace + 0.6F * release, 0.0F, 1.0F);
+        this.coreGlow = Mth.clamp(0.28F + 0.1F * fierce + 0.4F * brace + 0.5F * release, 0.0F, 1.0F);
     }
 
     // The extra turns the heart makes over a move, whole ones, so it is back where it was as the move ends.

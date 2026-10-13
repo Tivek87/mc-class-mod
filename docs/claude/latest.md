@@ -8,5 +8,9 @@
 - Blaze: nieuwe engine-shader `engine/client/fx/Energy` (`shaders/core/energy.*`), kroon en hart in het model, meer animatie (`RodOrbit`, model, leunen in vliegrichting), eigen effect per element, `ScorchBallRenderer`, energie over ray, bliksem en steen; textuur via het script.
 - Formulieren: alle tekstvakken 2500 tekens. Niet aangepast: lijst-regels (300, de live relay weigert meer dan 400 per cel) en factietekst (300).
 - Getest in het spel (3 runs): alle regelchecks kloppen (lock, wisselen, join -100, lid op 0, waarschuwing, uitgestoten bij -32, hulp, assist, dood doelwit losgelaten), Blaze-beelden van elk element en gevecht, tour (3 kaarten). `./gradlew build` groen.
-- Niet getest: echte multiplayer; de laatste dimming van de Blaze-effecten alleen gebouwd, niet opnieuw bekeken (komt in release 2).
-- Open: release 2; bug #84 en ideeen #78, #81, #82, #85, #24 niet aangeraakt (alleen na ja).
+- 22:25: commit `b259de0` gepusht, v0.9.14-alpha gepubliceerd (Latest).
+- Release 2 (0.9.15): Blaze minder fel (textuur gedempt via het script, niet meer in vol licht: minstens licht 9, gloed/hart/effecten zwakker, half zoveel deeltjes), 20% sterker (72 HP, 9.6 schade in `ElementalBlaze`), wind harder (`BlazeCasts` GALE_PUSH 2.1, GALE_LIFT 0.6). Tour: `FROM` 0.9.14, dezelfde 3 kaarten, de 3 nieuwe regels in `SMALL`.
+- Getest in het spel (2 runs): 72 HP, wind gooit een zombie ~10 blokken (was ~6.6 berekend), beelden rustiger, tour gelopen. `./gradlew build` groen.
+- Niet getest: echte multiplayer; de allerlaatste verzwakking van de vuur-cast (minder vlammen) alleen gebouwd.
+- Geen GitHub-rapport over de Blaze gevonden (`bugs.ps1 sync`): alleen de tekst van de gebruiker gevolgd. Bug #84 en ideeen #78, #81, #82, #85, #24 niet aangeraakt (alleen na ja).
+- Open punten voor de gebruiker: lijst-regels in formulieren blijven 300 tekens (relay moet anders opnieuw uitgerold), factietekst blijft 300.

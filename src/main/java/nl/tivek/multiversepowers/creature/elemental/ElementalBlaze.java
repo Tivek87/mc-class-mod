@@ -123,8 +123,8 @@ public final class ElementalBlaze extends Monster {
     }
 
     private static void onAttributes(EntityAttributeCreationEvent event) {
-        event.put(TYPE.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 60.0)
-                .add(Attributes.ARMOR, 6.0).add(Attributes.ATTACK_DAMAGE, 8.0).add(Attributes.FOLLOW_RANGE, 24.0)
+        event.put(TYPE.get(), Monster.createMonsterAttributes().add(Attributes.MAX_HEALTH, 72.0)
+                .add(Attributes.ARMOR, 6.0).add(Attributes.ATTACK_DAMAGE, 9.6).add(Attributes.FOLLOW_RANGE, 24.0)
                 .add(Attributes.MOVEMENT_SPEED, 0.23).add(Attributes.FLYING_SPEED, 0.32)
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.3).build());
     }
@@ -355,7 +355,7 @@ public final class ElementalBlaze extends Monster {
         for (int i = 0; i < RodOrbit.RODS; i++) {
             Element own = RodOrbit.element(i);
             float glow = RodOrbit.glow(state, own, RodOrbit.ring(i));
-            if (this.random.nextFloat() > 0.08F + 0.5F * glow) {
+            if (this.random.nextFloat() > 0.04F + 0.35F * glow) {
                 continue;
             }
             RodOrbit.place(state, i, this.rod);
@@ -367,7 +367,7 @@ public final class ElementalBlaze extends Monster {
                 this.level().addParticle(ParticleFx.dust(own.light, 1.1F), at.x, at.y - 0.2, at.z, 0.0, 0.0, 0.0);
             }
         }
-        if (this.awokeAt >= 0 && this.random.nextInt(3) == 0) {
+        if (this.awokeAt >= 0 && this.random.nextInt(6) == 0) {
             this.level().addParticle(ParticleTypes.FLAME, this.getRandomX(0.6), this.getRandomY(),
                     this.getRandomZ(0.6), 0.0, 0.03, 0.0);
         }

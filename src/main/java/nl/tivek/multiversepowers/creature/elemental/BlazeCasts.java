@@ -45,6 +45,9 @@ public final class BlazeCasts {
     public static final double RANGE = 16.0;
     private static final double GALE_RANGE = 7.0;
     private static final double GALE_CONE = 0.55;
+    // How fast a gust throws who it catches at its mouth, along and up, in blocks a tick.
+    private static final double GALE_PUSH = 2.1;
+    private static final double GALE_LIFT = 0.6;
     private static final double NOVA_RANGE = 6.0;
 
     private BlazeCasts() {
@@ -202,7 +205,8 @@ public final class BlazeCasts {
                 continue;
             }
             double strength = 1.0 - far / GALE_RANGE * 0.5;
-            Vec3 push = new Vec3(way.x, 0.0, way.z).normalize().scale(1.35 * strength).add(0.0, 0.45 * strength, 0.0);
+            Vec3 push = new Vec3(way.x, 0.0, way.z).normalize().scale(GALE_PUSH * strength)
+                    .add(0.0, GALE_LIFT * strength, 0.0);
             double resist = Mth.clamp(living.getAttributeValue(Attributes.KNOCKBACK_RESISTANCE), 0.0, 1.0);
             living.hurt(source(caster, caster, Element.WIND), harm);
             living.setDeltaMovement(living.getDeltaMovement().scale(0.2).add(push.scale(1.0 - resist)));

@@ -3,6 +3,15 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.15-alpha] - 2026-10-13
+
+### Changed
+- **Dimmer Elemental Blaze:** its rods' colours are muted, it is no longer drawn in full light where it is dark, its
+  rods' glow, its heart and the effects round it burn less brightly, and its rods shed half as many particles.
+- **Stronger Elemental Blaze:** a fifth stronger: 72 health (was 60) and 9.6 damage (was 8).
+- **Gale Push:** the wind of the Elemental Blaze and of the Elemental Staff throws one and a half times as hard, and
+  higher.
+
 ## [0.9.14-alpha] - 2026-10-13
 
 ### Changed

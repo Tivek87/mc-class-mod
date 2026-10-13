@@ -49,6 +49,8 @@ public final class ElementalBlazeTexture {
         for (int e = 0; e < 5; e++) {
             crown(p, glow, e);
         }
+        mute(p, 0.7, 0.88);
+        mute(glow, 0.8, 0.7);
         p.save(entity, "elemental_blaze");
         glow.save(entity, "elemental_blaze_glow");
         eyes.save(entity, "elemental_blaze_eyes");
@@ -188,6 +190,24 @@ public final class ElementalBlazeTexture {
             default -> {
                 piece(p, glow, new Paint.Box(u, w, 1, 2, 1), TONES[4][3], new int[] { 255, 240, 120 });
                 piece(p, glow, new Paint.Box(u + 4, w, 1, 2, 1), TONES[4][3], new int[] { 255, 240, 120 });
+            }
+        }
+    }
+
+    // Fifteen rods in five elements' colours shout: every pixel keeps only `colour` of its colour (the rest goes to its
+    // own grey) and `light` of its brightness.
+    private static void mute(Paint p, double colour, double light) {
+        for (int y = 0; y < p.image.getHeight(); y++) {
+            for (int x = 0; x < p.image.getWidth(); x++) {
+                int argb = p.image.getRGB(x, y);
+                int r = argb >> 16 & 255;
+                int g = argb >> 8 & 255;
+                int b = argb & 255;
+                double grey = 0.299 * r + 0.587 * g + 0.114 * b;
+                int[] muted = { (int) Math.round((grey + (r - grey) * colour) * light),
+                    (int) Math.round((grey + (g - grey) * colour) * light),
+                    (int) Math.round((grey + (b - grey) * colour) * light) };
+                p.image.setRGB(x, y, Paint.argb(muted, argb >>> 24));
             }
         }
     }

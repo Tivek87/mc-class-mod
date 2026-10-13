@@ -150,5 +150,5 @@ void main() {
     }
     float edge = round ? smoothstep(1.0, 0.86, length(uv)) : 1.0;
     vec3 colour = mix(tint.rgb, vec3(1.0), clamp(e.y, 0.0, 1.0) * 0.32);
-    fragColor = vec4(colour * e.x * edge * tint.a, 1.0);
+    fragColor = vec4(colour * e.x * edge * tint.a * 0.85, 1.0);
 }

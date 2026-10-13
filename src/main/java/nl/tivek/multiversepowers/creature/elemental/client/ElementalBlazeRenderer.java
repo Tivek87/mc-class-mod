@@ -26,7 +26,7 @@ import nl.tivek.multiversepowers.engine.client.fx.Energy;
 import nl.tivek.multiversepowers.engine.math.Ease;
 import org.joml.Quaternionf;
 
-// The Elemental Blaze drawn in full light as a blaze is: its own model, then its rods' own glow (the fire rod's flame,
+// The Elemental Blaze, never drawn darker than a dim light of its own: its own model, then its rods' own glow (the fire rod's flame,
 // the storm rod's sparks, the ice rod's shine), its eyes lit in the colour of the element it uses, and the rods of the
 // element it casts burning brighter as they swing round, a soft light gathering at the leading rod. Its heart burns in
 // the colour of its element, the crown's shard of the element it casts lights up, and the element itself plays round
@@ -48,6 +48,10 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
     private static final float HEART = 0.88F;
     private static final float SHOCK = 9.0F;
     private static final float LEAN = 0.9F;
+    // The least block light it is drawn in (a blaze takes 15: with fifteen rods that glared), and the share of its
+    // rods' own glow laid over it.
+    private static final int LIT = 9;
+    private static final float GLOW_SHARE = 0.6F;
     private final float[] place = new float[6];
 
     ElementalBlazeRenderer(EntityRendererProvider.Context context) {
@@ -66,7 +70,7 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
 
     @Override
     protected int getBlockLightLevel(ElementalBlaze blaze, BlockPos pos) {
-        return 15;
+        return Math.max(super.getBlockLightLevel(blaze, pos), LIT);
     }
 
     @Override
@@ -121,7 +125,7 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
         float brace = RodOrbit.brace(state);
         float release = RodOrbit.release(state);
         Vec3 heart = new Vec3(0.0, HEART, 0.0);
-        float smoulder = (state.awake() >= 0.0F ? 0.38F : 0.24F) + 0.35F * brace;
+        float smoulder = (state.awake() >= 0.0F ? 0.26F : 0.16F) + 0.3F * brace;
         Energy.puff(pose, energy, heart, 0.5F + 0.2F * brace + 0.6F * release, facing, pattern, element.colour,
                 smoulder, seed);
         if (state.move() == BlazeTimeline.AWAKEN) {
@@ -146,7 +150,7 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
             return;
         }
         float glow = RodOrbit.glow(state, casting, 0);
-        Energy.puff(pose, energy, lead, 0.25F + 0.35F * glow, facing, pattern, casting.colour, 0.65F * glow, seed + 1);
+        Energy.puff(pose, energy, lead, 0.25F + 0.35F * glow, facing, pattern, casting.colour, 0.5F * glow, seed + 1);
         float c = state.moveAge() - BlazeTimeline.shift(state.move());
         float since = c - BlazeTimeline.cast(casting);
         if (since >= 0.0F && since < SHOCK) {
@@ -157,12 +161,12 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
         Vec3 eye = this.entityRenderDispatcher.camera.getPosition().subtract(blaze.getPosition(partialTick));
         switch (casting) {
             case FIRE -> {
-                for (int k = 0; k < 5 && since < 0.0F; k++) {
-                    float turn = state.age() * 0.45F + k * Mth.TWO_PI / 5.0F;
+                for (int k = 0; k < 3 && since < 0.0F; k++) {
+                    float turn = state.age() * 0.45F + k * Mth.TWO_PI / 3.0F;
                     float away = 1.3F * (1.0F - brace) + 0.25F;
                     Energy.puff(pose, energy, lead.add(Mth.cos(turn) * away, Mth.sin(turn * 1.3F) * away * 0.5,
                             Mth.sin(turn) * away), 0.22F + 0.12F * brace, facing, Energy.FLAME, casting.colour,
-                            0.6F * brace, seed + 3 + k);
+                            0.45F * brace, seed + 3 + k);
                 }
             }
             case ICE -> {
@@ -259,7 +263,7 @@ public final class ElementalBlazeRenderer extends MobRenderer<ElementalBlaze, El
             float dim = blaze.deathTime > 0 ? Math.max(0.0F, 1.0F - (blaze.deathTime + partialTick) / 20.0F) : 1.0F;
             float flicker = 0.8F + 0.2F * Mth.sin(ageInTicks * 0.9F) * Mth.sin(ageInTicks * 0.37F);
             model.renderToBuffer(pose, buffers.getBuffer(GLOW), 0xF000F0, OverlayTexture.NO_OVERLAY,
-                    grey(flicker * dim));
+                    grey(GLOW_SHARE * flicker * dim));
             Element element = blaze.element();
             int eyes = FastColor.ARGB32.color(255, Math.round((element.light >> 16 & 255) * dim),
                     Math.round((element.light >> 8 & 255) * dim), Math.round((element.light & 255) * dim));
