@@ -14,6 +14,8 @@ import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
 import nl.tivek.multiversepowers.faction.Standing;
 import nl.tivek.multiversepowers.faction.mob.MobStats;
+import nl.tivek.multiversepowers.faction.rules.Faction;
+import nl.tivek.multiversepowers.faction.rules.FactionRules;
 
 // The Mobs page's picked creature under `MobRulesScreen`: its model turning in a card on the left (dragged to turn
 // it), its tabs over the list on the right, and the lines of its overview: how it stands to players and to every
@@ -301,6 +303,18 @@ abstract class MobRulesProfile extends MobRulesState {
             x += each + 2;
         }
         return new Tip(left, tip);
+    }
+
+    // The faction a creature's kind is in, in its colour, right-aligned to `right`; returns its left edge.
+    int factionTag(GuiGraphics graphics, Row row, int right, int y, int width) {
+        Faction faction = FactionRules.of(row.type());
+        if (faction == null || width < 220) {
+            return right;
+        }
+        Component name = Component.literal(faction.name()).withColor(faction.color());
+        int room = Math.min(this.font.width(name), width / 4);
+        graphics.drawString(this.font, this.fit(name, room), right - room, y + 5, MUTED, false);
+        return right - room - 6;
     }
 
     // A chip inside the list that scrolls with it.

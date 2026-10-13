@@ -77,7 +77,12 @@ import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
 import nl.tivek.multiversepowers.engine.entity.TumblePayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
-import nl.tivek.multiversepowers.faction.StandingsPayload;
+import nl.tivek.multiversepowers.faction.net.FactionEditPayload;
+import nl.tivek.multiversepowers.faction.FactionEdits;
+import nl.tivek.multiversepowers.faction.net.FactionStatePayload;
+import nl.tivek.multiversepowers.faction.net.MobFactionPayload;
+import nl.tivek.multiversepowers.faction.net.ReputationNotePayload;
+import nl.tivek.multiversepowers.faction.net.StandingsPayload;
 import nl.tivek.multiversepowers.faction.mob.MobDefaults;
 import nl.tivek.multiversepowers.faction.mob.MobBulkEditPayload;
 import nl.tivek.multiversepowers.faction.mob.MobPageActionPayload;
@@ -189,6 +194,12 @@ public final class ModNetwork {
                 ModNetwork::onSettingsResult);
         registrar.playToClient(ParticlesPayload.TYPE, ParticlesPayload.STREAM_CODEC, ModNetwork::onParticles);
         registrar.playToClient(StandingsPayload.TYPE, StandingsPayload.STREAM_CODEC, ModNetwork::onStandings);
+        registrar.playToClient(FactionStatePayload.TYPE, FactionStatePayload.STREAM_CODEC,
+                ModNetwork::onFactionState);
+        registrar.playToClient(MobFactionPayload.TYPE, MobFactionPayload.STREAM_CODEC, ModNetwork::onMobFaction);
+        registrar.playToClient(ReputationNotePayload.TYPE, ReputationNotePayload.STREAM_CODEC,
+                ModNetwork::onReputationNote);
+        registrar.playToServer(FactionEditPayload.TYPE, FactionEditPayload.STREAM_CODEC, ModNetwork::onFactionEdit);
         registrar.playToClient(MobTablePayload.TYPE, MobTablePayload.STREAM_CODEC, ModNetwork::onMobTable);
         registrar.playToServer(MobTableAskPayload.TYPE, MobTableAskPayload.STREAM_CODEC, ModNetwork::onMobTableAsk);
         registrar.playToServer(MobRuleEditPayload.TYPE, MobRuleEditPayload.STREAM_CODEC, ModNetwork::onMobRuleEdit);
@@ -286,6 +297,26 @@ public final class ModNetwork {
 
     private static void onStandings(StandingsPayload payload, IPayloadContext context) {
         ClientPayloadHandler.handleStandings(payload, context);
+    }
+
+    private static void onFactionState(FactionStatePayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleFactionState(payload, context);
+    }
+
+    private static void onMobFaction(MobFactionPayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleMobFaction(payload, context);
+    }
+
+    private static void onReputationNote(ReputationNotePayload payload, IPayloadContext context) {
+        ClientPayloadHandler.handleReputationNote(payload, context);
+    }
+
+    private static void onFactionEdit(FactionEditPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer serverPlayer) {
+                FactionEdits.page(serverPlayer, payload);
+            }
+        });
     }
 
     private static void onMobTable(MobTablePayload payload, IPayloadContext context) {

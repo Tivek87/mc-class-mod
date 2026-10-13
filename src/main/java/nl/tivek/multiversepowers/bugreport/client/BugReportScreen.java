@@ -3,6 +3,7 @@ package nl.tivek.multiversepowers.bugreport.client;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
@@ -22,6 +23,7 @@ import nl.tivek.multiversepowers.bugreport.client.form.FormView;
 import nl.tivek.multiversepowers.bugreport.client.form.Values;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
 import nl.tivek.multiversepowers.engine.client.gui.ScreenAnchors;
+import nl.tivek.multiversepowers.faction.client.pick.MobPickerScreen;
 import nl.tivek.multiversepowers.update.client.ManagerScreen;
 import nl.tivek.multiversepowers.update.client.UpdateChecker;
 import org.lwjgl.glfw.GLFW;
@@ -45,7 +47,9 @@ public final class BugReportScreen extends ManagerScreen {
     @Nullable
     private Button clear;
     @Nullable
-    private Button fold;
+    private Button closeAll;
+    @Nullable
+    private Button openAll;
     @Nullable
     private FormView view;
     @Nullable
@@ -65,12 +69,6 @@ public final class BugReportScreen extends ManagerScreen {
         this.shown = ReportStore.result(kind);
     }
 
-    // Whether the idea part (or else the bug part) is open now: where the tour's steps on them wait.
-    public static boolean showing(boolean idea) {
-        return Minecraft.getInstance().screen instanceof BugReportScreen screen
-                && screen.kind == (idea ? BugReporter.Kind.IDEA : BugReporter.Kind.BUG);
-    }
-
     @Override
     protected List<Tab> tabs() {
         return this.feedbackTabs(this.kind == BugReporter.Kind.BUG ? BUG : IDEA);
@@ -82,6 +80,12 @@ public final class BugReportScreen extends ManagerScreen {
 
     public static BugReportScreen idea(@Nullable Screen root) {
         return new BugReportScreen(root, BugReporter.Kind.IDEA);
+    }
+
+    // Whether the idea part (or else the bug part) is open now: where the tour's steps on them wait.
+    public static boolean showing(boolean idea) {
+        return Minecraft.getInstance().screen instanceof BugReportScreen screen
+                && screen.kind == (idea ? BugReporter.Kind.IDEA : BugReporter.Kind.BUG);
     }
 
     public static Screen reports(@Nullable Screen root) {
@@ -116,15 +120,18 @@ public final class BugReportScreen extends ManagerScreen {
             this.send = this.addRenderableWidget(Button.builder(words("send"), button -> this.submit())
                     .tooltip(tip(words("send.tip"))).bounds(x + width - 104, buttonsY, 104, 20).build());
             this.clear = null;
-            this.fold = null;
+            this.closeAll = null;
+            this.openAll = null;
             this.refreshButtons();
             return;
         }
         this.view = new FormView(this.form, this.values, this.font, new Host(), x, this.contentY, width, boxHeight);
         this.clear = this.addRenderableWidget(Button.builder(words("clear"), button -> this.clear())
-                .tooltip(tip(words("clear.tip"))).bounds(x, buttonsY, 64, 20).build());
-        this.fold = this.addRenderableWidget(Button.builder(words("fold_all"), button -> this.foldAll())
-                .tooltip(tip(words("fold_all.tip"))).bounds(x + 68, buttonsY, 72, 20).build());
+                .tooltip(tip(words("clear.tip"))).bounds(x, buttonsY, 60, 20).build());
+        this.closeAll = this.addRenderableWidget(Button.builder(words("close_all"), button -> this.foldAll(true))
+                .tooltip(tip(words("close_all.tip"))).bounds(x + 64, buttonsY, 60, 20).build());
+        this.openAll = this.addRenderableWidget(Button.builder(words("open_all"), button -> this.foldAll(false))
+                .tooltip(tip(words("open_all.tip"))).bounds(x + 128, buttonsY, 60, 20).build());
         this.send = this.addRenderableWidget(Button.builder(words("check"), button -> this.preview(true))
                 .bounds(x + width - 104, buttonsY, 104, 20).build());
         this.refreshButtons();
@@ -155,6 +162,12 @@ public final class BugReportScreen extends ManagerScreen {
         @Override
         public void changed() {
             BugReportScreen.this.changed();
+        }
+
+        @Override
+        public void pickMobs(Field field, List<String> picked, Consumer<List<String>> done) {
+            BugReportScreen.this.minecraft.setScreen(new MobPickerScreen(BugReportScreen.this, field.label(), picked,
+                    ACCENT, done));
         }
     }
 
@@ -190,9 +203,9 @@ public final class BugReportScreen extends ManagerScreen {
         }
     }
 
-    private void foldAll() {
+    private void foldAll(boolean folded) {
         if (this.view != null) {
-            this.view.foldAll(this.view.allOpen());
+            this.view.foldAll(folded);
         }
     }
 
@@ -250,8 +263,9 @@ public final class BugReportScreen extends ManagerScreen {
             this.clear.active = this.values.entrySet().stream().anyMatch(entry -> this.form.owns(entry.getKey())
                     && !entry.getKey().equals(FeedbackForms.CATEGORY) && !entry.getValue().isBlank());
         }
-        if (this.fold != null && this.view != null) {
-            this.fold.setMessage(words(this.view.allOpen() ? "fold_all" : "open_all"));
+        if (this.closeAll != null && this.openAll != null && this.view != null) {
+            this.closeAll.active = !this.view.allFolded();
+            this.openAll.active = !this.view.allOpen();
         }
     }
 

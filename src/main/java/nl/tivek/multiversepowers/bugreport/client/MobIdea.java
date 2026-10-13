@@ -8,6 +8,7 @@ import static nl.tivek.multiversepowers.bugreport.client.form.Field.number;
 import static nl.tivek.multiversepowers.bugreport.client.form.Field.text;
 import static nl.tivek.multiversepowers.bugreport.client.form.Field.yesNo;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import nl.tivek.multiversepowers.bugreport.client.form.Field.Unit;
@@ -18,6 +19,16 @@ import nl.tivek.multiversepowers.bugreport.client.form.Values;
 // The idea form for a new mob: what it is, how it fights, how tough it is, where it spawns, what it drops, its tier
 // with that many abilities, and for a boss its fight.
 final class MobIdea {
+    // The faction it belongs to: none, one every world starts with, or a new one. Above the form, which reads it.
+    private static final String[] FACTIONS;
+
+    static {
+        List<String> factions = new ArrayList<>(List.of("none"));
+        factions.addAll(List.of(FactionIdea.FACTIONS));
+        factions.add("new");
+        FACTIONS = factions.toArray(String[]::new);
+    }
+
     // How many abilities each tier has, fewest and most.
     private static final Map<String, int[]> ABILITIES = Map.of("entity", new int[] {2, 7}, "elite", new int[] {5, 9},
             "mini_boss", new int[] {8, 14}, "boss", new int[] {10, 20}, "world_boss", new int[] {14, 28});
@@ -32,7 +43,10 @@ final class MobIdea {
             Section.of("mob.nature",
                     choice("mob.tier", "entity", "elite", "mini_boss", "boss", "world_boss").fallback("entity")
                             .required(),
-                    choice("mob.attitude", "hostile", "neutral", "friendly").required(),
+                    choice("mob.attitude", "hostile", "neutral", "friendly").required()
+                            .colors(0xFF6B6B, 0xFFA040, 0x6EE7A0),
+                    choice("mob.faction", FACTIONS).fallback("none"),
+                    text("mob.faction_new", 40).required().when(v -> v.is("mob.faction", "new")),
                     choice("mob.kind", "undead", "humanoid", "animal", "monster", "arthropod", "aquatic", "magical",
                             "construct", "elemental", "nether", "ender", "plant", "other").required(),
                     multi("mob.movement", "ground", "swims", "flies", "climbs", "burrows").fallback("ground")

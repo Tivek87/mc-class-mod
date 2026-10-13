@@ -9,15 +9,16 @@ import nl.tivek.multiversepowers.bugreport.client.form.Field;
 import nl.tivek.multiversepowers.bugreport.client.form.Form;
 import nl.tivek.multiversepowers.bugreport.client.form.Section;
 
-// The forms of the feedback page: the bug report, and an idea's, which depends on its category (only New mob and No
-// category have a form yet; the others are shut until theirs is built). Each form's words are in en_us.json under
-// `screen.welcomescreen.bugreport.field.` and `.section.`.
+// The forms of the feedback page: the bug report, and an idea's, which depends on its category (only New mob, New
+// faction and No category have a form yet; the others are shut until theirs is built). Each form's words are in
+// en_us.json under `screen.welcomescreen.bugreport.field.` and `.section.`.
 final class FeedbackForms {
     static final String CATEGORY = "idea.category";
     static final String MOB = "mob";
+    static final String FACTION = "faction";
     static final String GLOBAL = "global";
-    private static final String[] CATEGORIES = {MOB, "magic", "character", "ability", "biome", "dimension", "item",
-        "block", "structure", "event", GLOBAL};
+    private static final String[] CATEGORIES = {MOB, FACTION, "magic", "character", "ability", "biome", "dimension",
+        "item", "block", "structure", "event", GLOBAL};
 
     // Only the category to pick, while none is picked.
     static final Form PICK = new Form("idea.pick", "idea.name", "idea.priority", List.of(category()));
@@ -64,7 +65,7 @@ final class FeedbackForms {
     }
 
     static Field priority(String id) {
-        return choice(id, "low", "medium", "high").fallback("medium")
+        return choice(id, "low", "medium", "high").fallback("medium").required()
                 .colors(BugReporter.Priority.LOW.color, BugReporter.Priority.MEDIUM.color,
                         BugReporter.Priority.HIGH.color);
     }
@@ -72,6 +73,7 @@ final class FeedbackForms {
     static Form idea(String category) {
         return switch (category) {
             case MOB -> MobIdea.FORM;
+            case FACTION -> FactionIdea.FORM;
             case GLOBAL -> GLOBAL_FORM;
             default -> PICK;
         };

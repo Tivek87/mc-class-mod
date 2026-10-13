@@ -2,14 +2,17 @@ package nl.tivek.multiversepowers.faction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
@@ -20,21 +23,32 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.faction.mob.MobDefaults;
+import nl.tivek.multiversepowers.faction.net.FactionStatePayload;
+import nl.tivek.multiversepowers.faction.net.StandingsPayload;
+import nl.tivek.multiversepowers.faction.rules.Faction;
+import nl.tivek.multiversepowers.faction.rules.FactionRules;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class Factions {
     private static final long INVITE_TICKS = 6000L;
     private static final long RESEND_TICKS = 1200L;
+    private static final long HUNT_EVERY = 20L;
     private static final Map<String, Map<UUID, Grudge>> GRUDGES = new HashMap<>();
     private static final Map<UUID, Invite> INVITES = new HashMap<>();
 
+    // The factions with someone to attack on sight now: another faction, or a player they are hostile to.
+    private static final Set<String> HUNTING = new HashSet<>();
+    private static long huntingAt = -1L;
+
     private static final Standings.View VIEW = new Standings.View() {
         @Override
-        public Standings.Relation relation(Player viewer, String team, String other) {
-            MinecraftServer server = viewer.getServer();
-            return server == null ? Standings.Relation.NONE : FactionData.get(server).relation(team, other);
+        @Nullable
+        public Standing stand(Mob mob, Player viewer) {
+            return FactionStands.of(mob, viewer, Reputation.SOURCE);
         }
 
         @Override
@@ -77,6 +91,47 @@ public final class Factions {
         return standing(viewer, entity) == Standing.HOSTILE;
     }
 
+    // The faction a player is in: the one named as their team, if the world has it.
+    @Nullable
+    public static Faction of(Player player) {
+        PlayerTeam team = player.getTeam();
+        return team == null ? null : FactionRules.get(team.getName());
+    }
+
+    // Whether `mob` attacks `player` on sight: by its faction or the Mobs page, else by the game's own.
+    public static boolean hostileTo(Mob mob, ServerPlayer player) {
+        Standing stand = FactionStands.of(mob, player, Reputation.SOURCE);
+        return (stand != null ? stand : MobDefaults.of(player.serverLevel(), mob.getType(), EntityType.PLAYER))
+                == Standing.HOSTILE;
+    }
+
+    // Whether `mob`'s faction or its own behaviour gives it someone to attack on sight.
+    public static boolean hunts(Mob mob) {
+        if (MobFactions.stance(mob) == Standing.HOSTILE) {
+            return true;
+        }
+        Faction faction = MobFactions.of(mob);
+        MinecraftServer server = mob.getServer();
+        if (faction == null || server == null) {
+            return false;
+        }
+        long now = now(server);
+        if (huntingAt < 0L || now - huntingAt >= HUNT_EVERY || now < huntingAt) {
+            huntingAt = now;
+            HUNTING.clear();
+            for (Faction each : FactionRules.all()) {
+                boolean hunts = FactionRules.table().hunts(each.id());
+                for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+                    hunts |= Reputation.toward(each, player) == Standing.HOSTILE;
+                }
+                if (hunts) {
+                    HUNTING.add(each.id());
+                }
+            }
+        }
+        return HUNTING.contains(faction.id());
+    }
+
     // Anyone may be hit, whatever their standing, but never by yourself and never a player of your own team.
     public static boolean mayHit(ServerPlayer attacker, Entity target) {
         return target != attacker && !sameTeam(attacker, target);
@@ -87,7 +142,7 @@ public final class Factions {
         return team != null && other instanceof Player them && them.getTeam() == team;
     }
 
-    static String key(Player player) {
+    public static String key(Player player) {
         PlayerTeam team = player.getTeam();
         return team != null ? team.getName() : "@" + player.getUUID();
     }
@@ -188,11 +243,11 @@ public final class Factions {
         }
     }
 
-    static void invite(ServerPlayer player, String team) {
+    public static void invite(ServerPlayer player, String team) {
         INVITES.put(player.getUUID(), new Invite(team, now(player.server) + INVITE_TICKS));
     }
 
-    static boolean invited(ServerPlayer player, String team) {
+    public static boolean invited(ServerPlayer player, String team) {
         Invite invite = INVITES.get(player.getUUID());
         if (invite == null || !invite.team().equals(team) || invite.until() < now(player.server)) {
             return false;
@@ -201,9 +256,43 @@ public final class Factions {
         return true;
     }
 
-    static void forget(String team) {
+    public static void forget(MinecraftServer server, String team) {
         GRUDGES.remove(team);
         INVITES.values().removeIf(invite -> invite.team().equals(team));
+        FactionData.get(server).forget(team);
+    }
+
+    // The game's own standings read before anyone plays, and the teams, allies and enemies of a world from before
+    // factions had a settings file moved into it, once.
+    @SubscribeEvent
+    public static void onServerStarted(ServerStartedEvent event) {
+        MinecraftServer server = event.getServer();
+        MobDefaults.table(server.overworld());
+        FactionData data = FactionData.get(server);
+        if (FactionRules.SPEC.isLoaded() && !data.adopted()) {
+            for (PlayerTeam team : server.getScoreboard().getPlayerTeams()) {
+                FactionEdits.adopt(team.getName());
+            }
+            for (String pair : data.allies()) {
+                FactionEdits.adopt(pair, Standing.FRIENDLY);
+            }
+            for (String pair : data.enemies()) {
+                FactionEdits.adopt(pair, Standing.HOSTILE);
+            }
+            data.adopt();
+            FactionEdits.store();
+        }
+    }
+
+    // The factions or someone's place among them changed: who hunts whom is worked out again, and everyone told.
+    public static void changed(MinecraftServer server) {
+        huntingAt = -1L;
+        sync(server);
+    }
+
+    static void told(ServerPlayer player) {
+        huntingAt = -1L;
+        sync(player);
     }
 
     public static void sync(MinecraftServer server) {
@@ -214,6 +303,10 @@ public final class Factions {
 
     static void sync(ServerPlayer player) {
         FactionData data = FactionData.get(player.server);
+        Map<String, Integer> pins = new HashMap<>();
+        data.pins(player.getUUID()).forEach((faction, standing) -> pins.put(faction, standing.ordinal()));
+        PacketDistributor.sendToPlayer(player, new FactionStatePayload(new HashMap<>(data.earned(player.getUUID())),
+                pins, FactionEdits.steps()));
         long now = now(player.server);
         List<UUID> ids = new ArrayList<>();
         List<Long> until = new ArrayList<>();
@@ -227,12 +320,16 @@ public final class Factions {
                 }
             }
         }
-        PacketDistributor.sendToPlayer(player, new StandingsPayload(List.copyOf(data.allies()),
-                List.copyOf(data.enemies()), ids, until));
+        PacketDistributor.sendToPlayer(player, new StandingsPayload(ids, until));
     }
 
     public static void clear() {
         GRUDGES.clear();
         INVITES.clear();
+        HUNTING.clear();
+        huntingAt = -1L;
+        Reputation.clear();
+        FactionHelp.clear();
+        FactionEdits.forget();
     }
 }

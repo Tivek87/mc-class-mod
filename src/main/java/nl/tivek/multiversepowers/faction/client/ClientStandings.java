@@ -1,9 +1,7 @@
 package nl.tivek.multiversepowers.faction.client;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.client.Minecraft;
@@ -16,22 +14,20 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
+import nl.tivek.multiversepowers.faction.FactionStands;
 import nl.tivek.multiversepowers.faction.Standing;
 import nl.tivek.multiversepowers.faction.Standings;
-import nl.tivek.multiversepowers.faction.StandingsPayload;
+import nl.tivek.multiversepowers.faction.net.StandingsPayload;
 
 @EventBusSubscriber(modid = MultiversePowers.MODID, value = Dist.CLIENT)
 public final class ClientStandings {
-    private static final Set<String> ALLIES = new HashSet<>();
-    private static final Set<String> ENEMIES = new HashSet<>();
     private static final Map<UUID, Long> GRUDGES = new HashMap<>();
 
     private static final Standings.View VIEW = new Standings.View() {
         @Override
-        public Standings.Relation relation(Player viewer, String team, String other) {
-            String pair = Standings.pair(team, other);
-            return ALLIES.contains(pair) ? Standings.Relation.ALLY
-                    : ENEMIES.contains(pair) ? Standings.Relation.ENEMY : Standings.Relation.NONE;
+        @Nullable
+        public Standing stand(Mob mob, Player viewer) {
+            return FactionStands.of(mob, viewer, ClientFactions.SOURCE);
         }
 
         @Override
@@ -56,10 +52,6 @@ public final class ClientStandings {
     }
 
     public static void update(StandingsPayload payload) {
-        ALLIES.clear();
-        ALLIES.addAll(payload.allies());
-        ENEMIES.clear();
-        ENEMIES.addAll(payload.enemies());
         GRUDGES.clear();
         for (int i = 0; i < payload.grudges().size() && i < payload.until().size(); i++) {
             GRUDGES.put(payload.grudges().get(i), payload.until().get(i));
@@ -73,8 +65,6 @@ public final class ClientStandings {
 
     @SubscribeEvent
     public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
-        ALLIES.clear();
-        ENEMIES.clear();
         GRUDGES.clear();
     }
 }

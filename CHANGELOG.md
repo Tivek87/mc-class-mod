@@ -3,6 +3,49 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.11-alpha] - 2026-10-13
+
+### Added
+- **Factions:** every creature belongs to a faction: Villagers, Illagers, Undead, Piglins, Nether Dwellers, Endfolk,
+  Monsters, Wildlife, Farm Animals, Sea Life or The Arcane. A faction has a name, description, lore, colour, a way
+  it starts toward players (friendly, neutral, hostile or as in the game) and a standing toward every other
+  faction. Until someone changes one, every creature acts as it always did.
+- **Reputation:** you have a reputation from -100 to 100 with each faction. Striking or killing members that left
+  you alone lowers it; killing what hunts them or their enemies, trading, breeding and taming raise it; it drifts
+  back a little each day. At a faction's threshold it turns hostile or friendly, between them it is neutral. A line
+  at the left edge shows every change (client setting Reputation notes).
+- **Helping:** a faction's creatures come to the aid of a member under attack, where the faction has that on.
+- **Factions page:** settings window, Factions, open to every player: each faction with how it stands to you and
+  your reputation. A faction opens into Overview, Members, Relations and Reputation. The host makes, changes and
+  deletes factions, sets the world's reputation rules, undoes up to 25 steps or resets them all; anyone joins a
+  faction that is open.
+- **One creature:** look at a creature and open the Factions page to give that one creature a faction or a
+  behaviour of its own (`/faction mob` does the same).
+- **Creature list:** creatures are picked from a list to search, each with its turning model, name, what it is,
+  health, attack and faction.
+- **`/faction` commands:** `list`, `info`, `rep`, `join`, `leave` and `invite` for everyone; `create`, `delete`,
+  `add`, `remove`, `set`, `relation`, `ally`, `enemy`, `neutral`, `member`, `mob`, `stance`, `rep set|add|get`,
+  `rule`, `undo` and `reset` for operators.
+- **New faction idea:** Feedback, Idea, New faction: its name, description, lore, how it starts, reputation, its
+  creatures (picked from the list, or new ones), how it treats each faction, and its home.
+
+### Changed
+- **Feedback forms:** a section folds by itself once it is done and you move on to the next. An optional answer
+  clicked again is taken back. Clicking a field's name puts you in its box, and a number box selects its number,
+  so typing replaces it. Fold all is now two buttons: Close all and Open all.
+- **New mob idea:** Hostile, Neutral and Friendly are red, orange and green, and a new question asks its faction.
+- **Mobs page:** every creature shows its faction.
+- **Friendly creatures:** a creature that is friendly to you no longer harms you at all, not by a blast or a stray
+  arrow either, and a shy one no longer runs from you.
+- **Old factions:** a world's factions from before keep their players, allies and enemies; they now live in the
+  world's `factions.toml` with everything else about them.
+
+### Fixed
+- **Hunting:** a creature kept from attacking you still goes after the others it is set to hunt.
+- **Form scrolling:** the mouse wheel over a text area scrolls the form again once that text cannot scroll further.
+- **Form clicks:** a text area in a folded section no longer takes the clicks where it last stood, which left
+  boxes such as an ability's description dead.
+
 ## [0.9.10-alpha] - 2026-10-13
 
 ### Added

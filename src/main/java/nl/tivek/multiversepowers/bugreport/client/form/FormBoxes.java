@@ -105,7 +105,7 @@ abstract class FormBoxes {
     }
 
     void area(String key, int width, int lines, int max, Component name, @Nullable Component hint) {
-        MultiLineEditBox area = new MultiLineEditBox(this.font, 0, 0, width, areaHeight(lines),
+        MultiLineEditBox area = new FormArea(this.font, width, areaHeight(lines),
                 hint == null ? Component.empty() : hint, name);
         // The box's own limit draws a counter under it, over the next row: the limit is kept here instead.
         area.setValue(cap(this.raw.getOrDefault(key, ""), max));
@@ -126,7 +126,7 @@ abstract class FormBoxes {
     }
 
     void set(String key, String value) {
-        if (this.muted || value.equals(this.raw.getOrDefault(key, ""))) {
+        if (this.muted || this.raw.containsKey(key) && value.equals(this.raw.get(key))) {
             return;
         }
         this.raw.put(key, value);
@@ -142,8 +142,7 @@ abstract class FormBoxes {
             }
             picked.sort((a, b) -> field.options().indexOf(a) - field.options().indexOf(b));
             this.set(field.id(), String.join(",", picked));
-        } else if (option.equals(this.values.get(field.id())) && !field.required(this.values)
-                && field.fallback.isEmpty()) {
+        } else if (option.equals(this.values.get(field.id())) && !field.required(this.values)) {
             this.set(field.id(), "");
         } else {
             this.set(field.id(), option);

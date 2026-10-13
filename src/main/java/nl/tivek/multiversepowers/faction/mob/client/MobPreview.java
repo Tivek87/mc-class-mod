@@ -177,7 +177,7 @@ public final class MobPreview {
     private long nextAct;
 
     @Nullable
-    LivingEntity of(EntityType<?> type) {
+    public LivingEntity of(EntityType<?> type) {
         if (this.broken.contains(type)) {
             return null;
         }
@@ -199,21 +199,21 @@ public final class MobPreview {
         return null;
     }
 
-    void hold(boolean held) {
+    public void hold(boolean held) {
         this.held = held;
     }
 
-    boolean held() {
+    public boolean held() {
         return this.held;
     }
 
     // Its near side follows the mouse, as a thing turned by hand does.
-    void drag(double dragX) {
+    public void drag(double dragX) {
         this.yaw -= (float) dragX * 2.5F;
     }
 
     // Draws `type` standing in the box, as large as fits; whether it could.
-    boolean draw(GuiGraphics graphics, EntityType<?> type, int x, int y, int width, int height) {
+    public boolean draw(GuiGraphics graphics, EntityType<?> type, int x, int y, int width, int height) {
         LivingEntity living = this.of(type);
         if (living == null) {
             return false;
@@ -309,7 +309,7 @@ public final class MobPreview {
         this.lastAct = null;
     }
 
-    void forget() {
+    public void forget() {
         this.stop();
         this.actor = null;
         this.acting = null;

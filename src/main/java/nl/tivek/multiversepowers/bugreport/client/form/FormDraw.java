@@ -74,7 +74,7 @@ final class FormDraw {
         graphics.fill(x + 1, y, x + width - 1, y + CHIP, 0xFF000000);
         graphics.fill(x + 1, y + 1, x + width - 1, y + CHIP - 1, fill);
         graphics.fill(x + 1, y + 1, x + width - 1, y + 2, state == 2 ? 0x60FFFFFF : 0x18FFFFFF);
-        int textColor = state == 2 ? 0xFF101010 : dim ? 0xFF6A6A6A : 0xFFD2D2D2;
+        int textColor = state == 2 ? 0xFF101010 : dim ? 0xFF6A6A6A : color != 0 ? 0xFF000000 | color : 0xFFD2D2D2;
         int left = x + 6;
         if (lock) {
             lock(graphics, left, y + 4, 0xFF8A8A8A);
@@ -154,6 +154,13 @@ final class FormDraw {
             }
             case MULTI -> parts.add(Form.words("form.multi").withColor(0x8E8E8E));
             case LIST -> parts.add(Form.words("form.list", field.nameMax(), field.max()).withColor(0x8E8E8E));
+            case MOBS -> {
+                parts.add(Form.words("form.mobs").withColor(0x8E8E8E));
+                String shown = field.display(values);
+                if (!shown.isEmpty()) {
+                    parts.add(Component.literal(shown).withColor(0xC8C8C8));
+                }
+            }
             default -> {
             }
         }

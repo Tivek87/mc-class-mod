@@ -184,9 +184,9 @@ powers go after by themselves; what they hit is anything in the way.
 
 | Colour | What | Examples |
 |---|---|---|
-| **Red** (hostile) | Monsters, creatures attacking you, players of an enemy faction, and anything your faction has turned hostile (see below) | zombies, an angry wolf, an enemy player |
+| **Red** (hostile) | Monsters, creatures attacking you, creatures and players of a faction hostile to you, and anything your faction has turned hostile (see below) | zombies, an angry wolf, an enemy player |
 | **Yellow** (neutral) | Everything else | animals, villagers, golems, players of other factions |
-| **Green** (friendly) | Your faction, allied factions, and your and their pets | your teammate, your tamed wolf |
+| **Green** (friendly) | Your faction, allied factions, creatures of a faction friendly to you, and your and their pets | your teammate, your tamed wolf |
 
 - What picks its own target (the Giant Hands, the Air Strike's marks, the Emerald Express, the mech, the Void
   Walk's marks) only goes after **red**.
@@ -198,18 +198,97 @@ powers go after by themselves; what they hit is anything in the way.
 - Players only hurt each other where the world allows it (PvP).
 - **Hold G** (the power wheel) to see your faction in its top-left corner ("none" when you are in none).
 
-**The command `/faction`** (a faction is the same as a vanilla scoreboard team, so vanilla `/team` works on them too):
+### Creatures have factions too
+
+Every creature belongs to a faction, and a player can join one. A world starts with eleven:
+
+| Faction | Who is in it |
+|---|---|
+| **Villagers** | villagers, wandering traders and their llamas, iron and snow golems |
+| **Illagers** | pillagers, vindicators, evokers, illusioners, ravagers, vexes |
+| **Undead** | zombies, skeletons, phantoms, the Wither, and this mod's zombies |
+| **Piglins** | piglins, piglin brutes, zombified piglins |
+| **Nether Dwellers** | blazes, ghasts, magma cubes, hoglins, zoglins, striders |
+| **Endfolk** | endermen, endermites, shulkers, the Ender Dragon |
+| **Monsters** | creepers, spiders, slimes, witches, the Warden, guardians, the Stalker |
+| **Wildlife** | wolves, foxes, bears, bees, and this mod's wild animals |
+| **Farm Animals** | cows, pigs, sheep, chickens, horses, cats |
+| **Sea Life** | fish, squid, dolphins, turtles, axolotls, crabs |
+| **The Arcane** | the Wizard |
+
+Any other creature, from another mod too, joins Monsters, Wildlife or Sea Life by what it is.
+
+- A faction has a **name, description, lore and colour**, a way it **starts toward players** (friendly, neutral,
+  hostile, or "as in the game") and a **standing toward every other faction**. Friendly never attacks, neutral only
+  hits back, hostile attacks on sight.
+- **Nothing changes by itself:** every starting faction is "as in the game", so creatures act as they always did
+  until your reputation or the host changes it.
+- **Members help each other** (Villagers, Illagers, Piglins, and any faction the host turns it on for): hit one and
+  those nearby that can fight come for you.
+- **One creature can differ:** the host can give a single creature a faction or a behaviour of its own.
+- A creature that is **friendly** to you never harms you, not by a blast or a stray arrow either, and a shy one
+  (a deer, a squirrel) no longer runs from you.
+
+### Reputation
+
+You have a reputation with each faction, from **-100 to 100**. You start in the middle (or deep in the zone of a
+faction that starts hostile or friendly).
+
+| Deed | Reputation |
+|---|---|
+| Striking a member that had not attacked you | -1 |
+| Killing a member that had not attacked you | -4 |
+| The same, for factions friendly to the one you wronged | half of it |
+| Killing something that hunts a faction's members (a zombie, for the Villagers), or a member of a faction it is hostile to | +2 |
+| A trade, or breeding its animals | +1 |
+| Taming one of its animals | +2 |
+| Each day | 2 back toward where you started |
+
+- At **-30 or lower** a faction turns **hostile** to you; at **30 or higher** it turns **friendly**; between them it
+  is **neutral** (or as in the game). Each faction can have its own thresholds.
+- A line at the left edge of the screen shows every change, and a chime says when a faction turns.
+- A faction that turns hostile to one of its own members casts them out.
+- Fighting back costs nothing: only creatures that had left you alone count. Creative and spectator players earn
+  and lose nothing. Farm Animals and Sea Life keep no score.
+- The host can change every number, or switch reputation off.
+
+### The Factions page
+
+**Settings window, Factions**, open to every player in a world.
+
+- The list shows each faction with how many kinds of creature and players it has, how it stands to you and your
+  reputation on a bar. Search by a faction's or a creature's name.
+- Click a faction for its **Overview** (name, description, lore, colour, how it starts, whether members help each
+  other, whether anyone may join), **Members** (its creatures, each with a turning model), **Relations** (toward
+  itself and every other faction) and **Reputation** (yours, and where it turns hostile or friendly).
+- **Join** a faction that anyone may join, or **Leave** yours, with one button.
+- The host (and operators, where the world lets them) can make a **New faction**, change everything, pick creatures
+  from a searchable list that shows each one's model, what it is, its health and attack, **Undo** the last 25
+  changes, **Reset all**, and set the world's reputation rules under the list.
+- **The creature in front of you:** look at a creature and open the page: its card on top lets the host put that
+  one creature in another faction, or make it friendly, neutral or hostile toward players on its own.
+
+**The command `/faction`** (a faction's players are a vanilla scoreboard team of the same name, so vanilla `/team`
+works on them too):
 
 | Command | Who | What |
 |---|---|---|
-| `/faction create <name>` | operators | Makes a faction (its members cannot hurt each other). |
-| `/faction delete <faction>` | operators | Removes a faction. |
-| `/faction add <faction> <players>` | operators | Puts players in a faction. |
-| `/faction remove <players>` | operators | Takes players out of their faction. |
-| `/faction enemy <faction> <faction>` | operators | The two factions are red to each other. |
-| `/faction ally <faction> <faction>` | operators | The two factions are green to each other. |
-| `/faction neutral <faction> <faction>` | operators | Back to yellow. |
+| `/faction` or `/faction list` | anyone | Every faction, how it stands to you and your reputation. Click a name for more. |
+| `/faction info <faction>` | anyone | Its description, creatures, players and relations. |
+| `/faction rep` | anyone | Your reputation with every faction. |
 | `/faction invite <player>` | members | Invites a player into your faction (for 5 minutes). |
-| `/faction join <faction>` | invited players | Joins the faction you were invited to (operators can join any). |
+| `/faction join <faction>` | anyone | Joins a faction that is open, or the one you were invited to. |
 | `/faction leave` | anyone | Leaves your faction. |
-| `/faction list` | anyone | Shows every faction with its members, allies and enemies. |
+| `/faction create <id> [name]` | operators | Makes a faction (its members never fight each other). |
+| `/faction delete <faction>` | operators | Removes a faction. |
+| `/faction add <faction> <players>` / `remove <players>` | operators | Puts players in a faction, or takes them out. |
+| `/faction set <faction> <what> <value>` | operators | Its name, description, lore, color, attitude, reputation, hostileAt, friendlyAt, help or open. |
+| `/faction relation <faction> <other> <friendly\|neutral\|hostile\|game>` | operators | How one faction stands toward another (or toward itself). |
+| `/faction ally` / `enemy` / `neutral <faction> <faction>` | operators | The same, both ways at once. |
+| `/faction member add <faction> <creature>` / `remove <creature>` / `list <faction>` | operators | Which kinds of creature are in a faction. |
+| `/faction mob <creatures> faction <faction\|none\|kind>` | operators | One creature's own faction. |
+| `/faction mob <creatures> stance <friendly\|neutral\|hostile\|faction>` | operators | One creature's own behaviour toward players. |
+| `/faction stance <players> <faction> <friendly\|neutral\|hostile\|clear>` | operators | Pins how a faction stands to a player, whatever their reputation. |
+| `/faction rep set` / `add <players> <faction> <number>`, `rep get <player>` | operators | A player's reputation. |
+| `/faction rule [<rule> <number>]` | operators | The world's reputation rules. |
+| `/faction undo`, `/faction reset confirm` | operators | Takes back the last change, or puts every faction back as a new world has it. |

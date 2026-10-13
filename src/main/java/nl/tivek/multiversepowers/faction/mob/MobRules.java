@@ -94,6 +94,18 @@ public final class MobRules {
         return own != null ? own : wide(now, actor, target);
     }
 
+    // What the pair's own line sets, or null.
+    @Nullable
+    public static Standing line(EntityType<?> actor, EntityType<?> target) {
+        Map<EntityType<?>, Standing> row = rules().pairs().get(actor);
+        return row == null ? null : row.get(target);
+    }
+
+    @Nullable
+    public static Standing wider(EntityType<?> actor, EntityType<?> target) {
+        return wide(rules(), actor, target);
+    }
+
     // What `actor`'s * or *>* sets toward `target`, past a line of the pair's own.
     @Nullable
     private static Standing wide(Rules now, EntityType<?> actor, EntityType<?> target) {

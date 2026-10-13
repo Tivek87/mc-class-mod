@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.faction.mob;
 
+import javax.annotation.Nullable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
@@ -18,16 +19,22 @@ import net.minecraft.world.entity.MobSpawnType;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.living.FinalizeSpawnEvent;
 import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.greenlantern.summon.Summons;
+import nl.tivek.multiversepowers.faction.FactionHelp;
+import nl.tivek.multiversepowers.faction.FactionStands;
+import nl.tivek.multiversepowers.faction.Factions;
+import nl.tivek.multiversepowers.faction.Reputation;
 import nl.tivek.multiversepowers.faction.Standing;
 
-// Holds creatures to `MobRules`: one set friendly never takes the target, not even struck by it by accident (its
-// anger and the grudge in its memory are let go too), one set neutral only when it was hit by it, and one set hostile
-// hunts it (every creature carries a goal for that, idle until the world sets a hunt for its kind,
-// and one that can strike but has no attack of its own a melee attack beside it). A target no longer allowed, the
-// world's settings changed meanwhile, is let go.
+// Holds creatures to how they stand (`FactionStands`: their faction, a player's reputation with it, the Mobs page):
+// one that is friendly never takes the target, not even struck by it by accident (its anger and the grudge in its
+// memory are let go too) and does it no harm, one that is neutral only when it was hit by it, and one that is hostile
+// hunts it (every creature carries a goal for that, idle until something sets a hunt for its kind or faction, and one
+// that can strike but has no attack of its own a melee attack beside it). A target no longer allowed, the world's
+// settings or a reputation changed meanwhile, is let go. One helping a friend (`FactionHelp`) keeps its target.
 @EventBusSubscriber(modid = MultiversePowers.MODID)
 public final class MobTargets {
     private MobTargets() {
@@ -78,6 +85,11 @@ public final class MobTargets {
             calm(mob, angry);
         }
         LivingEntity target = mob.getTarget();
+        if (target != null && FactionHelp.done(mob, target)) {
+            mob.setTarget(null);
+            mob.getBrain().eraseMemory(MemoryModuleType.ATTACK_TARGET);
+            return;
+        }
         if (target != null && forbidden(mob, target)) {
             if (friendly(mob, target)) {
                 calm(mob, target);
@@ -87,8 +99,24 @@ public final class MobTargets {
         }
     }
 
+    // How `actor` stands to `target` where the world says, else null.
+    @Nullable
+    private static Standing stand(LivingEntity actor, LivingEntity target) {
+        return actor instanceof Mob mob ? FactionStands.of(mob, target, Reputation.SOURCE)
+                : MobRules.set(actor.getType(), target.getType());
+    }
+
     private static boolean friendly(Mob mob, LivingEntity target) {
-        return !Summons.owned(mob) && MobRules.set(mob.getType(), target.getType()) == Standing.FRIENDLY;
+        return !Summons.owned(mob) && stand(mob, target) == Standing.FRIENDLY;
+    }
+
+    // A friend does no harm: not by a blast, a touch or an arrow gone astray either.
+    @SubscribeEvent
+    public static void onIncomingDamage(LivingIncomingDamageEvent event) {
+        if (event.getSource().getEntity() instanceof Mob mob && mob != event.getEntity()
+                && !mob.level().isClientSide() && friendly(mob, event.getEntity())) {
+            event.setCanceled(true);
+        }
     }
 
     // A friend that struck it by accident: no anger, no grudge, nothing that would call it back to the fight.
@@ -106,14 +134,16 @@ public final class MobTargets {
         }
     }
 
-    // A Green Lantern summon goes by its owner's fight, never by these rules.
-    private static boolean forbidden(LivingEntity actor, LivingEntity target) {
+    // A Green Lantern summon goes by its owner's fight, never by these rules. Asked too as a creature looks for
+    // someone to attack or to run from (`mixin/TargetingConditionsMixin`).
+    public static boolean forbidden(LivingEntity actor, LivingEntity target) {
         if (Summons.owned(actor)) {
             return false;
         }
-        Standing set = MobRules.set(actor.getType(), target.getType());
+        Standing set = stand(actor, target);
         return set == Standing.FRIENDLY || set == Standing.NEUTRAL && actor.getLastHurtByMob() != target
-                && target.getLastHurtMob() != actor && !(target instanceof Mob mob && mob.getTarget() == actor);
+                && target.getLastHurtMob() != actor && !(target instanceof Mob mob && mob.getTarget() == actor)
+                && !FactionHelp.helping(actor, target);
     }
 
     @SubscribeEvent
@@ -135,7 +165,12 @@ public final class MobTargets {
     }
 
     private static boolean hostile(Mob mob, LivingEntity target) {
-        return MobRules.set(mob.getType(), target.getType()) == Standing.HOSTILE;
+        return stand(mob, target) == Standing.HOSTILE;
+    }
+
+    // Whether `mob` may strike `target`: set to hunt it, or after it to help a friend.
+    private static boolean after(Mob mob, LivingEntity target) {
+        return hostile(mob, target) || FactionHelp.helping(mob, target);
     }
 
     private static final class Hunt extends NearestAttackableTargetGoal<LivingEntity> {
@@ -145,7 +180,7 @@ public final class MobTargets {
 
         @Override
         public boolean canUse() {
-            return MobRules.hunts(this.mob.getType()) && super.canUse();
+            return (MobRules.hunts(this.mob.getType()) || Factions.hunts(this.mob)) && super.canUse();
         }
 
         @Override
@@ -173,13 +208,13 @@ public final class MobTargets {
         @Override
         public boolean canUse() {
             LivingEntity target = this.mob.getTarget();
-            return target != null && hostile(this.mob, target) && super.canUse();
+            return target != null && after(this.mob, target) && super.canUse();
         }
 
         @Override
         public boolean canContinueToUse() {
             LivingEntity target = this.mob.getTarget();
-            return target != null && hostile(this.mob, target) && super.canContinueToUse();
+            return target != null && after(this.mob, target) && super.canContinueToUse();
         }
     }
 }

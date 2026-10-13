@@ -116,6 +116,13 @@ public final class Form {
                                     rows));
                         }
                     }
+                    // Too many names for a table's cell.
+                    case MOBS -> {
+                        String shown = field.display(values);
+                        if (!shown.isEmpty()) {
+                            texts.add(Block.text(label, shown));
+                        }
+                    }
                     default -> {
                         String shown = field.display(values);
                         if (!shown.isEmpty()) {

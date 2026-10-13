@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 import javax.annotation.Nullable;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -41,6 +42,10 @@ public final class FormView extends FormBoxes {
         void tooltip(List<FormattedCharSequence> lines);
 
         void changed();
+
+        // Opens a list of the game's creatures with `picked` ticked; `done` gets the ids ticked at the end.
+        default void pickMobs(Field field, List<String> picked, Consumer<List<String>> done) {
+        }
     }
 
     private enum Kind { LEGEND, HEADER, FIELD, ENTRY }
@@ -58,6 +63,9 @@ public final class FormView extends FormBoxes {
     private double scroll;
     @Nullable
     private GuiEventListener followed;
+    // The section worked in last: once left done, it folds.
+    @Nullable
+    private Section here;
     @Nullable
     private List<FormattedCharSequence> tip;
 
@@ -88,7 +96,11 @@ public final class FormView extends FormBoxes {
     }
 
     public boolean allOpen() {
-        return this.form.sections().stream().noneMatch(this::folded);
+        return this.form.sections().stream().filter(section -> section.shown(this.values)).noneMatch(this::folded);
+    }
+
+    public boolean allFolded() {
+        return this.form.sections().stream().filter(section -> section.shown(this.values)).allMatch(this::folded);
     }
 
     public void foldAll(boolean folded) {
@@ -212,14 +224,62 @@ public final class FormView extends FormBoxes {
         this.followed = focused;
         for (Map.Entry<String, EditBox> entry : this.boxes.entrySet()) {
             if (entry.getValue() == focused) {
+                this.enter(this.sectionOf(entry.getKey()));
                 this.show(entry.getKey(), ROW);
+                Field field = this.form.field(entry.getKey());
+                if (field != null && field.type() == Field.Type.NUMBER) {
+                    entry.getValue().moveCursorToEnd(false);
+                    entry.getValue().setHighlightPos(0);
+                }
             }
         }
         for (Map.Entry<String, MultiLineEditBox> entry : this.areas.entrySet()) {
             if (entry.getValue() == focused) {
+                this.enter(this.sectionOf(entry.getKey()));
                 this.show(entry.getKey(), entry.getValue().getHeight() + 12);
             }
         }
+    }
+
+    @Nullable
+    private Section sectionOf(String key) {
+        for (Section section : this.form.sections()) {
+            for (Field field : section.fields()) {
+                if (key.equals(field.id()) || field.type() == Field.Type.LIST && key.startsWith(field.id() + ".")) {
+                    return section;
+                }
+            }
+        }
+        return null;
+    }
+
+    // Work moves to `section`: the one left folds when nothing in it is missing, the one entered staying where it
+    // stands on screen.
+    private void enter(@Nullable Section section) {
+        Section left = this.here;
+        if (section == null || section == left) {
+            return;
+        }
+        this.here = section;
+        if (left == null || this.folded(left) || !left.shown(this.values) || left.missing(this.values) > 0) {
+            return;
+        }
+        int before = this.headerAt(section);
+        fold(this.form, left.id(), true);
+        this.layout();
+        int after = this.headerAt(section);
+        if (before >= 0 && after >= 0) {
+            this.scroll = Math.max(0, Math.min(this.maxScroll(), this.scroll - (before - after)));
+        }
+    }
+
+    private int headerAt(Section section) {
+        for (Item item : this.items) {
+            if (item.kind() == Kind.HEADER && item.section() == section) {
+                return item.y();
+            }
+        }
+        return -1;
     }
 
     private void show(String key, int room) {
@@ -255,7 +315,10 @@ public final class FormView extends FormBoxes {
         }
         int room = right - 5 - statusWidth - 8 - (this.x + 15);
         graphics.drawString(this.font, FormDraw.fit(this.font, title, room), this.x + 15, top + 4, 0xFFFFFFFF, true);
-        this.hits.add(new Hit(this.x, top, right - this.x, HEADER, () -> fold(this.form, section.id(), open)));
+        this.hits.add(new Hit(this.x, top, right - this.x, HEADER, () -> {
+            fold(this.form, section.id(), open);
+            this.enter(section);
+        }));
         if (over) {
             List<Component> parts = new ArrayList<>();
             parts.add(section.tip().copy().withColor(0xC8C8C8));
@@ -290,11 +353,17 @@ public final class FormView extends FormBoxes {
         if (overLabel || overRow && field.type() != Field.Type.CHOICE && field.type() != Field.Type.MULTI) {
             this.tip = FormDraw.tip(this.font, field.label(), FormDraw.parts(field, this.values));
         }
+        AbstractWidget own = area ? this.areas.get(field.id()) : this.boxes.get(field.id());
+        if (own != null) {
+            this.hits.add(new Hit(this.x, labelY - 2, Math.min(labelRoom, this.font.width(label) + 4), 12,
+                    () -> this.host.focus(own)));
+        }
         int cx = this.controlX();
         switch (field.type()) {
             case TEXT -> this.place(this.boxes.get(field.id()), cx, top + 2);
             case NUMBER -> this.number(graphics, field, cx, top + 2, mouseX, mouseY);
             case CHOICE, MULTI -> this.options(graphics, field, cx, top + 2, mouseX, mouseY);
+            case MOBS -> this.mobs(graphics, field, cx, top + 2, mouseX, mouseY);
             case AREA -> {
                 MultiLineEditBox box = this.areas.get(field.id());
                 FormDraw.counter(graphics, this.font, box.getValue().length(), field.max(), this.x + this.width - BAR,
@@ -308,6 +377,22 @@ public final class FormView extends FormBoxes {
                         0xFF8E8E8E, false);
             }
         }
+    }
+
+    // A button that opens the list of creatures, and beside it the names picked so far.
+    private void mobs(GuiGraphics graphics, Field field, int cx, int top, int mouseX, int mouseY) {
+        List<String> picked = new ArrayList<>(List.of(this.values.get(field.id()).split(",")));
+        picked.removeIf(String::isBlank);
+        Component label = Form.words(picked.isEmpty() ? "form.mobs.choose" : "form.mobs.change", picked.size());
+        int width = this.font.width(label) + 12;
+        boolean over = mouseX >= cx && mouseX < cx + width && mouseY >= top && mouseY < top + FormDraw.CHIP;
+        FormDraw.chip(graphics, this.font, label.getVisualOrderText(), cx, top, width, over ? 1 : 0, 0, false, false);
+        graphics.drawString(this.font, FormDraw.fit(this.font, Component.literal(field.display(this.values)),
+                this.controlWidth() - width - 8), cx + width + 6, top + 4, 0xFF8E8E8E, false);
+        this.hits.add(new Hit(cx, top, width, FormDraw.CHIP, () -> {
+            this.enter(this.sectionOf(field.id()));
+            this.host.pickMobs(field, picked, ids -> this.set(field.id(), String.join(",", ids)));
+        }));
     }
 
     private void place(AbstractWidget widget, int x, int y) {
@@ -345,6 +430,7 @@ public final class FormView extends FormBoxes {
             graphics.fill(left + 6, top + 5, left + 8, top + 11, 0xFFE0E0E0);
         }
         this.hits.add(new Hit(left, top, 14, 16, () -> {
+            this.enter(this.sectionOf(field.id()));
             double stepSize = field.hasDecimals() ? 0.5 : 1.0;
             double step = stepSize * (Screen.hasShiftDown() ? 10 : 1);
             double next = Field.parse(this.values.get(field.id()), 0) + sign * step;
@@ -371,7 +457,10 @@ public final class FormView extends FormBoxes {
             FormDraw.chip(graphics, this.font, text, chip[0], chipY, chip[2], state, field.color(option),
                     forced != null || shut, shut);
             if (usable) {
-                this.hits.add(new Hit(chip[0], chipY, chip[2], FormDraw.CHIP, () -> this.pick(field, option)));
+                this.hits.add(new Hit(chip[0], chipY, chip[2], FormDraw.CHIP, () -> {
+                    this.enter(this.sectionOf(field.id()));
+                    this.pick(field, option);
+                }));
             }
             if (over) {
                 List<Component> parts = new ArrayList<>();
@@ -401,6 +490,7 @@ public final class FormView extends FormBoxes {
         this.place(does, this.x + 12, top + ROW);
         FormDraw.counter(graphics, this.font, does.getValue().length(), field.max(), this.x + this.width - BAR,
                 top + ROW + areaHeight(3) + 2);
+        this.hits.add(new Hit(this.x, top, this.labelWidth - 6, ROW, () -> this.host.focus(name)));
         if (mouseX >= this.x && mouseX < this.controlX() && mouseY >= top && mouseY < top + ROW) {
             this.tip = FormDraw.tip(this.font, number, List.of(
                     Form.words("field." + field.id() + ".entry.tip").withColor(0xC8C8C8),
@@ -423,14 +513,15 @@ public final class FormView extends FormBoxes {
         return false;
     }
 
-    // Scrolls the form, unless a text box with the keys lies under the pointer: that one scrolls its own text.
+    // Scrolls the form, unless a text area under the pointer can still scroll its own text that way.
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         if (!this.inside(mouseX, mouseY)) {
             return false;
         }
-        GuiEventListener focused = this.host.focused();
-        if (focused instanceof MultiLineEditBox area && area.visible && area.isMouseOver(mouseX, mouseY)) {
-            return false;
+        for (MultiLineEditBox area : this.areas.values()) {
+            if (area.visible && area.isMouseOver(mouseX, mouseY) && ((FormArea) area).scrolls(scrollY)) {
+                return false;
+            }
         }
         this.scroll = Math.max(0, Math.min(this.maxScroll(), this.scroll - scrollY * SCROLL_STEP));
         return true;

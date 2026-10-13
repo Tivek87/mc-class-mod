@@ -12,6 +12,7 @@ import nl.tivek.multiversepowers.MultiversePowers;
 import nl.tivek.multiversepowers.character.CharacterConfig;
 import nl.tivek.multiversepowers.command.CommandAliases;
 import nl.tivek.multiversepowers.faction.mob.MobRules;
+import nl.tivek.multiversepowers.faction.rules.FactionRules;
 import nl.tivek.multiversepowers.schematic.SchematicRules;
 import nl.tivek.multiversepowers.stamina.StaminaConfig;
 
@@ -29,6 +30,7 @@ public final class ModConfigs {
         world(container, "general", PowerRules.SPEC);
         world(container, "stamina", StaminaConfig.SPEC);
         world(container, "mobs", MobRules.SPEC);
+        world(container, "factions", FactionRules.SPEC);
         world(container, "commands", CommandAliases.SPEC);
         world(container, "schematics", SchematicRules.SPEC);
         CharacterConfig.register(container, modEventBus);

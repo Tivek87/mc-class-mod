@@ -6,7 +6,8 @@
   "mixins": [
     "EntityMixin",
     "MinecraftServerMixin",
-    "ServerGamePacketListenerMixin"
+    "ServerGamePacketListenerMixin",
+    "TargetingConditionsMixin"
   ],
   "client": [
     "client.CameraMixin",

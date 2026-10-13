@@ -9,13 +9,15 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.client.resources.language.I18n;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 
 // One question of a form: its kind, limits, default, and when it shows, must be filled or is locked to an answer by
 // the others. Its words are `field.<id>` in en_us.json (`.tip`, `.hint`, each option's `.o.<option>` and its `.tip`).
 public final class Field {
-    public enum Type { TEXT, AREA, CHOICE, MULTI, NUMBER, LIST }
+    public enum Type { TEXT, AREA, CHOICE, MULTI, NUMBER, LIST, MOBS }
 
     public enum Unit { COUNT, HEALTH, BLOCKS, PER_SECOND }
 
@@ -91,6 +93,11 @@ public final class Field {
         field.nameMax = nameMax;
         field.max = descriptionMax;
         return field;
+    }
+
+    // Kinds of creature picked from the game's own (their ids, comma apart), through `FormView.Host.pickMobs`.
+    public static Field mobs(String id) {
+        return new Field(id, Type.MOBS);
     }
 
     public Field required() {
@@ -211,7 +218,9 @@ public final class Field {
                 double number = parse(raw.isEmpty() ? this.fallback : raw, bounds[0]);
                 yield format(Math.max(bounds[0], Math.min(bounds[1], this.decimals ? number : Math.round(number))));
             }
-            case CHOICE -> this.options.contains(raw) && !this.shut.contains(raw) ? raw : this.fallback;
+            // Taken back by a second click: no answer, not the default.
+            case CHOICE -> !values.has(this.id) ? this.fallback
+                    : this.options.contains(raw) && !this.shut.contains(raw) ? raw : raw.isEmpty() ? "" : this.fallback;
             case MULTI -> {
                 StringBuilder kept = new StringBuilder();
                 for (String option : (values.has(this.id) ? raw : this.fallback).split(",")) {
@@ -270,6 +279,16 @@ public final class Field {
                 yield text.toString();
             }
             case NUMBER -> amount(this.unit, parse(value, 0)).getString();
+            case MOBS -> {
+                StringBuilder text = new StringBuilder();
+                for (String id : value.isBlank() ? new String[0] : value.split(",")) {
+                    ResourceLocation key = ResourceLocation.tryParse(id);
+                    String name = key == null ? id : BuiltInRegistries.ENTITY_TYPE.getOptional(key)
+                            .map(type -> type.getDescription().getString()).orElse(id);
+                    text.append(text.isEmpty() ? "" : ", ").append(name);
+                }
+                yield text.toString();
+            }
             default -> value.strip();
         };
     }

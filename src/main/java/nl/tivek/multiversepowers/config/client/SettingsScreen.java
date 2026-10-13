@@ -99,9 +99,15 @@ public final class SettingsScreen extends NavScreen {
                     null));
             last = page;
         }
-        if (last == null || !last.world()) {
+        // Without the world's own pages (the factions are everyone's) one shut line says whose they are.
+        boolean host = false;
+        for (SettingsPages.Page page : pages) {
+            host |= page.world() && !page.id().equals(SettingsPages.FACTIONS);
+        }
+        if (!host) {
             items.add(new Item("host_only", Component.translatable(PREFIX + "host_only"), PixelIcons.Icon.LOCK, null,
-                    false, last != null, server, 0, Component.translatable(PREFIX + "host_only.desc")));
+                    false, last != null, last != null && last.world() ? null : server, 0,
+                    Component.translatable(PREFIX + "host_only.desc")));
         }
         return items;
     }

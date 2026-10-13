@@ -8,26 +8,23 @@ import net.minecraft.world.entity.OwnableEntity;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.scores.PlayerTeam;
+import nl.tivek.multiversepowers.faction.rules.FactionRules;
 
 public final class Standings {
     public static final int GRUDGE_HITS = 1;
     public static final long GRUDGE_TICKS = 6000L;
 
-    public enum Relation {
-        NONE,
-        ALLY,
-        ENEMY
-    }
-
     public interface View {
-        Relation relation(Player viewer, String team, String other);
-
         boolean grudge(Player viewer, UUID entity);
 
         boolean angry(Mob mob, Player viewer);
 
         @Nullable
         Player player(Player viewer, UUID id);
+
+        // How `mob` stands to the viewer by its faction and the Mobs page (`FactionStands`), or null.
+        @Nullable
+        Standing stand(Mob mob, Player viewer);
     }
 
     private Standings() {
@@ -38,7 +35,7 @@ public final class Standings {
             return Standing.FRIENDLY;
         }
         if (entity instanceof Player player) {
-            Standing side = between(viewer, player, view);
+            Standing side = between(viewer, player);
             return side == Standing.NEUTRAL && view.grudge(viewer, player.getUUID()) ? Standing.HOSTILE : side;
         }
         if (entity instanceof OwnableEntity pet && pet.getOwnerUUID() != null) {
@@ -51,14 +48,19 @@ public final class Standings {
                 return side;
             }
         }
-        if (view.grudge(viewer, entity.getUUID()) || entity instanceof Enemy
+        Standing stand = entity instanceof Mob mob ? view.stand(mob, viewer) : null;
+        if (view.grudge(viewer, entity.getUUID()) || stand == Standing.HOSTILE
                 || entity instanceof Mob mob && view.angry(mob, viewer)) {
             return Standing.HOSTILE;
         }
-        return Standing.NEUTRAL;
+        if (stand != null) {
+            return stand;
+        }
+        return entity instanceof Enemy ? Standing.HOSTILE : Standing.NEUTRAL;
     }
 
-    public static Standing between(Player viewer, Player other, View view) {
+    // Two players by their factions: hostile where either faction is to the other, friendly where either is.
+    public static Standing between(Player viewer, Player other) {
         PlayerTeam mine = viewer.getTeam();
         PlayerTeam theirs = other.getTeam();
         if (mine == null || theirs == null) {
@@ -67,14 +69,11 @@ public final class Standings {
         if (mine == theirs) {
             return Standing.FRIENDLY;
         }
-        return switch (view.relation(viewer, mine.getName(), theirs.getName())) {
-            case ALLY -> Standing.FRIENDLY;
-            case ENEMY -> Standing.HOSTILE;
-            case NONE -> Standing.NEUTRAL;
-        };
-    }
-
-    public static String pair(String team, String other) {
-        return team.compareTo(other) < 0 ? team + "|" + other : other + "|" + team;
+        Standing to = FactionRules.relation(mine.getName(), theirs.getName());
+        Standing from = FactionRules.relation(theirs.getName(), mine.getName());
+        if (to == Standing.HOSTILE || from == Standing.HOSTILE) {
+            return Standing.HOSTILE;
+        }
+        return to == Standing.FRIENDLY || from == Standing.FRIENDLY ? Standing.FRIENDLY : Standing.NEUTRAL;
     }
 }

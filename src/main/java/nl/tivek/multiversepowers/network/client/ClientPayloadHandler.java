@@ -64,8 +64,13 @@ import nl.tivek.multiversepowers.engine.entity.KnockdownPayload;
 import nl.tivek.multiversepowers.engine.entity.TumblePayload;
 import nl.tivek.multiversepowers.engine.fx.ParticlesPayload;
 import nl.tivek.multiversepowers.engine.fx.VoicePayload;
-import nl.tivek.multiversepowers.faction.StandingsPayload;
+import nl.tivek.multiversepowers.faction.net.FactionStatePayload;
+import nl.tivek.multiversepowers.faction.net.MobFactionPayload;
+import nl.tivek.multiversepowers.faction.net.ReputationNotePayload;
+import nl.tivek.multiversepowers.faction.net.StandingsPayload;
+import nl.tivek.multiversepowers.faction.client.ClientFactions;
 import nl.tivek.multiversepowers.faction.client.ClientStandings;
+import nl.tivek.multiversepowers.faction.client.ReputationHud;
 import nl.tivek.multiversepowers.faction.mob.MobStepsPayload;
 import nl.tivek.multiversepowers.faction.mob.MobTablePayload;
 import nl.tivek.multiversepowers.faction.mob.client.ClientMobTable;
@@ -243,6 +248,18 @@ public final class ClientPayloadHandler {
 
     public static void handleStandings(StandingsPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> ClientStandings.update(payload));
+    }
+
+    public static void handleFactionState(FactionStatePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientFactions.state(payload));
+    }
+
+    public static void handleMobFaction(MobFactionPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientFactions.mob(payload));
+    }
+
+    public static void handleReputationNote(ReputationNotePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ReputationHud.note(payload));
     }
 
     public static void handleMobSteps(MobStepsPayload payload, IPayloadContext context) {

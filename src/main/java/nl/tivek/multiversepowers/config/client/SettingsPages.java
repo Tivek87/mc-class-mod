@@ -25,8 +25,10 @@ import nl.tivek.multiversepowers.config.PowerRules;
 import nl.tivek.multiversepowers.config.Unit;
 import nl.tivek.multiversepowers.config.transfer.client.ShareSettingsScreen;
 import nl.tivek.multiversepowers.engine.client.gui.PixelIcons;
+import nl.tivek.multiversepowers.faction.client.page.FactionsScreen;
 import nl.tivek.multiversepowers.faction.mob.MobRules;
 import nl.tivek.multiversepowers.faction.mob.client.MobRulesScreen;
+import nl.tivek.multiversepowers.faction.rules.FactionRules;
 import nl.tivek.multiversepowers.schematic.SchematicLibrary;
 import nl.tivek.multiversepowers.schematic.SchematicRules;
 import nl.tivek.multiversepowers.schematic.client.menu.SchematicScreen;
@@ -38,6 +40,7 @@ public final class SettingsPages {
     public static final String RULES = "rules";
     public static final String STAMINA = "stamina";
     public static final String MOBS = "mobs";
+    public static final String FACTIONS = "factions";
     public static final String COMMANDS = "commands";
     public static final String SHARE = "share";
     public static final String SCHEMATICS = "schematics";
@@ -77,16 +80,21 @@ public final class SettingsPages {
     }
 
     // Every page of the settings window, in order: your own game (client), then the world's rules, stamina and each
-    // character (server), those only for its host or a listed owner while in it.
+    // character (server), those only for its host or a listed owner while in it. The world's factions are there for
+    // every player of it, to look at and to join one.
     public static List<Page> all() {
         List<Page> pages = new ArrayList<>();
         pages.add(client());
         if (!serverOpen()) {
+            if (Minecraft.getInstance().level != null && FactionRules.SPEC.isLoaded()) {
+                pages.add(factions());
+            }
             return pages;
         }
         pages.add(general());
         pages.add(stamina());
         pages.add(mobs());
+        pages.add(factions());
         pages.add(commands());
         pages.add(schematics());
         for (GameCharacter character : GameCharacter.values()) {
@@ -182,6 +190,12 @@ public final class SettingsPages {
         return new Page(MOBS, Component.translatable(PREFIX + "mobs"), 0x7FD8FF, PixelIcons.Icon.FACE, null,
                 List.of(), worldEditable(MobRules.SPEC), true, () -> {
                 }, MobRulesScreen::new);
+    }
+
+    public static Page factions() {
+        return new Page(FACTIONS, Component.translatable(PREFIX + "factions"), FactionsScreen.COLOR,
+                PixelIcons.Icon.PERSON, null, List.of(), worldEditable(FactionRules.SPEC), true, () -> {
+                }, FactionsScreen::new);
     }
 
     // Every short command and the world's own: a page of its own.

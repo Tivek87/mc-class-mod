@@ -450,7 +450,7 @@ public final class MobRulesScreen extends MobRulesProfile {
             if (this.area.over(mouseX, mouseY, right - 8, y, 9, ROW)) {
                 tip = Component.translatable(PREFIX + "mobs.dot", label(toPlayers));
             }
-            right -= 10;
+            right = this.factionTag(graphics, row, right - 10, y, width);
             this.area.hit(this.listX, y, width, ROW, () -> this.pick(row));
         } else {
             // The choices open once the mouse reaches the pill and close when it leaves them, so the name beside
