@@ -20,6 +20,7 @@ import nl.tivek.multiversepowers.creature.Bleeding;
 import nl.tivek.multiversepowers.creature.animal.WildAnimals;
 import nl.tivek.multiversepowers.creature.bloater.Bloater;
 import nl.tivek.multiversepowers.creature.brute.ZombieBrute;
+import nl.tivek.multiversepowers.creature.elemental.ElementalBlaze;
 import nl.tivek.multiversepowers.creature.lurker.Lurker;
 import nl.tivek.multiversepowers.creature.rustbound.Rustbound;
 import nl.tivek.multiversepowers.creature.screamer.Screamer;
@@ -73,6 +74,7 @@ public class MultiversePowers {
         Lurker.register(modEventBus);
         Screamer.register(modEventBus);
         Rustbound.register(modEventBus);
+        ElementalBlaze.register(modEventBus);
         Stalker.register(modEventBus);
         WildAnimals.register(modEventBus);
         Wizard.register(modEventBus);

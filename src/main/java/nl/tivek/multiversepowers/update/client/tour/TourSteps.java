@@ -6,12 +6,9 @@ import java.util.List;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import nl.tivek.multiversepowers.character.AbilitySlot;
 import nl.tivek.multiversepowers.character.client.AbilityKeys;
-import nl.tivek.multiversepowers.engine.client.gui.NavScreen;
-import nl.tivek.multiversepowers.faction.client.page.FactionsScreen;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Kind;
 import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 
@@ -23,7 +20,7 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.9.12-alpha";
+    static final String VERSION = "0.9.13-alpha";
     // The oldest version whose changes this tour shows: normally its own.
     static final String FROM = VERSION;
     // The card every release with a new character (`GameCharacter.newIn` = VERSION) shows: hold the wheel key, where
@@ -31,13 +28,11 @@ final class TourSteps {
     static final String NEW_CHARACTER = "new_character";
 
     static final List<TourStep> ALL = List.of(
-            step(VERSION, "faction_lore", Kind.CHANGED, Place.SETTINGS).at("factions.list")
-                    .prepare(TourSteps::factions).covers("Lore factions:", "Faction standings:", "Faction sides:"),
-            step(VERSION, "faction_tags", Kind.NEW, Place.GAME).covers("Faction over heads:"),
-            step(VERSION, "faction_book", Kind.NEW, Place.GAME).covers("Faction Book:"));
+            step(VERSION, "elemental_blaze", Kind.NEW, Place.GAME).covers("Elemental Blaze:", "Elemental rods:"),
+            step(VERSION, "elemental_staff", Kind.NEW, Place.GAME).covers("Elemental Staff:"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of("Old worlds:", "Faction players:", "Factions page numbers:");
+    static final List<String> SMALL = List.of("Frozen:", "Cinder Court:");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);
@@ -52,14 +47,6 @@ final class TourSteps {
             .key(key(() -> AbilityKeys.SPELL_WHEEL));
 
     private TourSteps() {
-    }
-
-    // Opens the settings window's Factions page, which only a world has.
-    private static void factions() {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.level != null && !(minecraft.screen instanceof FactionsScreen)) {
-            minecraft.setScreen(new FactionsScreen(minecraft.screen instanceof NavScreen nav ? nav.root() : null));
-        }
     }
 
     @Nullable

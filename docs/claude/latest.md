@@ -1,10 +1,12 @@
 # Laatste sessie
 
-- Datum: 2026-10-13 19:24
-- Verzoek: facties met lore (15 volken), factie-naam boven elk wezen/speler, live sliders, logische standaarden (undead/monsters vijandig), "game"-houding weg, Faction Book-item, alle gemelde bugs fixen.
-- Gedaan: `FactionDefaults` herschreven (naam, beschrijving, lore per factie), `FactionUpgrade` zet oude werelden eenmalig om, `FactionTags` (naam boven hoofden, client setting `factionTags`), `FactionBookItem` + `client/book/FactionBookScreen` (recept: book + ink sac + gold nugget), pending-waarden in `FactionsState` (sliders direct bijgewerkt), spelers in Members/boek met hun skin.
-- Bugs: #83 golem valt Covenant-speler aan, #77 beam-dial 55% zonder linkertekst (`BeamGauge`, `ArcGauge`), #76 minigun first person: geen armblok, kogels uit de loop (`HeavyArms`). Alle drie gesloten met `bugs.ps1 fixed`.
-- Versie 0.9.12-alpha: `CHANGELOG.md`, 3 tour-stappen (`TourSteps`), `docs/PROJECT.md`.
-- Getest in het spel: tags, boek, golem, dial, minigun, sliders, tour-wandeling. `./gradlew build` groen.
-- Niet getest: `FactionUpgrade` op een echte oude wereld, echte multiplayer.
-- Open: commit + push + `release.ps1 publish` wachten op ja; ideeen #78, #80, #81, #82, #24 alleen na ja.
+- Datum: 2026-10-13 21:12
+- Verzoek: idee #80 Elemental Blaze helemaal bouwen (werkend, geanimeerd, eigen VFX, vanilla friendly), alleen dit, geen agents.
+- Gedaan: nieuwe map `creature/elemental/`: `ElementalBlaze` (vliegende mini boss, 60 HP, 2 fases, Rod Ward, boss bar in elementkleur, spawnt zeldzaam in donkere grotten onder y 32), 5 aanvallen (`BlazeCasts`, `spell/`: Frost Ray + effect Frozen, Stone Heave, Chain Lightning, Scorch Ball, Gale Push), Element Shift en Elemental Surge (`BlazeMoves`, `BlazeTimeline`, `RodOrbit`), eigen model/renderer/VFX (`client/`), 5 rods + `ElementalStaff` (recept: 5 rods), loot, 50 XP, spawn egg, schadetypes, tags.
+- Ook: `FactionDefaults`/`FactionUpgrade` (Cinder Court, ook in oude werelden), `ModItems`, `MonsterBlows.foe`, `en_us.json`, texturen via `scripts/models/zombies/ElementalBlazeTexture.java`.
+- Versie 0.9.13-alpha: `CHANGELOG.md`, 2 tour-stappen (`TourSteps`), `docs/PROJECT.md` (factietabel), `CLAUDE.md` (lokaal).
+- Getest in het spel (5 runs): gevecht, elk element (schade, knockback-richting, Frozen houdt je vast), fase 2 + surge, dood, drops (60 kills gelijk verdeeld), 50 XP, spawnregel, recept, staff (alle 5, wisselen), Mobs-pagina, beide tour-kaarten. `./gradlew build` groen.
+- Niet getest: echte multiplayer, natuurlijke spawn in een echte grot, opslaan/herladen van een Blaze in fase 2, de laatste kleine hoogte-aanpassing in `BlazeMoves.spot`.
+- Idee #80 gesloten met `bugs.ps1 fixed` (staat in `bugs/fixed/`).
+- `run/config/welcomescreen/tour.json` teruggezet met `asked` 0.9.12-alpha (de eerste testrun had het al aangepast).
+- Open: commit + push + release wacht op ja. Ideeen #78, #81, #82, #24 alleen na ja.

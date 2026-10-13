@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "welcomescreen:inferno"
+    "welcomescreen:inferno",
+    "welcomescreen:elemental_fire"
   ]
 }

@@ -61,10 +61,11 @@ public final class FactionDefaults {
                 "piglin", "piglin_brute"),
         new Start("cinder", "The Cinder Court", 0xE25C5C, HOSTILE, true, false, true, false,
                 "The fortress lords of the Nether: blazes, ghasts and magma cubes, the wither skeletons who man the"
-                        + " walls, and the hoglins and zoglins that roam the crimson wastes.",
+                        + " walls, the hoglins and zoglins that roam the crimson wastes, and the elemental blazes that"
+                        + " strayed into the caves of the Overworld.",
                 "The Court was old when the first portal opened. Its halls of nether brick still stand, and the"
                         + " blazes still keep their posts for a king who walked into the fire and never came out.",
-                "blaze", "ghast", "magma_cube", "wither_skeleton", "hoglin", "zoglin"),
+                "blaze", "ghast", "magma_cube", "wither_skeleton", "hoglin", "zoglin", OWN + "elemental_blaze"),
         new Start("wanderers", "The Wanderers Between", 0xA57BEA, NEUTRAL, true, false, true, false,
                 "Creatures caught between worlds: the endermen who step from place to place, the zombified piglins"
                         + " who stumbled out of the portals, and the striders of the lava seas.",

@@ -14,9 +14,10 @@ import nl.tivek.multiversepowers.faction.rules.FactionRules;
 
 // A world made with the first factions (Villagers, Undead and the rest, each going by the game) gets the peoples of
 // today in their place, once: their players, reputation and pinned standings move to the faction that took over,
-// creatures and relations a player set on factions of their own stay, and an attitude of "game" becomes neutral.
+// creatures and relations a player set on factions of their own stay, and an attitude of "game" becomes neutral. Each
+// raise of VERSION also gives the kinds of creature added since (the Elemental Blaze) their faction.
 final class FactionUpgrade {
-    static final int VERSION = 2;
+    static final int VERSION = 3;
     private static final String GAME = "|attitude=game";
     private static final Map<String, String> RENAMED = Map.ofEntries(Map.entry("villagers", "hearthbound"),
             Map.entry("illagers", "covenant"), Map.entry("undead", "legion"), Map.entry("piglins", "horde"),
@@ -53,6 +54,7 @@ final class FactionUpgrade {
             teams(server.getScoreboard());
             RENAMED.forEach(data::rename);
         }
+        joinNew();
         if (!kept.equals(factions)) {
             FactionRules.FACTIONS.set(kept);
         }
@@ -118,6 +120,27 @@ final class FactionUpgrade {
             }
         }
         return lines;
+    }
+
+    // Kinds of creature added since the world's lists were written (no line of their own yet) join the faction
+    // today's lines give them; a kind a player put somewhere keeps its line.
+    private static void joinNew() {
+        List<String> members = new ArrayList<>(FactionRules.MEMBERS.get());
+        Set<String> listed = new HashSet<>();
+        for (String line : members) {
+            int is = line.indexOf('=');
+            listed.add(is < 0 ? line : line.substring(0, is));
+        }
+        boolean added = false;
+        for (String line : FactionDefaults.members()) {
+            if (listed.add(line.substring(0, line.indexOf('=')))) {
+                members.add(line);
+                added = true;
+            }
+        }
+        if (added) {
+            FactionRules.MEMBERS.set(members);
+        }
     }
 
     // Every player of a faction that was renamed into the team of the one that took over.

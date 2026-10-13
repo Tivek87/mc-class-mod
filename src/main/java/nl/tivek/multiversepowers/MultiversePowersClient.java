@@ -53,6 +53,7 @@ import nl.tivek.multiversepowers.config.client.SettingsPages;
 import nl.tivek.multiversepowers.config.client.SettingsScreen;
 import nl.tivek.multiversepowers.creature.bloater.client.BloaterRenderer;
 import nl.tivek.multiversepowers.creature.brute.client.BruteRenderer;
+import nl.tivek.multiversepowers.creature.elemental.client.ElementalClient;
 import nl.tivek.multiversepowers.creature.lurker.client.CrawlerRenderer;
 import nl.tivek.multiversepowers.creature.rustbound.client.RustboundRenderer;
 import nl.tivek.multiversepowers.creature.screamer.client.ScreamerRenderer;
@@ -110,6 +111,9 @@ public final class MultiversePowersClient {
         modEventBus.addListener(ScreamerRenderer::onRegisterLayers);
         modEventBus.addListener(RustboundRenderer::onRegisterRenderers);
         modEventBus.addListener(RustboundRenderer::onRegisterLayers);
+        modEventBus.addListener(ElementalClient::onRegisterRenderers);
+        modEventBus.addListener(ElementalClient::onRegisterLayers);
+        modEventBus.addListener(ElementalClient::onClientSetup);
         modEventBus.addListener(StalkerRenderer::onRegisterRenderers);
         modEventBus.addListener(StalkerRenderer::onRegisterLayers);
         WildAnimalsClient.register(modEventBus);

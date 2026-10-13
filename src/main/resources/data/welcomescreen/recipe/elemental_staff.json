@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "equipment",
+  "ingredients": [
+    {
+      "item": "welcomescreen:earth_rod"
+    },
+    {
+      "item": "welcomescreen:ember_rod"
+    },
+    {
+      "item": "welcomescreen:frost_rod"
+    },
+    {
+      "item": "welcomescreen:gale_rod"
+    },
+    {
+      "item": "welcomescreen:storm_rod"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "welcomescreen:elemental_staff"
+  }
+}

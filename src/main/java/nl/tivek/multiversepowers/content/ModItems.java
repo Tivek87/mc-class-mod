@@ -1,5 +1,6 @@
 package nl.tivek.multiversepowers.content;
 
+import java.util.Arrays;
 import java.util.List;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -40,6 +41,10 @@ import nl.tivek.multiversepowers.creature.animal.snake.Snake;
 import nl.tivek.multiversepowers.creature.animal.squirrel.Squirrel;
 import nl.tivek.multiversepowers.creature.bloater.Bloater;
 import nl.tivek.multiversepowers.creature.brute.ZombieBrute;
+import nl.tivek.multiversepowers.creature.elemental.Element;
+import nl.tivek.multiversepowers.creature.elemental.ElementRod;
+import nl.tivek.multiversepowers.creature.elemental.ElementalBlaze;
+import nl.tivek.multiversepowers.creature.elemental.ElementalStaff;
 import nl.tivek.multiversepowers.creature.lurker.Lurker;
 import nl.tivek.multiversepowers.creature.rustbound.Rustbound;
 import nl.tivek.multiversepowers.creature.screamer.Feral;
@@ -74,6 +79,8 @@ public final class ModItems {
                     () -> new DeferredSpawnEggItem(Rustbound.TYPE, 0x7A3E1E, 0x7FC8FF, new Item.Properties())),
             ITEMS.register("stalker_spawn_egg",
                     () -> new DeferredSpawnEggItem(Stalker.TYPE, 0x2B2622, 0xD8F2E4, new Item.Properties())),
+            ITEMS.register("elemental_blaze_spawn_egg",
+                    () -> new DeferredSpawnEggItem(ElementalBlaze.TYPE, 0xE8A33A, 0x7FD6FF, new Item.Properties())),
             ITEMS.register("wizard_spawn_egg",
                     () -> new DeferredSpawnEggItem(WizardEntities.WIZARD, 0x2C2868, 0xD6AC42, new Item.Properties())),
             ITEMS.register("arcane_familiar_spawn_egg",
@@ -151,6 +158,14 @@ public final class ModItems {
     public static final DeferredItem<ArcaneTomeItem> ARCANE_TOME = ITEMS.register("arcane_tome",
             () -> new ArcaneTomeItem(new Item.Properties().stacksTo(16).rarity(Rarity.EPIC)));
 
+    // The Elemental Blaze's rods, one per element, and the staff all five make.
+    public static final List<DeferredItem<ElementRod>> ELEMENT_RODS = Arrays.stream(Element.ALL)
+            .map(element -> ITEMS.register(element.rod, () -> new ElementRod(element, new Item.Properties()
+                    .rarity(Rarity.RARE).fireResistant()))).toList();
+    public static final DeferredItem<ElementalStaff> ELEMENTAL_STAFF = ITEMS.register("elemental_staff",
+            () -> new ElementalStaff(new Item.Properties().stacksTo(1).durability(450).rarity(Rarity.EPIC)
+                    .fireResistant()));
+
     public static final DeferredItem<FactionBookItem> FACTION_BOOK = ITEMS.register("faction_book",
             () -> new FactionBookItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
 
@@ -169,6 +184,8 @@ public final class ModItems {
                         HARD_LIGHT_EGGS.forEach(egg -> output.accept(egg.get()));
                         LAMPS.forEach(lamp -> output.accept(lamp.get()));
                         output.accept(ARCANE_TOME.get());
+                        ELEMENT_RODS.forEach(rod -> output.accept(rod.get()));
+                        output.accept(ELEMENTAL_STAFF.get());
                         output.accept(FACTION_BOOK.get());
                         output.accept(SCHEMATIC_WAND.get());
                     }).build());
@@ -199,6 +216,12 @@ public final class ModItems {
         }
         if (event.getTabKey() == CreativeModeTabs.FOOD_AND_DRINKS) {
             MEATS.forEach(meat -> event.accept(meat.get()));
+        }
+        if (event.getTabKey() == CreativeModeTabs.INGREDIENTS) {
+            ELEMENT_RODS.forEach(rod -> event.accept(rod.get()));
+        }
+        if (event.getTabKey() == CreativeModeTabs.COMBAT) {
+            event.accept(ELEMENTAL_STAFF.get());
         }
         if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(ARCANE_TOME.get());

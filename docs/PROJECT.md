@@ -210,7 +210,7 @@ not kinds of monster. A world starts with fifteen:
 | **The Hollow Legion** | hostile | zombies, husks, drowned, skeletons, strays, phantoms, the Wither, undead horses |
 | **The Rotborn Blight** | hostile | this mod's zombies: the Brute, Bloater, Lurker, Screamer, Feral, Rustbound |
 | **The Gilded Horde** | hostile | piglins, piglin brutes |
-| **The Cinder Court** | hostile | blazes, ghasts, magma cubes, wither skeletons, hoglins, zoglins |
+| **The Cinder Court** | hostile | blazes, ghasts, magma cubes, wither skeletons, hoglins, zoglins, the Elemental Blaze |
 | **The Wanderers Between** | neutral | endermen, zombified piglins, striders |
 | **The Endwatch** | hostile | shulkers, endermites, the Ender Dragon |
 | **The Creeping Dark** | hostile | creepers, spiders, silverfish, slimes, breezes, the Warden, the Stalker |

@@ -52,24 +52,25 @@ public final class MonsterBlows {
     // Who its blows land on: what it hunts, players, creatures that are no monster and monsters it hunts by the game's
     // own rules (the Wizard hunts them all), as the Mobs page sets them.
     public static List<LivingEntity> foes(Mob mob, AABB box) {
-        LivingEntity target = mob.getTarget();
-        return mob.level().getEntitiesOfClass(LivingEntity.class, box, living -> {
-            if (living == mob || !living.isAlive() || !EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(living)) {
-                return false;
-            }
-            if (living == target) {
-                return true;
-            }
-            Standing set = MobRules.set(mob.getType(), living.getType());
-            if (set != null) {
-                return set == Standing.HOSTILE;
-            }
-            if (living instanceof Player || !(living instanceof Enemy)) {
-                return true;
-            }
-            return mob.level() instanceof ServerLevel level
-                    && MobDefaults.of(level, mob.getType(), living.getType()) == Standing.HOSTILE;
-        });
+        return mob.level().getEntitiesOfClass(LivingEntity.class, box, living -> foe(mob, living));
+    }
+
+    public static boolean foe(Mob mob, LivingEntity living) {
+        if (living == mob || !living.isAlive() || !EntitySelector.NO_CREATIVE_OR_SPECTATOR.test(living)) {
+            return false;
+        }
+        if (living == mob.getTarget()) {
+            return true;
+        }
+        Standing set = MobRules.set(mob.getType(), living.getType());
+        if (set != null) {
+            return set == Standing.HOSTILE;
+        }
+        if (living instanceof Player || !(living instanceof Enemy)) {
+            return true;
+        }
+        return mob.level() instanceof ServerLevel level
+                && MobDefaults.of(level, mob.getType(), living.getType()) == Standing.HOSTILE;
     }
 
     // A blow that throws: the target is sent along `push`, less as it stands firm. Whether it landed.

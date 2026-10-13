@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "welcomescreen:frost"
+    "welcomescreen:frost",
+    "welcomescreen:elemental_ice"
   ]
 }

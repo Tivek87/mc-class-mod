@@ -3,6 +3,22 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.13-alpha] - 2026-10-13
+
+### Added
+- **Elemental Blaze:** a rare mini boss deep in caves (below y 32, in the dark, with room to float): a blaze whose
+  fifteen rods carry earth, fire, ice, wind and lightning. It floats at a distance and casts Frost Ray, Stone Heave,
+  Chain Lightning, Scorch Ball and Gale Push, the rod of each swinging to its front first; its rods turn a fifth of
+  every blow aside; at half health it awakens with a burst of every element and from then on casts two elements one
+  right after the other. Its boss bar takes the colour of the element in use. Spawn egg in the mod's tab.
+- **Elemental rods:** it drops one of its five rods at random: the Earth, Ember, Frost, Gale and Storm Rod.
+- **Elemental Staff:** the five rods crafted together: it casts each of the Elemental Blaze's elements (use), sneak
+  and use to switch element; blaze rods mend it.
+- **Frozen:** a new effect from the frost ray: held in place for three seconds, unable to walk or jump.
+
+### Changed
+- **Cinder Court:** the Elemental Blaze belongs to it, also in worlds made before.
+
 ## [0.9.12-alpha] - 2026-10-13
 
 ### Added
