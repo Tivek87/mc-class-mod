@@ -125,7 +125,9 @@ vec2 ring(vec2 p, float t, float s) {
 }
 
 // Painted as the game paints its particles: in square pixels (kind.y above its low byte: how many of the game's
-// pixels lie from the middle to an edge), a few flat shades with a hard edge, and about ten frames a second.
+// pixels lie from the middle to an edge), a few flat shades with a hard edge, and about ten frames a second. Each
+// pixel covers what lies behind it (the faintest shade a little less), times the quad's strength, so it shows against
+// a bright sky as well as in the dark.
 void main() {
     float t = floor(GameTime * 1200.0 * 10.0) / 10.0;
     float s = float(kind.y & 255) * 1.618;
@@ -153,7 +155,11 @@ void main() {
     }
     float edge = round ? step(length(p), 1.0) : 1.0;
     float shade = floor(clamp(e.x, 0.0, 1.0) * 4.0 + 0.35) / 4.0;
+    float cover = shade * edge;
+    if (cover <= 0.0) {
+        discard;
+    }
     float hot = step(0.6, e.y);
-    vec3 colour = mix(tint.rgb, vec3(1.0), hot * 0.35);
-    fragColor = vec4(colour * shade * edge * tint.a * 0.85, 1.0);
+    vec3 colour = mix(tint.rgb, vec3(1.0), hot * 0.5) * (0.7 + 0.3 * shade);
+    fragColor = vec4(colour, min(1.0, 0.3 + shade) * tint.a);
 }

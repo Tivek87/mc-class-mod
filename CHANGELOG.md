@@ -3,6 +3,12 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.20-alpha] - 2026-10-14
+
+### Changed
+- **Solid Elemental Blaze effects:** its fireball, lightning, frost ray and stone dust are solid now, easy to see by
+  day.
+
 ## [0.9.19-alpha] - 2026-10-14
 
 ### Changed

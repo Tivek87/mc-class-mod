@@ -50,7 +50,9 @@ final class StormArcRenderer extends EntityRenderer<StormArc> {
         Vec3 from = ElementalClient.start(caster, BlazeCasts.tip(caster, partialTick).subtract(origin),
                 aimed.subtract(origin));
         float age = arc.tickCount + partialTick;
-        VertexConsumer buffer = buffers.getBuffer(Additive.TYPE);
+        // Every jag of every bolt (from, to, strength), worked out first and then drawn solid in one go.
+        List<Vec3> jags = new ArrayList<>();
+        List<Float> jagStrengths = new ArrayList<>();
         PoseStack.Pose at = pose.last();
         RandomSource random = RandomSource.create(arc.getId() * 31L + arc.tickCount);
         var facing = this.entityRenderDispatcher.cameraOrientation();
@@ -61,7 +63,7 @@ final class StormArcRenderer extends EntityRenderer<StormArc> {
             float strength = Mth.clamp(1.0F - age / FADE, 0.0F, 1.0F);
             if (strength > 0.0F) {
                 Vec3 to = arc.miss().subtract(origin);
-                this.bolt(at, buffer, from, to, eye, strength, random, true);
+                this.bolt(jags, jagStrengths, from, to, strength, random, true);
                 legs.add(from);
                 legs.add(to);
                 strengths.add(strength);
@@ -79,12 +81,24 @@ final class StormArcRenderer extends EntityRenderer<StormArc> {
             Vec3 to = struck.getPosition(partialTick).add(0.0, struck.getBbHeight() * 0.55, 0.0).subtract(origin);
             float strength = Mth.clamp(1.0F - since / FADE, 0.0F, 1.0F) * (0.75F + 0.25F * random.nextFloat());
             if (strength > 0.0F) {
-                this.bolt(at, buffer, from, to, eye, strength, random, true);
+                this.bolt(jags, jagStrengths, from, to, strength, random, true);
                 legs.add(from);
                 legs.add(to);
                 strengths.add(strength);
             }
             from = to;
+        }
+        // A storm-yellow sheath round a white-hot core, both covering the sky behind them rather than adding light to
+        // it, so the bolt reads by day as well as by night.
+        VertexConsumer buffer = buffers.getBuffer(Additive.MIST);
+        for (int i = 0; i < jagStrengths.size(); i++) {
+            Vec3 a = jags.get(i * 2);
+            Vec3 b = jags.get(i * 2 + 1);
+            float strength = jagStrengths.get(i);
+            Additive.ribbon(at, buffer, a, b, eye, 0.28F, Additive.mist(Element.STORM.colour, 0.55F * strength),
+                    Additive.mist(Element.STORM.colour, 0.55F * strength));
+            Additive.ribbon(at, buffer, a, b, eye, 0.1F, Additive.mist(0xFFFFFF, strength),
+                    Additive.mist(Element.STORM.light, strength));
         }
         VertexConsumer energy = Energy.buffer(buffers);
         for (int i = 0; i < strengths.size() && energy != null; i++) {
@@ -98,8 +112,8 @@ final class StormArcRenderer extends EntityRenderer<StormArc> {
     }
 
     // One jagged bolt, and now and then a fork off it.
-    private void bolt(PoseStack.Pose at, VertexConsumer buffer, Vec3 from, Vec3 to, Vec3 eye, float strength,
-            RandomSource random, boolean forks) {
+    private void bolt(List<Vec3> jags, List<Float> strengths, Vec3 from, Vec3 to, float strength, RandomSource random,
+            boolean forks) {
         Vec3 way = to.subtract(from);
         double length = way.length();
         double jag = Math.min(0.6, length * 0.08);
@@ -110,14 +124,13 @@ final class StormArcRenderer extends EntityRenderer<StormArc> {
                 next = next.add((random.nextDouble() - 0.5) * jag * 2.0, (random.nextDouble() - 0.5) * jag * 2.0,
                         (random.nextDouble() - 0.5) * jag * 2.0);
             }
-            Additive.ribbon(at, buffer, previous, next, eye, 0.3F, Additive.rgb(Element.STORM.colour,
-                    0.3F * strength), Additive.rgb(Element.STORM.colour, 0.3F * strength));
-            Additive.ribbon(at, buffer, previous, next, eye, 0.08F, Additive.rgb(0xFFFFFF, strength),
-                    Additive.rgb(Element.STORM.light, strength));
+            jags.add(previous);
+            jags.add(next);
+            strengths.add(strength);
             if (forks && k > 1 && k < JAGS - 1 && random.nextInt(4) == 0) {
                 Vec3 off = new Vec3(random.nextDouble() - 0.5, random.nextDouble() - 0.6, random.nextDouble() - 0.5)
                         .normalize().scale(length * 0.25);
-                this.bolt(at, buffer, next, next.add(off), eye, strength * 0.6F, random, false);
+                this.bolt(jags, strengths, next, next.add(off), strength * 0.6F, random, false);
             }
             previous = next;
         }

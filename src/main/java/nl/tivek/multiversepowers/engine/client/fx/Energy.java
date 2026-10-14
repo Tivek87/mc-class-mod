@@ -16,10 +16,11 @@ import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import nl.tivek.multiversepowers.MultiversePowers;
 import org.joml.Quaternionf;
 
-// Living energy painted by a shader of its own, added to the picture as light: a quad is given a pattern and a colour,
-// and the shader paints that pattern moving on it, with no texture, in square pixels the size of the game's own, a few
-// flat shades and a few frames a second, so it sits beside the game's particles. Round patterns fill a square (turned
-// to the eye or lying flat), the two bands run from one point to another.
+// Living energy painted by a shader of its own: a quad is given a pattern and a colour, and the shader paints that
+// pattern moving on it, with no texture, in square pixels the size of the game's own, a few flat shades and a few
+// frames a second, so it sits beside the game's particles. Its pixels are solid, as a particle's are, its strength
+// how much they cover, so it reads against a bright sky too. Round patterns fill a square (turned to the eye or lying
+// flat), the two bands run from one point to another.
 public final class Energy {
     public static final int FLAME = 0;
     public static final int FROST = 1;
@@ -35,7 +36,7 @@ public final class Energy {
     private static final RenderType TYPE = RenderType.create("welcomescreen_energy", DefaultVertexFormat.PARTICLE,
             VertexFormat.Mode.QUADS, 1536, false, true, RenderType.CompositeState.builder()
                     .setShaderState(new RenderStateShard.ShaderStateShard(() -> shader))
-                    .setTransparencyState(RenderStateShard.ADDITIVE_TRANSPARENCY)
+                    .setTransparencyState(RenderStateShard.TRANSLUCENT_TRANSPARENCY)
                     .setWriteMaskState(RenderStateShard.COLOR_WRITE)
                     .setCullState(RenderStateShard.NO_CULL)
                     .createCompositeState(false));
