@@ -98,7 +98,7 @@ public final class FactionDefaults {
                 "wolf", "fox", "ocelot", "polar_bear", "panda", "parrot", "bat", "bee", "frog", "armadillo", "sniffer",
                 "allay", "goat", "rabbit", OWN + "brown_bear", OWN + "deer", OWN + "raccoon", OWN + "hedgehog",
                 OWN + "owl", OWN + "squirrel", OWN + "snake", OWN + "moose", OWN + "lynx", OWN + "monkey",
-                OWN + "elephant", OWN + "giraffe", OWN + "duck", OWN + "crocodile"),
+                OWN + "elephant", OWN + "giraffe", OWN + "duck", OWN + "crocodile", OWN + "flamingo"),
         new Start("meadowfolk", "The Farm Animals", 0xF2994A, FRIENDLY, false, false, false, false,
                 "The tame beasts of field and pen: cattle and sheep, pigs and chickens, horses, llamas and camels,"
                         + " and the cats that keep the barns.",

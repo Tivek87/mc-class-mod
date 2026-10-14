@@ -17,10 +17,10 @@ import nl.tivek.multiversepowers.faction.rules.FactionRules;
 // A world made with the first factions (Villagers, Undead and the rest, each going by the game) gets the peoples of
 // today in their place, once: their players, reputation and pinned standings move to the faction that took over,
 // creatures and relations a player set on factions of their own stay, and an attitude of "game" becomes neutral. Each
-// raise of VERSION also gives the kinds of creature added since (the Elemental Blaze) their faction, a faction still
+// raise of VERSION also gives the kinds of creature added since (the Elemental Blaze, the flamingo) their faction, a faction still
 // called as it was before a renaming today's name, and every member the standing a member starts with.
 final class FactionUpgrade {
-    static final int VERSION = 4;
+    static final int VERSION = 5;
     // A faction's earlier name, and a phrase of the lore that called it so, by the start of its line.
     private static final Map<String, String> EARLIER = Map.ofEntries(
             Map.entry("hearthbound|name=", "The Hearthbound Accord"),

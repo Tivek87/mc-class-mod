@@ -7,6 +7,7 @@ import nl.tivek.multiversepowers.creature.animal.crocodile.Crocodile;
 import nl.tivek.multiversepowers.creature.animal.deer.Deer;
 import nl.tivek.multiversepowers.creature.animal.duck.Duck;
 import nl.tivek.multiversepowers.creature.animal.elephant.Elephant;
+import nl.tivek.multiversepowers.creature.animal.flamingo.Flamingo;
 import nl.tivek.multiversepowers.creature.animal.giraffe.Giraffe;
 import nl.tivek.multiversepowers.creature.animal.hedgehog.Hedgehog;
 import nl.tivek.multiversepowers.creature.animal.lynx.Lynx;
@@ -38,5 +39,6 @@ public final class WildAnimals {
         Giraffe.register(modEventBus);
         Duck.register(modEventBus);
         Crocodile.register(modEventBus);
+        Flamingo.register(modEventBus);
     }
 }

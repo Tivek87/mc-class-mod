@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Caribbean Flamingo — Minecraft Vanilla+ 3D Entity Model</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #090b0e;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #e4e7ec;
+        }
+        #viewport-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+            background: radial-gradient(circle at 50% 42%, #191e26 0%, #0b0d12 65%, #060709 100%);
+        }
+        #viewport-container:active {
+            cursor: grabbing;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .glass-panel {
+            background: rgba(14, 17, 23, 0.82);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.65);
+        }
+        .anim-btn {
+            transition: all 0.16s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .anim-btn:hover {
+            background: rgba(255, 255, 255, 0.07);
+            color: #ffffff;
+        }
+        .anim-btn.active {
+            background: #fb7185;
+            color: #2b0610;
+            font-weight: 600;
+            box-shadow: 0 0 20px rgba(251, 113, 133, 0.38);
+        }
+        .toggle-btn {
+            transition: all 0.15s ease;
+        }
+        .toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .toggle-btn.active {
+            background: rgba(251, 113, 133, 0.18);
+            border-color: rgba(251, 113, 133, 0.45);
+            color: #fda4af;
+        }
+        .mono-badge {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="relative w-full h-full overflow-hidden">
+
+    <!-- 3D Viewport -->
+    <div id="viewport-container"></div>
+
+    <header class="pointer-events-none fixed top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3.5 sm:px-6 sm:py-4">
+        <!-- Left: Entity Name & FPS -->
+        <div class="pointer-events-auto glass-panel flex items-center gap-3 rounded-xl px-3.5 py-2">
+            <div class="flex items-center gap-2">
+                <span class="inline-block h-2 w-2 rounded-full bg-rose-400 shadow-[0_0_8px_#fb7185]"></span>
+                <span class="text-xs font-semibold tracking-wider uppercase text-zinc-100">minecraft:flamingo</span>
+            </div>
+            <span class="h-3.5 w-[1px] bg-white/10"></span>
+            <span id="fps-counter" class="mono-badge text-[11px] text-rose-400/90">60 FPS</span>
+        </div>
+
+        <!-- Right: Essential Model Controls -->
+        <div class="pointer-events-auto flex items-center gap-2">
+            <!-- Toggle Fluffy Grey Flamingo Chick -->
+            <button id="btn-infant" type="button" class="toggle-btn glass-panel flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium text-zinc-300" title="Toggle Fluffy Downy Flamingo Chick">
+                <svg class="w-3.5 h-3.5 text-rose-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                </svg>
+                <span>Fluffy Chick</span>
+            </button>
+
+            <!-- Toggle Shallow Lagoon & Sandbar Habitat -->
+            <button id="btn-habitat" type="button" class="toggle-btn active glass-panel flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-medium text-zinc-300" title="Toggle Shallow Lagoon & Sandbar Context">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 17h18M5 17l2-6 5-3 5 3 2 6"/>
+                </svg>
+                <span class="hidden sm:inline">Lagoon Shallows</span>
+            </button>
+
+            <!-- Animation Speed / Pause -->
+            <button id="btn-speed" type="button" class="toggle-btn glass-panel mono-badge rounded-xl px-3 py-2 text-xs font-medium text-zinc-300" title="Cycle Animation Speed">
+                1.0x
+            </button>
+
+            <!-- Reset Camera -->
+            <button id="btn-reset-cam" type="button" class="toggle-btn glass-panel flex items-center justify-center rounded-xl p-2 text-zinc-300" title="Reset Camera View">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <footer class="pointer-events-none fixed bottom-0 left-0 right-0 z-20 flex flex-col items-center justify-end px-3 pb-4 sm:pb-6">
+        <div class="pointer-events-auto glass-panel no-scrollbar flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl p-1.5">
+            <button type="button" data-anim="oneleg" class="anim-btn active flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-medium text-zinc-300">
+                <span class="h-1.5 w-1.5 rounded-full bg-current opacity-80"></span>
+                <span>One-Leg Stand</span>
+            </button>
+            <button type="button" data-anim="wade" class="anim-btn flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-medium text-zinc-300">
+                <span class="h-1.5 w-1.5 rounded-full bg-current opacity-80"></span>
+                <span>Lagoon Wade</span>
+            </button>
+            <button type="button" data-anim="stride" class="anim-btn flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-medium text-zinc-300">
+                <span class="h-1.5 w-1.5 rounded-full bg-current opacity-80"></span>
+                <span>Shallow Stride</span>
+            </button>
+            <button type="button" data-anim="feed" class="anim-btn flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-medium text-zinc-300">
+                <span class="h-1.5 w-1.5 rounded-full bg-current opacity-80"></span>
+                <span>Filter Feed</span>
+            </button>
+            <button type="button" data-anim="salute" class="anim-btn flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-medium text-zinc-300">
+                <span class="h-1.5 w-1.5 rounded-full bg-current opacity-80"></span>
+                <span>Wing Salute</span>
+            </button>
+            <button type="button" data-anim="preen" class="anim-btn flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-medium text-zinc-300">
+                <span class="h-1.5 w-1.5 rounded-full bg-current opacity-80"></span>
+                <span>Feather Preen</span>
+            </button>
+        </div>
+        <div class="mt-2 text-[11px] text-zinc-500 tracking-wide">
+            Drag to orbit &bull; Scroll to zoom &bull; Right-drag to pan
+        </div>
+    </footer>
+
+    <script>
+        (function () {
+            'use strict';
+
+            // ============================================================================
+            // 1. NATURAL VANILLA+ SOFT-SHADED PLUMAGE & SKIN TEXTURE ENGINE (2x Density)
+            // ============================================================================
+            // Produces layered coral-orange, warm salmon-pink, and pale rose feather
+            // gradients, crisp black-and-ivory hooked bill patterns, and stilt leg scales.
+
+            const TEX_SCALE = 2;
+
+            function hash2D(x, y, seed = 1) {
+                let n = Math.sin(x * 127.1 + y * 311.7 + seed * 74.7) * 43758.5453123;
+                return n - Math.floor(n);
+            }
+
+            function hexToRgb(hex) {
+                const v = parseInt(hex.replace('#', ''), 16);
+                return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+            }
+
+            function rgbToHex(r, g, b) {
+                const clamp = (n) => Math.max(0, Math.min(255, Math.round(n)));
+                return '#' + [clamp(r), clamp(g), clamp(b)]
+                    .map(x => x.toString(16).padStart(2, '0'))
+                    .join('');
+            }
+
+            function mixHex(hexA, hexB, t) {
+                const a = hexToRgb(hexA);
+                const b = hexToRgb(hexB);
+                const k = Math.max(0, Math.min(1, t));
+                return rgbToHex(
+                    a[0] + (b[0] - a[0]) * k,
+                    a[1] + (b[1] - a[1]) * k,
+                    a[2] + (b[2] - a[2]) * k
+                );
+            }
+
+            function shadeHex(hex, factor) {
+                const [r, g, b] = hexToRgb(hex);
+                return rgbToHex(r * factor, g * factor, b * factor);
+            }
+
+            function makePixelTexture(width, height, drawFn, transparent = false, roughness = 0.68) {
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(2, Math.round(width * TEX_SCALE));
+                canvas.height = Math.max(2, Math.round(height * TEX_SCALE));
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = false;
+
+                const setPx = (x, y, hex) => {
+                    if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) return;
+                    ctx.fillStyle = hex;
+                    ctx.fillRect(x, y, 1, 1);
+                };
+
+                const fillRect = (x, y, w, h, hex) => {
+                    ctx.fillStyle = hex;
+                    ctx.fillRect(x, y, w, h);
+                };
+
+                drawFn(ctx, canvas.width, canvas.height, setPx, fillRect);
+
+                const tex = new THREE.CanvasTexture(canvas);
+                tex.magFilter = THREE.NearestFilter;
+                tex.minFilter = THREE.NearestFilter;
+                tex.generateMipmaps = false;
+                tex.needsUpdate = true;
+
+                return new THREE.MeshStandardMaterial({
+                    map: tex,
+                    roughness: roughness,
+                    metalness: 0.04,
+                    transparent: transparent,
+                    alphaTest: transparent ? 0.1 : 0.0,
+                    side: transparent ? THREE.DoubleSide : THREE.FrontSide
+                });
+            }
+
+            // Cohesive palette tuned directly to Reference 1 (Beach One-Leg Stand),
+            // Reference 2 (Lagoon Wade), and Reference 3 (Shallow Stride)
+            const PALETTE = {
+                // Rich vibrant coral-vermilion neck, head, breast & tail plumes (Ref 1, 2, 3)
+                coralDeep: '#e04f38',
+                coralMid: '#f26649',
+                coralBright: '#fc7e62',
+                // Soft salmon-pink & pale rose-cream layered upper wing coverts (Ref 1 & 3)
+                wingPale: '#fbd2c6',
+                wingSalmon: '#f89e89',
+                wingCoral: '#ee6146',
+                // Dramatic jet-black primary flight feathers along inner/lower wing edge (Ref 2 & 3)
+                flightBlack: '#16161a',
+                flightCharcoal: '#27272e',
+                // Iconic two-tone hooked flamingo bill (Ref 1, 2, 3)
+                billCream: '#f6efe4',
+                billBlush: '#f59c86',
+                billCoral: '#eb5e45',
+                billBlack: '#141418',
+                billHighlight: '#32323a',
+                // Pale yellow bird eye & bare facial lore skin (Ref 2 & 3)
+                eyeYellow: '#fef08a',
+                eyePupil: '#111113',
+                loreWhite: '#f5ebe4',
+                // Slender pink stilt legs & deeper coral-rose ankle joint & webbed feet (Ref 1, 2, 3)
+                legPink: '#dca09e',
+                legShade: '#bd8180',
+                jointCoral: '#df5a5c',
+                jointDeep: '#ba3f44',
+                // Fluffy Downy Grey-White Flamingo Chick palette
+                chickLight: '#eceae4',
+                chickMid: '#d5d1c8',
+                chickShade: '#b8b3a8',
+                chickLeg: '#d98a8c',
+                // Shallow Tropical Lagoon, Sandbar & Reeds Habitat
+                sandLight: '#e3d2b4',
+                sandWet: '#c7b291',
+                waterTeal: '#1e5f68',
+                waterSurface: '#2c828c',
+                waterFoam: '#a5f3fc',
+                reedGreen: ['#48753e', '#365c2e', '#5d8f50']
+            };
+
+            // Paints layered Vanilla+ flamingo plumage with soft scalloped feather overlaps
+            function paintPlumage(w, h, setPx, options = {}) {
+                const {
+                    topCol = PALETTE.coralMid,
+                    bottomCol = PALETTE.coralDeep,
+                    leftCol = null,
+                    rightCol = null,
+                    featherScallops = true,
+                    blackEdgeBottom = false,
+                    seed = 1
+                } = options;
+
+                for (let y = 0; y < h; y++) {
+                    const ny = y / Math.max(1, h - 1);
+                    for (let x = 0; x < w; x++) {
+                        const nx = x / Math.max(1, w - 1);
+
+                        let base = mixHex(topCol, bottomCol, ny);
+                        if (leftCol && rightCol) {
+                            const horiz = mixHex(leftCol, rightCol, nx);
+                            base = mixHex(base, horiz, 0.45);
+                        }
+
+                        // Layered U-shaped feather covert scallops (visible on wings in Ref 1 & 2)
+                        if (featherScallops) {
+                            const rowPeriod = 3;
+                            const rowIdx = Math.floor(y / rowPeriod);
+                            const localY = y % rowPeriod;
+                            const offsetX = (x + (rowIdx % 2) * 2);
+                            const isRib = (localY === rowPeriod - 1) && (offsetX % 4 !== 0);
+                            if (isRib) {
+                                base = shadeHex(base, 0.91);
+                            } else if (localY === 0 && (offsetX % 4 === 1)) {
+                                base = mixHex(base, PALETTE.wingPale, 0.28);
+                            }
+                        }
+
+                        // Subtle directional feather barbule texture
+                        const grain = (hash2D(x, Math.floor(y / 2), seed) - 0.5) * 0.06;
+                        let col = shadeHex(base, 1 + grain);
+
+                        // Soft cylindrical volume highlight
+                        const edgeX = Math.sin(nx * Math.PI);
+                        const edgeY = Math.sin(ny * Math.PI);
+                        const volume = 0.92 + 0.12 * (edgeX * 0.65 + edgeY * 0.35);
+                        col = shadeHex(col, volume);
+
+                        // Subtle peek of jet-black primary flight feathers at bottom edge of wing (Ref 2 & 3)
+                        if (blackEdgeBottom && y === h - 1 && x > Math.floor(w * 0.15) && x < Math.floor(w * 0.88)) {
+                            col = (x % 2 === 0) ? PALETTE.flightBlack : PALETTE.flightCharcoal;
+                        }
+
+                        setPx(x, y, col);
+                    }
+                }
+            }
+
+            // Face order in Three.js BoxGeometry: 0:+X(Right), 1:-X(Left), 2:+Y(Top), 3:-Y(Bottom), 4:+Z(Front), 5:-Z(Back)
+            function createVoxelBox(w, h, d, facePainters, pivotOffset = [0, 0, 0], roughness = 0.64) {
+                const geom = new THREE.BoxGeometry(w, h, d);
+                if (pivotOffset[0] !== 0 || pivotOffset[1] !== 0 || pivotOffset[2] !== 0) {
+                    geom.translate(pivotOffset[0], pivotOffset[1], pivotOffset[2]);
+                }
+
+                const dims = [
+                    [d, h], // 0: Right (+X)
+                    [d, h], // 1: Left (-X)
+                    [w, d], // 2: Top (+Y)
+                    [w, d], // 3: Bottom (-Y)
+                    [w, h], // 4: Front (+Z)
+                    [w, h]  // 5: Back (-Z)
+                ];
+
+                const materials = dims.map(([fw, fh], idx) => {
+                    const painter = facePainters[idx] || facePainters.default;
+                    return makePixelTexture(fw, fh, painter, false, roughness);
+                });
+
+                const mesh = new THREE.Mesh(geom, materials);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                return mesh;
+            }
+
+            // ============================================================================
+            // 2. THREE.JS SCENE, LIGHTING & CAMERA SETUP
+            // ============================================================================
+            const container = document.getElementById('viewport-container');
+            const scene = new THREE.Scene();
+
+            const camera = new THREE.PerspectiveCamera(
+                38,
+                window.innerWidth / window.innerHeight,
+                0.5,
+                350
+            );
+
+            const renderer = new THREE.WebGLRenderer({
+                antialias: true,
+                powerPreference: 'high-performance'
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            container.appendChild(renderer.domElement);
+
+            // Warm Caribbean sunlight + turquoise lagoon bounce light
+            const ambientLight = new THREE.HemisphereLight(0xfff7f2, 0x22353c, 0.96);
+            scene.add(ambientLight);
+
+            const mainSun = new THREE.DirectionalLight(0xfff5e4, 0.92);
+            mainSun.position.set(32, 56, 38);
+            mainSun.castShadow = true;
+            mainSun.shadow.mapSize.width = 1024;
+            mainSun.shadow.mapSize.height = 1024;
+            mainSun.shadow.camera.near = 5;
+            mainSun.shadow.camera.far = 150;
+            const dCam = 32;
+            mainSun.shadow.camera.left = -dCam;
+            mainSun.shadow.camera.right = dCam;
+            mainSun.shadow.camera.top = dCam;
+            mainSun.shadow.camera.bottom = -dCam;
+            mainSun.shadow.bias = -0.0008;
+            scene.add(mainSun);
+
+            const rimLight = new THREE.DirectionalLight(0x67e8f9, 0.38);
+            rimLight.position.set(-30, 26, -24);
+            scene.add(rimLight);
+
+            const frontFill = new THREE.DirectionalLight(0xffe4e6, 0.26);
+            frontFill.position.set(0, 18, 42);
+            scene.add(frontFill);
+
+            // Subtle dark studio pedestal / Minecraft block grid
+            const floorGroup = new THREE.Group();
+            scene.add(floorGroup);
+
+            const shadowPlaneGeo = new THREE.PlaneGeometry(90, 90);
+            const shadowPlaneMat = new THREE.ShadowMaterial({ opacity: 0.40 });
+            const shadowPlane = new THREE.Mesh(shadowPlaneGeo, shadowPlaneMat);
+            shadowPlane.rotation.x = -Math.PI / 2;
+            shadowPlane.position.y = 0.01;
+            shadowPlane.receiveShadow = true;
+            floorGroup.add(shadowPlane);
+
+            const gridHelper = new THREE.GridHelper(56, 14, 0x262d3b, 0x151922);
+            gridHelper.position.y = 0;
+            floorGroup.add(gridHelper);
+
+            // ============================================================================
+            // 3. CONSTRUCTING THE MINECRAFT VANILLA+ CARIBBEAN FLAMINGO RIG
+            // ============================================================================
+            function buildFlamingoRig(scaleMultiplier = 1.0, isChick = false) {
+                const root = new THREE.Group();
+                root.scale.setScalar(scaleMultiplier);
+
+                const bodyTopCol = isChick ? PALETTE.chickLight : PALETTE.wingPale;
+                const bodyMidCol = isChick ? PALETTE.chickMid : PALETTE.wingSalmon;
+                const bodyDeepCol = isChick ? PALETTE.chickShade : PALETTE.coralMid;
+                const neckTopCol = isChick ? PALETTE.chickLight : PALETTE.coralBright;
+                const neckDeepCol = isChick ? PALETTE.chickMid : PALETTE.coralDeep;
+
+                // --- 1. MAIN OVOID TORSO / BODY GROUP (Elevated high on stilt legs) ---
+                const bodyGroup = new THREE.Group();
+                bodyGroup.position.set(0, 16.0, 0);
+                root.add(bodyGroup);
+
+                // Core Body (6.6w x 6.0h x 9.6d)
+                const torsoMesh = createVoxelBox(6.6, 6.0, 9.6, {
+                    0: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                        topCol: bodyTopCol,
+                        bottomCol: bodyDeepCol,
+                        leftCol: bodyMidCol,
+                        rightCol: neckDeepCol,
+                        seed: 11
+                    }),
+                    1: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                        topCol: bodyTopCol,
+                        bottomCol: bodyDeepCol,
+                        leftCol: neckDeepCol,
+                        rightCol: bodyMidCol,
+                        seed: 12
+                    }),
+                    2: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                        topCol: bodyTopCol,
+                        bottomCol: bodyMidCol,
+                        seed: 13
+                    }),
+                    3: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                        topCol: bodyMidCol,
+                        bottomCol: bodyDeepCol,
+                        featherScallops: false,
+                        seed: 14
+                    }),
+                    // Front Breast: Rich warm coral-vermilion breast (Ref 1, 2, 3)
+                    4: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                        topCol: neckTopCol,
+                        bottomCol: bodyMidCol,
+                        seed: 15
+                    }),
+                    5: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                        topCol: bodyMidCol,
+                        bottomCol: bodyDeepCol,
+                        seed: 16
+                    })
+                }, [0, 0, 0]);
+                bodyGroup.add(torsoMesh);
+
+                // Rounded Anterior Breast Swell (5.8w x 5.0h x 3.2d)
+                const breastMesh = createVoxelBox(5.8, 5.0, 3.2, {
+                    default: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                        topCol: neckTopCol,
+                        bottomCol: neckDeepCol,
+                        seed: 17
+                    })
+                }, [0, -0.1, 4.4]);
+                bodyGroup.add(breastMesh);
+
+                // --- 2. DROOPING CORAL TAIL & TERTIAL PLUMES (Ref 1, 2, 3) ---
+                const tailGroup = new THREE.Group();
+                tailGroup.position.set(0, 0.2, -4.4);
+                tailGroup.rotation.x = -0.38;
+                bodyGroup.add(tailGroup);
+
+                const tailBaseMesh = createVoxelBox(5.2, 3.8, 4.6, {
+                    default: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                        topCol: isChick ? PALETTE.chickMid : PALETTE.wingSalmon,
+                        bottomCol: isChick ? PALETTE.chickShade : PALETTE.coralDeep,
+                        seed: 21
+                    })
+                }, [0, 0, -1.8]);
+                tailGroup.add(tailBaseMesh);
+
+                // Pointed drooping coral-vermilion tail tips (visible trailing in Ref 1 & 2)
+                if (!isChick) {
+                    const tailPlumeTip = createVoxelBox(3.8, 2.2, 4.4, {
+                        default: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                            topCol: PALETTE.coralMid,
+                            bottomCol: PALETTE.coralDeep,
+                            seed: 22
+                        })
+                    }, [0, -0.8, -5.0]);
+                    tailPlumeTip.rotation.x = -0.26;
+                    tailGroup.add(tailPlumeTip);
+                }
+
+                // --- 3. ARTICULATED LAYERED WINGS (Soft Pale Salmon Top + Coral Edge + Black Flight Feathers) ---
+                function createWing(isLeft) {
+                    const side = isLeft ? 1 : -1;
+                    const wingGroup = new THREE.Group();
+                    wingGroup.position.set(side * 3.3, 1.4, 3.2);
+
+                    // Main Layered Wing Covert Shield (1.6w x 5.2h x 9.6d)
+                    // Matches Ref 1, 2, 3: pale rose-cream top blending into salmon-pink & bright coral lower border
+                    const covertMesh = createVoxelBox(1.6, 5.2, 9.6, {
+                        default: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                            topCol: isChick ? PALETTE.chickLight : PALETTE.wingPale,
+                            bottomCol: isChick ? PALETTE.chickShade : PALETTE.wingCoral,
+                            blackEdgeBottom: !isChick,
+                            seed: isLeft ? 31 : 32
+                        })
+                    }, [side * 0.5, -2.0, -4.0]);
+                    wingGroup.add(covertMesh);
+
+                    // Secondary Tapered Rear Wing Plume + Hidden Jet-Black Primary Flight Feathers (for Wing Salute!)
+                    const outerWingGroup = new THREE.Group();
+                    outerWingGroup.position.set(side * 0.6, -2.0, -7.8);
+                    wingGroup.add(outerWingGroup);
+
+                    if (!isChick) {
+                        const tertialTipMesh = createVoxelBox(1.2, 3.6, 4.4, {
+                            default: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                                topCol: PALETTE.wingSalmon,
+                                bottomCol: PALETTE.coralDeep,
+                                blackEdgeBottom: true,
+                                seed: isLeft ? 33 : 34
+                            })
+                        }, [0, -0.4, -1.8]);
+                        outerWingGroup.add(tertialTipMesh);
+
+                        // Inner/Underneath Black Flight Feather Blade (Flashes dramatically when wings open!)
+                        const blackPrimaryMesh = createVoxelBox(0.7, 4.0, 8.6, {
+                            default: (ctx, w, h, setPx) => {
+                                for (let y = 0; y < h; y++) {
+                                    for (let x = 0; x < w; x++) {
+                                        const isCovertTop = y < Math.floor(h * 0.35);
+                                        setPx(x, y, isCovertTop ? PALETTE.wingCoral : ((x + y) % 2 === 0 ? PALETTE.flightBlack : PALETTE.flightCharcoal));
+                                    }
+                                }
+                            }
+                        }, [-side * 0.25, -0.6, 2.2]);
+                        outerWingGroup.add(blackPrimaryMesh);
+                    }
+
+                    return { wingGroup, outerWingGroup };
+                }
+
+                const leftWing = createWing(true);
+                const rightWing = createWing(false);
+                bodyGroup.add(leftWing.wingGroup, rightWing.wingGroup);
+
+                // --- 4. GRACEFUL 5-SEGMENT ARTICULATED S-CURVE NECK ---
+                // Segmented chain from lower chest loop -> vertical column -> upper arch -> head
+                const neckSegments = [];
+                const segSpecs = isChick ? [
+                    { w: 2.8, h: 2.6, d: 2.8, len: 2.2 },
+                    { w: 2.5, h: 2.4, d: 2.5, len: 2.0 },
+                    { w: 2.3, h: 2.2, d: 2.3, len: 1.8 },
+                    { w: 2.2, h: 2.0, d: 2.2, len: 1.6 },
+                    { w: 2.1, h: 1.8, d: 2.1, len: 1.4 }
+                ] : [
+                    { w: 3.1, h: 3.8, d: 3.1, len: 3.3 }, // Seg 0: Base emerging from lower breast
+                    { w: 2.7, h: 3.8, d: 2.7, len: 3.3 }, // Seg 1: Lower S-curve scoop
+                    { w: 2.5, h: 4.0, d: 2.5, len: 3.5 }, // Seg 2: Mid-neck rising stem
+                    { w: 2.4, h: 3.8, d: 2.4, len: 3.3 }, // Seg 3: Upper neck stem
+                    { w: 2.3, h: 3.2, d: 2.4, len: 2.7 }  // Seg 4: Crown arch into head
+                ];
+
+                let parentNode = bodyGroup;
+                segSpecs.forEach((spec, idx) => {
+                    const segGroup = new THREE.Group();
+                    if (idx === 0) {
+                        segGroup.position.set(0, -1.0, 5.2);
+                    } else {
+                        segGroup.position.set(0, segSpecs[idx - 1].len, 0);
+                    }
+                    parentNode.add(segGroup);
+
+                    const segMesh = createVoxelBox(spec.w, spec.h, spec.d, {
+                        default: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                            topCol: neckTopCol,
+                            bottomCol: neckDeepCol,
+                            featherScallops: false,
+                            seed: 40 + idx
+                        })
+                    }, [0, spec.h * 0.42, 0]);
+                    segGroup.add(segMesh);
+
+                    neckSegments.push(segGroup);
+                    parentNode = segGroup;
+                });
+
+                // --- 5. SCULPTED FLAMINGO HEAD & ICONIC DOWN-CURVED HOOKED BILL ---
+                const headGroup = new THREE.Group();
+                headGroup.position.set(0, segSpecs[segSpecs.length - 1].len, 0.2);
+                parentNode.add(headGroup);
+
+                // Rounded Coral-Orange Cranium (3.0w x 3.0h x 3.6d)
+                // Features pale bare lore skin & bright pale-yellow iris with pinpoint black pupil (Ref 1, 2, 3)
+                const craniumMesh = createVoxelBox(3.0, 3.0, 3.6, {
+                    // Right & Left Side of Head with Yellow Flamingo Eye & Pale Lore Bridge
+                    0: (ctx, w, h, setPx) => {
+                        paintPlumage(w, h, setPx, { topCol: neckTopCol, bottomCol: neckDeepCol, featherScallops: false, seed: 51 });
+                        // Bare white-blush facial lore at front (right side of +X face is +Z front)
+                        for (let y = Math.floor(h * 0.3); y < Math.floor(h * 0.75); y++) {
+                            for (let x = Math.floor(w * 0.62); x < w; x++) {
+                                setPx(x, y, PALETTE.loreWhite);
+                            }
+                        }
+                        // Bright yellow iris + pinpoint dark pupil
+                        const ex = Math.floor(w * 0.56);
+                        const ey = Math.floor(h * 0.38);
+                        setPx(ex, ey, PALETTE.eyeYellow);
+                        setPx(ex + 1, ey, PALETTE.eyeYellow);
+                        setPx(ex, ey + 1, PALETTE.eyeYellow);
+                        setPx(ex + 1, ey + 1, PALETTE.eyePupil);
+                    },
+                    1: (ctx, w, h, setPx) => {
+                        paintPlumage(w, h, setPx, { topCol: neckTopCol, bottomCol: neckDeepCol, featherScallops: false, seed: 52 });
+                        // Bare white-blush facial lore at front (left side of -X face is +Z front)
+                        for (let y = Math.floor(h * 0.3); y < Math.floor(h * 0.75); y++) {
+                            for (let x = 0; x < Math.floor(w * 0.38); x++) {
+                                setPx(x, y, PALETTE.loreWhite);
+                            }
+                        }
+                        const ex = Math.floor(w * 0.32);
+                        const ey = Math.floor(h * 0.38);
+                        setPx(ex, ey, PALETTE.eyeYellow);
+                        setPx(ex + 1, ey, PALETTE.eyeYellow);
+                        setPx(ex, ey + 1, PALETTE.eyeYellow);
+                        setPx(ex, ey + 1, PALETTE.eyePupil);
+                    },
+                    default: (ctx, w, h, setPx) => paintPlumage(w, h, setPx, {
+                        topCol: neckTopCol,
+                        bottomCol: neckDeepCol,
+                        featherScallops: false,
+                        seed: 53
+                    })
+                }, [0, 1.1, 0.9]);
+                headGroup.add(craniumMesh);
+
+                // Blink Eyelid Overlays
+                const eyelidMat = makePixelTexture(2, 2, (ctx, w, h, setPx, fillRect) => {
+                    fillRect(0, 0, w, h, isChick ? PALETTE.chickMid : PALETTE.coralMid);
+                });
+                const eyelidGeo = new THREE.PlaneGeometry(0.95, 0.95);
+                const leftEyelid = new THREE.Mesh(eyelidGeo, eyelidMat);
+                leftEyelid.position.set(1.53, 1.25, 1.35);
+                leftEyelid.rotation.y = Math.PI / 2;
+                leftEyelid.visible = false;
+                headGroup.add(leftEyelid);
+
+                const rightEyelid = new THREE.Mesh(eyelidGeo, eyelidMat);
+                rightEyelid.position.set(-1.53, 1.25, 1.35);
+                rightEyelid.rotation.y = -Math.PI / 2;
+                rightEyelid.visible = false;
+                headGroup.add(rightEyelid);
+
+                // Proximal Upper Bill Base (2.2w x 2.0h x 2.8d) — Pale Ivory-Cream & Coral-Orange Saddle (Ref 1, 2, 3)
+                const billBaseGroup = new THREE.Group();
+                billBaseGroup.position.set(0, 0.9, 2.4);
+                billBaseGroup.rotation.x = 0.42; // Slopes forward and downward
+                headGroup.add(billBaseGroup);
+
+                const billBaseMesh = createVoxelBox(2.2, 1.9, 2.8, {
+                    default: (ctx, w, h, setPx) => {
+                        for (let y = 0; y < h; y++) {
+                            for (let x = 0; x < w; x++) {
+                                if (isChick) {
+                                    setPx(x, y, y > h * 0.6 ? PALETTE.billBlack : PALETTE.chickShade);
+                                } else {
+                                    // Pale ivory top ridge, warm coral-salmon lower cheek, dark seam at tip
+                                    let col = PALETTE.billCream;
+                                    if (y > h * 0.45) col = PALETTE.billCoral;
+                                    if (x > w * 0.72 && y > h * 0.5) col = PALETTE.billBlack;
+                                    setPx(x, y, col);
+                                }
+                            }
+                        }
+                    }
+                }, [0, -0.2, 1.1], 0.42);
+                billBaseGroup.add(billBaseMesh);
+
+                // Distal Down-Curved Jet-Black Hooked Bill Tip (1.8w x 2.9h x 1.7d)
+                // Captures the iconic sharp downward Roman-nose bend of the flamingo beak!
+                const billHookGroup = new THREE.Group();
+                billHookGroup.position.set(0, -0.4, 2.2);
+                billHookGroup.rotation.x = 0.58;
+                billBaseGroup.add(billHookGroup);
+
+                const billHookMesh = createVoxelBox(1.85, 2.9, 1.7, {
+                    default: (ctx, w, h, setPx) => {
+                        for (let y = 0; y < h; y++) {
+                            for (let x = 0; x < w; x++) {
+                                const isTopBridge = (y === 0 && !isChick);
+                                const col = isTopBridge ? PALETTE.billCream : (x === 0 ? PALETTE.billHighlight : PALETTE.billBlack);
+                                setPx(x, y, col);
+                            }
+                        }
+                    }
+                }, [0, -1.2, 0.2], 0.35);
+                billHookGroup.add(billHookMesh);
+
+                // Articulated Lower Mandible / Jaw (for filter-feeding chattering)
+                const jawGroup = new THREE.Group();
+                jawGroup.position.set(0, -0.6, 0.4);
+                billBaseGroup.add(jawGroup);
+
+                const jawMesh = createVoxelBox(1.65, 1.1, 2.3, {
+                    default: (ctx, w, h, setPx) => {
+                        for (let y = 0; y < h; y++) {
+                            for (let x = 0; x < w; x++) {
+                                setPx(x, y, y < h * 0.4 ? PALETTE.billCoral : PALETTE.billBlack);
+                            }
+                        }
+                    }
+                }, [0, -0.3, 0.9], 0.38);
+                jawGroup.add(jawMesh);
+
+                // --- 6. STILT-LIKE LEGS WITH CORAL INTERTARSAL ("BACKWARD KNEE") JOINTS ---
+                function createFlamingoLeg(isLeft) {
+                    const side = isLeft ? 1 : -1;
+                    const hipGroup = new THREE.Group();
+                    hipGroup.position.set(side * 1.65, -2.2, -0.4);
+
+                    // Upper Leg / Tibiotarsus (1.1w x 7.4h x 1.1d) descending to the ankle joint
+                    const upperLegLen = isChick ? 4.2 : 7.2;
+                    const lowerLegLen = isChick ? 4.4 : 7.4;
+                    const shaftThick = isChick ? 1.25 : 1.05;
+
+                    const upperLegMesh = createVoxelBox(shaftThick, upperLegLen, shaftThick, {
+                        default: (ctx, w, h, setPx) => {
+                            for (let y = 0; y < h; y++) {
+                                for (let x = 0; x < w; x++) {
+                                    const isBottomJoint = y >= h - 3;
+                                    const base = isBottomJoint ? PALETTE.jointCoral : (isChick ? PALETTE.chickLeg : PALETTE.legPink);
+                                    setPx(x, y, x === 0 ? shadeHex(base, 0.9) : base);
+                                }
+                            }
+                        }
+                    }, [0, -upperLegLen / 2, 0], 0.55);
+                    hipGroup.add(upperLegMesh);
+
+                    // Swollen Coral-Pink Intertarsal ("Backward Knee" / Ankle) Joint Knob (Ref 1, 2, 3!)
+                    const ankleJointKnob = createVoxelBox(shaftThick * 1.38, 1.5, shaftThick * 1.45, {
+                        default: (ctx, w, h, setPx) => {
+                            for (let y = 0; y < h; y++) {
+                                for (let x = 0; x < w; x++) {
+                                    setPx(x, y, y % 2 === 0 ? PALETTE.jointCoral : PALETTE.jointDeep);
+                                }
+                            }
+                        }
+                    }, [0, -upperLegLen, -0.1], 0.52);
+                    hipGroup.add(ankleJointKnob);
+
+                    // Lower Leg / Tarsometatarsus Group (Bends BACKWARD/UPWARD in One-Leg Stand Ref 1!)
+                    const ankleGroup = new THREE.Group();
+                    ankleGroup.position.set(0, -upperLegLen, 0);
+                    hipGroup.add(ankleGroup);
+
+                    const lowerLegMesh = createVoxelBox(shaftThick * 0.92, lowerLegLen, shaftThick * 0.92, {
+                        default: (ctx, w, h, setPx) => {
+                            for (let y = 0; y < h; y++) {
+                                for (let x = 0; x < w; x++) {
+                                    const isTopJoint = y < 2;
+                                    const base = isTopJoint ? PALETTE.jointCoral : (isChick ? PALETTE.chickLeg : PALETTE.legPink);
+                                    setPx(x, y, (y % 2 === 0 && x === 0) ? PALETTE.legShade : base);
+                                }
+                            }
+                        }
+                    }, [0, -lowerLegLen / 2, 0], 0.55);
+                    ankleGroup.add(lowerLegMesh);
+
+                    // Webbed Pink Flamingo Foot (Spreads flat on ground, folds neatly when tucked in Ref 1!)
+                    const footGroup = new THREE.Group();
+                    footGroup.position.set(0, -lowerLegLen, 0);
+                    ankleGroup.add(footGroup);
+
+                    const footMesh = createVoxelBox(2.9, 0.55, 3.8, {
+                        default: (ctx, w, h, setPx) => {
+                            for (let y = 0; y < h; y++) {
+                                for (let x = 0; x < w; x++) {
+                                    const ridge = (x === 1 || x === Math.floor(w / 2) || x === w - 2);
+                                    setPx(x, y, ridge ? PALETTE.jointCoral : PALETTE.legPink);
+                                }
+                            }
+                        }
+                    }, [0, 0.25, 1.3], 0.55);
+                    footGroup.add(footMesh);
+
+                    return { hipGroup, ankleGroup, footGroup };
+                }
+
+                const leftLeg = createFlamingoLeg(true);
+                const rightLeg = createFlamingoLeg(false);
+                bodyGroup.add(leftLeg.hipGroup, rightLeg.hipGroup);
+
+                return {
+                    root,
+                    bodyGroup,
+                    tailGroup,
+                    leftWing,
+                    rightWing,
+                    neckSegments,
+                    headGroup,
+                    billBaseGroup,
+                    billHookGroup,
+                    jawGroup,
+                    leftEyelid,
+                    rightEyelid,
+                    leftLeg,
+                    rightLeg
+                };
+            }
+
+            const flamingo = buildFlamingoRig(1.0, false);
+            scene.add(flamingo.root);
+
+            // Build Fluffy Grey-White Flamingo Chick (toggled via top-right "Fluffy Chick" button)
+            const chick = buildFlamingoRig(0.46, true);
+            chick.root.visible = false;
+            scene.add(chick.root);
+
+            // ============================================================================
+            // 4. SHALLOW LAGOON WATER, SANDBAR & TROPICAL REEDS HABITAT PROP
+            // ============================================================================
+            const habitatGroup = new THREE.Group();
+            scene.add(habitatGroup);
+
+            // Translucent Turquoise-Emerald Lagoon Water Pad
+            const waterMat = makePixelTexture(28, 28, (ctx, w, h, setPx) => {
+                for (let y = 0; y < h; y++) {
+                    for (let x = 0; x < w; x++) {
+                        const n = hash2D(x, y, 501);
+                        let col = n > 0.65 ? PALETTE.waterSurface : PALETTE.waterTeal;
+                        // Subtle water caustic ripples
+                        if ((x + y * 2) % 9 === 0 && n > 0.45) {
+                            col = mixHex(col, PALETTE.waterFoam, 0.25);
+                        }
+                        setPx(x, y, col);
+                    }
+                }
+            }, true, 0.25);
+            waterMat.opacity = 0.82;
+
+            const lagoonWaterMesh = new THREE.Mesh(new THREE.BoxGeometry(28, 1.2, 26), waterMat);
+            lagoonWaterMesh.position.set(0, 0.6, 0);
+            lagoonWaterMesh.receiveShadow = true;
+            habitatGroup.add(lagoonWaterMesh);
+
+            // Warm Caribbean Sandy Bank / Shoal (Ref 1 beach shoreline!)
+            const sandBankMesh = createVoxelBox(14, 1.6, 12, {
+                default: (ctx, w, h, setPx) => {
+                    for (let y = 0; y < h; y++) {
+                        for (let x = 0; x < w; x++) {
+                            const n = hash2D(x, y, 505);
+                            setPx(x, y, n > 0.5 ? PALETTE.sandLight : PALETTE.sandWet);
+                        }
+                    }
+                }
+            }, [0, 0.8, 0], 0.82);
+            sandBankMesh.position.set(-7.5, 0, -6.5);
+            sandBankMesh.rotation.y = 0.28;
+            habitatGroup.add(sandBankMesh);
+
+            // Marsh Sedge Reeds on the Sandbar Corner
+            const reedPositions = [
+                [-11.5, -9.0, 11],
+                [-10.2, -10.2, 14],
+                [-12.4, -7.8, 9]
+            ];
+            reedPositions.forEach(([rx, rz, rh], idx) => {
+                const reed = createVoxelBox(0.9, rh, 0.9, {
+                    default: (ctx, w, h, setPx) => {
+                        for (let y = 0; y < h; y++) {
+                            for (let x = 0; x < w; x++) {
+                                setPx(x, y, PALETTE.reedGreen[(y + idx) % PALETTE.reedGreen.length]);
+                            }
+                        }
+                    }
+                }, [0, rh / 2, 0], 0.7);
+                reed.position.set(rx, 1.2, rz);
+                habitatGroup.add(reed);
+            });
+
+            // ============================================================================
+            // 5. OBJECT-POOLED MINECRAFT PIXEL PARTICLES (Water Ripples & Droplets)
+            // ============================================================================
+            const particleGroup = new THREE.Group();
+            scene.add(particleGroup);
+
+            const dropletMat = makePixelTexture(4, 4, (ctx, w, h, setPx) => {
+                ctx.clearRect(0, 0, w, h);
+                setPx(1, 0, '#cffafe');
+                setPx(2, 0, '#cffafe');
+                setPx(1, 1, '#67e8f9');
+                setPx(2, 1, '#67e8f9');
+            }, true);
+
+            const featherParticleMat = makePixelTexture(5, 5, (ctx, w, h, setPx) => {
+                ctx.clearRect(0, 0, w, h);
+                setPx(2, 1, PALETTE.wingPale);
+                setPx(1, 2, PALETTE.wingSalmon);
+                setPx(2, 2, PALETTE.coralBright);
+                setPx(3, 2, PALETTE.wingSalmon);
+                setPx(2, 3, PALETTE.coralMid);
+            }, true);
+
+            const particles = [];
+            for (let i = 0; i < 16; i++) {
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), dropletMat);
+                mesh.visible = false;
+                particleGroup.add(mesh);
+                particles.push({
+                    mesh,
+                    active: false,
+                    age: 0,
+                    maxAge: 1.0,
+                    vx: 0,
+                    vy: 0,
+                    vz: 0
+                });
+            }
+
+            function spawnParticle(type, x, y, z) {
+                const p = particles.find(item => !item.active);
+                if (!p) return;
+                p.active = true;
+                p.age = 0;
+                p.mesh.visible = true;
+                p.mesh.position.set(x, y, z);
+
+                if (type === 'splash') {
+                    p.maxAge = 0.75;
+                    p.mesh.material = dropletMat;
+                    p.mesh.scale.setScalar(0.85);
+                    p.vx = (Math.random() - 0.5) * 5.0;
+                    p.vy = 2.8 + Math.random() * 2.5;
+                    p.vz = (Math.random() - 0.5) * 5.0;
+                } else {
+                    p.maxAge = 1.25;
+                    p.mesh.material = featherParticleMat;
+                    p.mesh.scale.setScalar(0.95);
+                    p.vx = (Math.random() - 0.5) * 2.5;
+                    p.vy = 1.2 + Math.random() * 1.5;
+                    p.vz = (Math.random() - 0.5) * 2.5;
+                }
+            }
+
+            // ============================================================================
+            // 6. SMOOTH 60FPS ANIMATION CONTROLLER & S-CURVE NECK POSE BLENDER
+            // ============================================================================
+            let currentAnim = 'oneleg';
+            let animTime = 0;
+            let speedMultiplier = 1.0;
+            let habitatPreference = true;
+            let infantEnabled = false;
+            let particleTimer = 0;
+
+            function damp(current, target, lambda, dt) {
+                return THREE.MathUtils.lerp(current, target, 1 - Math.exp(-lambda * dt));
+            }
+
+            function evaluateFlamingoAnimation(t, dt) {
+                // Default S-curve neck angles (in radians) for the 5 neck segments:
+                // Seg 0 curves forward/down from chest; Seg 1 curves up; Seg 2 & 3 rise gracefully; Seg 4 arches forward into the head
+                const pose = {
+                    bodyPos: [0, 16.0, 0],
+                    bodyRot: [0, 0, 0],
+                    tailRot: [-0.38, 0, 0],
+                    neckRots: [
+                        [0.82, 0, 0],  // Seg 0: scoops forward & slightly down out of chest
+                        [-0.58, 0, 0], // Seg 1: curves upward
+                        [-0.38, 0, 0], // Seg 2: rises vertically
+                        [-0.12, 0, 0], // Seg 3: upper neck column
+                        [0.52, 0, 0]   // Seg 4: arches forward into the head
+                    ],
+                    headRot: [-0.18, 0, 0],
+                    jawRotX: 0,
+                    lWingRot: [0, 0, 0],
+                    lOuterWingRot: [0, 0, 0],
+                    rWingRot: [0, 0, 0],
+                    rOuterWingRot: [0, 0, 0],
+                    lHipRot: [0, 0, 0],
+                    lAnkleRot: [0, 0, 0],
+                    lFootRot: [0, 0, 0],
+                    rHipRot: [0, 0, 0],
+                    rAnkleRot: [0, 0, 0],
+                    rFootRot: [0, 0, 0],
+                    eyesClosed: false
+                };
+
+                // Periodic natural blink
+                if ((t % 4.2) > 4.04) {
+                    pose.eyesClosed = true;
+                }
+
+                // ------------------------------------------------------------------------
+                // ANIMATION 1: ONE-LEG STAND (Reference Image 1)
+                // Iconic flamingo posture: standing tall on one straight leg while the left
+                // leg bends sharply backward in a figure-4 triangle with relaxed vertical foot!
+                // ------------------------------------------------------------------------
+                if (currentAnim === 'oneleg') {
+                    const breath = Math.sin(t * 1.9);
+                    const look = Math.sin(t * 0.85);
+
+                    pose.bodyPos = [0, 16.0 + breath * 0.12, 0];
+                    pose.bodyRot = [0.02 + breath * 0.015, 0, -0.02];
+
+                    // Classic poised S-curve neck from Reference 1
+                    pose.neckRots[0] = [0.86 + breath * 0.03, 0, 0];
+                    pose.neckRots[1] = [-0.60 - breath * 0.02, 0, 0];
+                    pose.neckRots[2] = [-0.38, look * 0.06, 0];
+                    pose.neckRots[3] = [-0.14, look * 0.08, 0];
+                    pose.neckRots[4] = [0.56, look * 0.10, 0];
+                    pose.headRot = [-0.22 + breath * 0.02, look * 0.12, 0];
+
+                    // Right Leg: Planted straight and sturdy underneath the center of gravity (Ref 1)
+                    pose.rHipRot = [0.02, 0, -0.05];
+                    pose.rAnkleRot = [-0.02, 0, 0.05];
+                    pose.rFootRot = [0, 0, 0];
+
+                    // Left Leg: Bent sharply backward at hip (-1.05 rad), forward at ankle (+1.68 rad)
+                    // forming the exact horizontal triangle / figure-4 in Reference 1 with dangling folded foot!
+                    pose.lHipRot = [-1.05 + breath * 0.03, 0, 0.04];
+                    pose.lAnkleRot = [1.68 + Math.sin(t * 1.5) * 0.04, 0, 0];
+                    pose.lFootRot = [1.22, 0, 0];
+                }
+
+                // ------------------------------------------------------------------------
+                // ANIMATION 2: LAGOON WADE (Reference Image 2)
+                // Standing serenely on both stilt legs slightly offset in calm shallow water
+                // ------------------------------------------------------------------------
+                else if (currentAnim === 'wade') {
+                    const breath = Math.sin(t * 1.7);
+                    const glance = Math.sin(t * 1.1);
+
+                    pose.bodyPos = [0, 15.85 + breath * 0.12, 0];
+                    pose.bodyRot = [0.04, glance * 0.04, 0];
+
+                    pose.neckRots[0] = [0.92 + breath * 0.03, 0, 0];
+                    pose.neckRots[1] = [-0.55, 0, 0];
+                    pose.neckRots[2] = [-0.42, glance * 0.08, 0];
+                    pose.neckRots[3] = [-0.18, glance * 0.12, 0];
+                    pose.neckRots[4] = [0.54, glance * 0.14, 0];
+                    pose.headRot = [-0.20, glance * 0.16, 0];
+
+                    // Both slender legs planted in a natural staggered wading stance (Ref 2)
+                    pose.lHipRot = [0.14, 0, 0];
+                    pose.lAnkleRot = [-0.18, 0, 0];
+                    pose.lFootRot = [0.04, 0, 0];
+
+                    pose.rHipRot = [-0.14, 0, 0];
+                    pose.rAnkleRot = [-0.04, 0, 0];
+                    pose.rFootRot = [0.18, 0, 0];
+                }
+
+                // ------------------------------------------------------------------------
+                // ANIMATION 3: SHALLOW STRIDE (Reference Image 3)
+                // High-stepping wading walk through shallow water with S-neck head bob
+                // ------------------------------------------------------------------------
+                else if (currentAnim === 'stride') {
+                    const w = t * 3.8;
+                    const sinW = Math.sin(w);
+                    const cosW = Math.cos(w);
+                    const bob = Math.sin(w * 2);
+
+                    pose.bodyPos = [0, 15.7 + Math.abs(sinW) * 0.45, 0];
+                    pose.bodyRot = [0.06 + bob * 0.02, sinW * 0.05, cosW * 0.03];
+
+                    // Rhythmic avian S-neck forward-and-back bobbing (Ref 3)
+                    pose.neckRots[0] = [0.88 + bob * 0.08, 0, 0];
+                    pose.neckRots[1] = [-0.52 - bob * 0.06, 0, 0];
+                    pose.neckRots[2] = [-0.40 - bob * 0.05, 0, 0];
+                    pose.neckRots[3] = [-0.15 + bob * 0.06, 0, 0];
+                    pose.neckRots[4] = [0.52 + bob * 0.06, 0, 0];
+                    pose.headRot = [-0.24 - bob * 0.05, 0, 0];
+
+                    // Alternating high-stepping flamingo leg stride (Ref 3 lifted front foot!)
+                    const lLift = Math.max(0, cosW);
+                    const rLift = Math.max(0, -cosW);
+
+                    pose.lHipRot = [sinW * 0.42 - lLift * 0.48, 0, 0];
+                    pose.lAnkleRot = [lLift * 1.15, 0, 0];
+                    pose.lFootRot = [lLift * 0.85 - sinW * 0.25, 0, 0];
+
+                    pose.rHipRot = [-sinW * 0.42 - rLift * 0.48, 0, 0];
+                    pose.rAnkleRot = [rLift * 1.15, 0, 0];
+                    pose.rFootRot = [rLift * 0.85 + sinW * 0.25, 0, 0];
+
+                    particleTimer += dt;
+                    if (particleTimer > 0.35) {
+                        particleTimer = 0;
+                        spawnParticle('splash', (Math.random() - 0.5) * 3, 1.4, (Math.random() - 0.5) * 4);
+                    }
+                }
+
+                // ------------------------------------------------------------------------
+                // ANIMATION 4: FILTER FEED
+                // Sweeps the long S-neck down into the water with the hooked bill inverted
+                // upside-down, sweeping side-to-side while rapidly chattering the jaw!
+                // ------------------------------------------------------------------------
+                else if (currentAnim === 'feed') {
+                    const sweep = Math.sin(t * 3.6);
+                    const chatter = Math.abs(Math.sin(t * 18.0));
+
+                    pose.bodyPos = [0, 15.2, 0];
+                    pose.bodyRot = [0.46, sweep * 0.08, 0];
+                    pose.tailRot = [-0.15, 0, 0];
+
+                    // Deep downward arch plunging the head down to water level (Y ≈ 1.5)
+                    pose.neckRots[0] = [1.28, sweep * 0.14, 0];
+                    pose.neckRots[1] = [0.42, sweep * 0.14, 0];
+                    pose.neckRots[2] = [0.35, sweep * 0.12, 0];
+                    pose.neckRots[3] = [0.28, sweep * 0.10, 0];
+                    pose.neckRots[4] = [0.22, sweep * 0.08, 0];
+
+                    // Flamingo feeds with the top of its hooked bill inverted parallel to the lagoon floor!
+                    pose.headRot = [0.32, sweep * 0.18, 0];
+                    pose.jawRotX = chatter * 0.26;
+
+                    pose.lHipRot = [-0.42, 0, 0.05];
+                    pose.lAnkleRot = [-0.04, 0, 0];
+                    pose.lFootRot = [0.46, 0, 0];
+
+                    pose.rHipRot = [-0.52, 0, -0.05];
+                    pose.rAnkleRot = [0.06, 0, 0];
+                    pose.rFootRot = [0.46, 0, 0];
+
+                    particleTimer += dt;
+                    if (particleTimer > 0.14) {
+                        particleTimer = 0;
+                        spawnParticle('splash', sweep * 4.5, 1.5, 11.5);
+                    }
+                }
+
+                // ------------------------------------------------------------------------
+                // ANIMATION 5: WING SALUTE (Courtship Display)
+                // Stretches S-neck tall ("head-flagging") and spreads both wings wide to flash
+                // the striking contrast of coral-pink coverts & jet-black flight feathers!
+                // ------------------------------------------------------------------------
+                else if (currentAnim === 'salute') {
+                    const flap = Math.sin(t * 5.2);
+                    const flag = Math.sin(t * 4.5);
+
+                    pose.bodyPos = [0, 16.3 + Math.abs(flap) * 0.25, 0];
+                    pose.bodyRot = [-0.22, flag * 0.08, 0];
+                    pose.tailRot = [-0.52, 0, 0];
+
+                    // Tall, proud vertical neck stretch with rhythmic head-flagging turns
+                    pose.neckRots[0] = [0.52, 0, 0];
+                    pose.neckRots[1] = [-0.35, 0, 0];
+                    pose.neckRots[2] = [-0.12, flag * 0.15, 0];
+                    pose.neckRots[3] = [0.02, flag * 0.22, 0];
+                    pose.neckRots[4] = [0.25, flag * 0.28, 0];
+                    pose.headRot = [-0.15, flag * 0.32, 0];
+                    pose.jawRotX = 0.18 + Math.max(0, flap) * 0.15;
+
+                    // Wide open Wing Salute flashing black primary flight feathers
+                    const spread = 1.28 + flap * 0.22;
+                    pose.lWingRot = [0.22, 0.25, spread];
+                    pose.lOuterWingRot = [0, 0, 0.35 + flap * 0.15];
+
+                    pose.rWingRot = [0.22, -0.25, -spread];
+                    pose.rOuterWingRot = [0, 0, -0.35 - flap * 0.15];
+
+                    pose.lHipRot = [0.20, 0, 0.04];
+                    pose.lAnkleRot = [0.02, 0, 0];
+                    pose.lFootRot = [-0.22, 0, 0];
+
+                    pose.rHipRot = [0.20, 0, -0.04];
+                    pose.rAnkleRot = [0.02, 0, 0];
+                    pose.rFootRot = [-0.22, 0, 0];
+                }
+
+                // ------------------------------------------------------------------------
+                // ANIMATION 6: FEATHER PREEN
+                // Curves the flexible S-neck backward over the left wing to nibble and groom
+                // ------------------------------------------------------------------------
+                else if (currentAnim === 'preen') {
+                    const nibble = Math.sin(t * 12.0);
+                    const sway = Math.sin(t * 2.4);
+
+                    pose.bodyPos = [0, 15.9, 0];
+                    pose.bodyRot = [0.05, 0.08, 0];
+
+                    // Graceful backward S-loop curving around to preen the raised left wing
+                    pose.neckRots[0] = [0.65, 0.28, 0];
+                    pose.neckRots[1] = [-0.45, 0.42, 0];
+                    pose.neckRots[2] = [-0.52, 0.55, -0.15];
+                    pose.neckRots[3] = [-0.48 + nibble * 0.06, 0.45, -0.18];
+                    pose.neckRots[4] = [0.42 + nibble * 0.08, 0.35, 0];
+                    pose.headRot = [0.35 + nibble * 0.10, 0.25, 0];
+                    pose.jawRotX = Math.abs(nibble) * 0.22;
+
+                    // Left wing slightly lifted & fluttering while being groomed
+                    pose.lWingRot = [0.08, 0.12, 0.38 + Math.abs(nibble) * 0.08];
+                    pose.lOuterWingRot = [0, 0, 0.18 + sway * 0.06];
+
+                    pose.lHipRot = [0.04, 0, 0];
+                    pose.lAnkleRot = [-0.08, 0, 0];
+                    pose.lFootRot = [0.04, 0, 0];
+
+                    pose.rHipRot = [-0.08, 0, 0];
+                    pose.rAnkleRot = [0.04, 0, 0];
+                    pose.rFootRot = [0.04, 0, 0];
+
+                    particleTimer += dt;
+                    if (particleTimer > 0.45) {
+                        particleTimer = 0;
+                        spawnParticle('feather', 3.5, 17.5, -1.5);
+                    }
+                }
+
+                // ------------------------------------------------------------------------
+                // APPLY SMOOTH POSE BLENDING TO FLAMINGO RIG
+                // ------------------------------------------------------------------------
+                const b = 10.5;
+
+                flamingo.bodyGroup.position.x = damp(flamingo.bodyGroup.position.x, pose.bodyPos[0], b, dt);
+                flamingo.bodyGroup.position.y = damp(flamingo.bodyGroup.position.y, pose.bodyPos[1], b, dt);
+                flamingo.bodyGroup.position.z = damp(flamingo.bodyGroup.position.z, pose.bodyPos[2], b, dt);
+
+                flamingo.bodyGroup.rotation.x = damp(flamingo.bodyGroup.rotation.x, pose.bodyRot[0], b, dt);
+                flamingo.bodyGroup.rotation.y = damp(flamingo.bodyGroup.rotation.y, pose.bodyRot[1], b, dt);
+                flamingo.bodyGroup.rotation.z = damp(flamingo.bodyGroup.rotation.z, pose.bodyRot[2], b, dt);
+
+                flamingo.tailGroup.rotation.x = damp(flamingo.tailGroup.rotation.x, pose.tailRot[0], b, dt);
+                flamingo.tailGroup.rotation.y = damp(flamingo.tailGroup.rotation.y, pose.tailRot[1], b, dt);
+                flamingo.tailGroup.rotation.z = damp(flamingo.tailGroup.rotation.z, pose.tailRot[2], b, dt);
+
+                // Smoothly blend all 5 S-curve neck segments
+                for (let i = 0; i < 5; i++) {
+                    const seg = flamingo.neckSegments[i];
+                    const target = pose.neckRots[i];
+                    seg.rotation.x = damp(seg.rotation.x, target[0], b, dt);
+                    seg.rotation.y = damp(seg.rotation.y, target[1], b, dt);
+                    seg.rotation.z = damp(seg.rotation.z, target[2], b, dt);
+                }
+
+                flamingo.headGroup.rotation.x = damp(flamingo.headGroup.rotation.x, pose.headRot[0], b, dt);
+                flamingo.headGroup.rotation.y = damp(flamingo.headGroup.rotation.y, pose.headRot[1], b, dt);
+                flamingo.headGroup.rotation.z = damp(flamingo.headGroup.rotation.z, pose.headRot[2], b, dt);
+
+                flamingo.jawGroup.rotation.x = damp(flamingo.jawGroup.rotation.x, pose.jawRotX, 16, dt);
+
+                // Wings
+                flamingo.leftWing.wingGroup.rotation.x = damp(flamingo.leftWing.wingGroup.rotation.x, pose.lWingRot[0], b, dt);
+                flamingo.leftWing.wingGroup.rotation.y = damp(flamingo.leftWing.wingGroup.rotation.y, pose.lWingRot[1], b, dt);
+                flamingo.leftWing.wingGroup.rotation.z = damp(flamingo.leftWing.wingGroup.rotation.z, pose.lWingRot[2], b, dt);
+                flamingo.leftWing.outerWingGroup.rotation.z = damp(flamingo.leftWing.outerWingGroup.rotation.z, pose.lOuterWingRot[2], b, dt);
+
+                flamingo.rightWing.wingGroup.rotation.x = damp(flamingo.rightWing.wingGroup.rotation.x, pose.rWingRot[0], b, dt);
+                flamingo.rightWing.wingGroup.rotation.y = damp(flamingo.rightWing.wingGroup.rotation.y, pose.rWingRot[1], b, dt);
+                flamingo.rightWing.wingGroup.rotation.z = damp(flamingo.rightWing.wingGroup.rotation.z, pose.rWingRot[2], b, dt);
+                flamingo.rightWing.outerWingGroup.rotation.z = damp(flamingo.rightWing.outerWingGroup.rotation.z, pose.rOuterWingRot[2], b, dt);
+
+                // Legs & Feet
+                flamingo.leftLeg.hipGroup.rotation.x = damp(flamingo.leftLeg.hipGroup.rotation.x, pose.lHipRot[0], b, dt);
+                flamingo.leftLeg.hipGroup.rotation.y = damp(flamingo.leftLeg.hipGroup.rotation.y, pose.lHipRot[1], b, dt);
+                flamingo.leftLeg.hipGroup.rotation.z = damp(flamingo.leftLeg.hipGroup.rotation.z, pose.lHipRot[2], b, dt);
+                flamingo.leftLeg.ankleGroup.rotation.x = damp(flamingo.leftLeg.ankleGroup.rotation.x, pose.lAnkleRot[0], b, dt);
+                flamingo.leftLeg.ankleGroup.rotation.z = damp(flamingo.leftLeg.ankleGroup.rotation.z, pose.lAnkleRot[2], b, dt);
+                flamingo.leftLeg.footGroup.rotation.x = damp(flamingo.leftLeg.footGroup.rotation.x, pose.lFootRot[0], b, dt);
+
+                flamingo.rightLeg.hipGroup.rotation.x = damp(flamingo.rightLeg.hipGroup.rotation.x, pose.rHipRot[0], b, dt);
+                flamingo.rightLeg.hipGroup.rotation.y = damp(flamingo.rightLeg.hipGroup.rotation.y, pose.rHipRot[1], b, dt);
+                flamingo.rightLeg.hipGroup.rotation.z = damp(flamingo.rightLeg.hipGroup.rotation.z, pose.rHipRot[2], b, dt);
+                flamingo.rightLeg.ankleGroup.rotation.x = damp(flamingo.rightLeg.ankleGroup.rotation.x, pose.rAnkleRot[0], b, dt);
+                flamingo.rightLeg.ankleGroup.rotation.z = damp(flamingo.rightLeg.ankleGroup.rotation.z, pose.rAnkleRot[2], b, dt);
+                flamingo.rightLeg.footGroup.rotation.x = damp(flamingo.rightLeg.footGroup.rotation.x, pose.rFootRot[0], b, dt);
+
+                flamingo.leftEyelid.visible = pose.eyesClosed;
+                flamingo.rightEyelid.visible = pose.eyesClosed;
+
+                // Animate Fluffy Downy Flamingo Chick beside the adult
+                chick.root.visible = infantEnabled;
+                if (infantEnabled) {
+                    chick.root.position.set(-6.2, 0.8, -3.2);
+                    chick.root.rotation.y = 0.42;
+                    chick.bodyGroup.position.set(0, 10.2 + Math.sin(t * 3.2) * 0.12, 0);
+                    chick.neckSegments[0].rotation.set(0.55, 0, 0);
+                    chick.neckSegments[1].rotation.set(-0.35, 0, 0);
+                    chick.neckSegments[2].rotation.set(-0.22, Math.sin(t * 2.2) * 0.15, 0);
+                    chick.neckSegments[3].rotation.set(-0.08, Math.sin(t * 2.2) * 0.15, 0);
+                    chick.neckSegments[4].rotation.set(0.35, 0, 0);
+                    chick.headGroup.rotation.set(-0.15 + Math.sin(t * 3.8) * 0.08, Math.sin(t * 2.2) * 0.2, 0);
+                    chick.leftWing.wingGroup.rotation.z = Math.max(0, Math.sin(t * 6.5)) * 0.35;
+                    chick.rightWing.wingGroup.rotation.z = -Math.max(0, Math.sin(t * 6.5)) * 0.35;
+                    chick.leftEyelid.visible = (t % 3.6) > 3.42;
+                    chick.rightEyelid.visible = (t % 3.6) > 3.42;
+                }
+
+                habitatGroup.visible = habitatPreference;
+
+                // Update active particles
+                for (let i = 0; i < particles.length; i++) {
+                    const p = particles[i];
+                    if (!p.active) continue;
+                    p.age += dt;
+                    if (p.age >= p.maxAge) {
+                        p.active = false;
+                        p.mesh.visible = false;
+                        continue;
+                    }
+                    p.vy -= 4.5 * dt;
+                    p.mesh.position.x += p.vx * dt;
+                    p.mesh.position.y = Math.max(1.2, p.mesh.position.y + p.vy * dt);
+                    p.mesh.position.z += p.vz * dt;
+                    p.mesh.quaternion.copy(camera.quaternion);
+                }
+            }
+
+            // ============================================================================
+            // 7. SMOOTH ORBIT, PAN & ZOOM CAMERA CONTROLLER
+            // ============================================================================
+            const camState = {
+                theta: -1.28,
+                phi: 1.38,
+                radius: 46,
+                targetTheta: -1.28,
+                targetPhi: 1.38,
+                targetRadius: 46,
+                lookAt: new THREE.Vector3(0, 15.2, 0.5),
+                targetLookAt: new THREE.Vector3(0, 15.2, 0.5),
+                isDragging: false,
+                isPanning: false,
+                prevX: 0,
+                prevY: 0,
+                pinchDist: 0
+            };
+
+            function focusCameraForAnim(animName) {
+                if (animName === 'oneleg') {
+                    // Matches the left-facing side profile of Reference Image 1!
+                    camState.targetTheta = -1.28;
+                    camState.targetPhi = 1.38;
+                    camState.targetRadius = 46;
+                    camState.targetLookAt.set(0, 15.2, 0.5);
+                } else if (animName === 'wade') {
+                    // Matches the right-facing lagoon side profile of Reference Image 2!
+                    camState.targetTheta = 1.18;
+                    camState.targetPhi = 1.34;
+                    camState.targetRadius = 45;
+                    camState.targetLookAt.set(0, 15.2, 0.8);
+                } else if (animName === 'stride') {
+                    // Matches the wading stride profile of Reference Image 3!
+                    camState.targetTheta = -1.15;
+                    camState.targetPhi = 1.32;
+                    camState.targetRadius = 46;
+                    camState.targetLookAt.set(0, 14.8, 0.5);
+                } else if (animName === 'feed') {
+                    camState.targetTheta = -1.05;
+                    camState.targetPhi = 1.26;
+                    camState.targetRadius = 44;
+                    camState.targetLookAt.set(0, 11.5, 3.0);
+                } else if (animName === 'salute') {
+                    camState.targetTheta = 0.52;
+                    camState.targetPhi = 1.30;
+                    camState.targetRadius = 48;
+                    camState.targetLookAt.set(0, 16.5, 0.5);
+                } else {
+                    camState.targetTheta = 0.95;
+                    camState.targetPhi = 1.30;
+                    camState.targetRadius = 44;
+                    camState.targetLookAt.set(0, 15.5, 0.5);
+                }
+            }
+
+            function updateCamera(dt) {
+                camState.theta = damp(camState.theta, camState.targetTheta, 12, dt);
+                camState.phi = damp(camState.phi, camState.targetPhi, 12, dt);
+                camState.radius = damp(camState.radius, camState.targetRadius, 12, dt);
+                camState.lookAt.lerp(camState.targetLookAt, 1 - Math.exp(-12 * dt));
+
+                const sinPhi = Math.sin(camState.phi);
+                camera.position.x = camState.lookAt.x + camState.radius * sinPhi * Math.sin(camState.theta);
+                camera.position.y = camState.lookAt.y + camState.radius * Math.cos(camState.phi);
+                camera.position.z = camState.lookAt.z + camState.radius * sinPhi * Math.cos(camState.theta);
+                camera.lookAt(camState.lookAt);
+            }
+
+            container.addEventListener('mousedown', (e) => {
+                camState.isDragging = true;
+                camState.isPanning = (e.button === 2 || e.shiftKey);
+                camState.prevX = e.clientX;
+                camState.prevY = e.clientY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!camState.isDragging) return;
+                const dx = e.clientX - camState.prevX;
+                const dy = e.clientY - camState.prevY;
+                camState.prevX = e.clientX;
+                camState.prevY = e.clientY;
+
+                if (camState.isPanning) {
+                    camState.targetLookAt.y += dy * 0.04;
+                    const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+                    camState.targetLookAt.addScaledVector(right, -dx * 0.04);
+                } else {
+                    camState.targetTheta -= dx * 0.0075;
+                    camState.targetPhi = THREE.MathUtils.clamp(camState.targetPhi - dy * 0.0075, 0.25, Math.PI / 2 + 0.12);
+                }
+            });
+
+            window.addEventListener('mouseup', () => {
+                camState.isDragging = false;
+            });
+
+            container.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                camState.targetRadius = THREE.MathUtils.clamp(camState.targetRadius + e.deltaY * 0.035, 22, 85);
+            }, { passive: false });
+
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    camState.isDragging = true;
+                    camState.isPanning = false;
+                    camState.prevX = e.touches[0].clientX;
+                    camState.prevY = e.touches[0].clientY;
+                } else if (e.touches.length === 2) {
+                    camState.isDragging = false;
+                    camState.pinchDist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                }
+            }, { passive: true });
+
+            container.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && camState.isDragging) {
+                    const dx = e.touches[0].clientX - camState.prevX;
+                    const dy = e.touches[0].clientY - camState.prevY;
+                    camState.prevX = e.touches[0].clientX;
+                    camState.prevY = e.touches[0].clientY;
+                    camState.targetTheta -= dx * 0.008;
+                    camState.targetPhi = THREE.MathUtils.clamp(camState.targetPhi - dy * 0.008, 0.25, Math.PI / 2 + 0.12);
+                } else if (e.touches.length === 2) {
+                    const dist = Math.hypot(
+                        e.touches[0].clientX - e.touches[1].clientX,
+                        e.touches[0].clientY - e.touches[1].clientY
+                    );
+                    const delta = camState.pinchDist - dist;
+                    camState.pinchDist = dist;
+                    camState.targetRadius = THREE.MathUtils.clamp(camState.targetRadius + delta * 0.08, 22, 85);
+                }
+            }, { passive: true });
+
+            container.addEventListener('touchend', () => {
+                camState.isDragging = false;
+            });
+
+            // ============================================================================
+            // 8. UI EVENT LISTENERS & 60 FPS RENDER LOOP
+            // ============================================================================
+            const animButtons = document.querySelectorAll('.anim-btn');
+            animButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    animButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentAnim = btn.getAttribute('data-anim');
+                    focusCameraForAnim(currentAnim);
+                });
+            });
+
+            const btnInfant = document.getElementById('btn-infant');
+            btnInfant.addEventListener('click', () => {
+                infantEnabled = !infantEnabled;
+                btnInfant.classList.toggle('active', infantEnabled);
+            });
+
+            const btnHabitat = document.getElementById('btn-habitat');
+            btnHabitat.addEventListener('click', () => {
+                habitatPreference = !habitatPreference;
+                btnHabitat.classList.toggle('active', habitatPreference);
+                focusCameraForAnim(currentAnim);
+            });
+
+            const speeds = [1.0, 1.5, 0.5, 0.0];
+            let speedIdx = 0;
+            const btnSpeed = document.getElementById('btn-speed');
+            btnSpeed.addEventListener('click', () => {
+                speedIdx = (speedIdx + 1) % speeds.length;
+                speedMultiplier = speeds[speedIdx];
+                btnSpeed.textContent = speedMultiplier === 0 ? 'PAUSED' : speedMultiplier.toFixed(1) + 'x';
+                btnSpeed.classList.toggle('active', speedMultiplier !== 1.0);
+            });
+
+            document.getElementById('btn-reset-cam').addEventListener('click', () => {
+                focusCameraForAnim(currentAnim);
+            });
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            const fpsBadge = document.getElementById('fps-counter');
+            let lastTime = performance.now();
+            let frameCount = 0;
+            let fpsAccumulator = 0;
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const now = performance.now();
+                const rawDt = Math.min((now - lastTime) / 1000, 0.1);
+                lastTime = now;
+
+                frameCount++;
+                fpsAccumulator += rawDt;
+                if (fpsAccumulator >= 0.5) {
+                    const fps = Math.min(60, Math.round(frameCount / fpsAccumulator));
+                    fpsBadge.textContent = fps + ' FPS';
+                    frameCount = 0;
+                    fpsAccumulator = 0;
+                }
+
+                animTime += rawDt * speedMultiplier;
+                evaluateFlamingoAnimation(animTime, rawDt);
+                updateCamera(rawDt);
+
+                renderer.render(scene, camera);
+            }
+
+            window.onload = function () {
+                animate();
+            };
+        })();
+    </script>
+</body>
+</html>

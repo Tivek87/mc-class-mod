@@ -1,0 +1,10 @@
+{
+  "type": "neoforge:add_spawns",
+  "biomes": "#welcomescreen:spawns_flamingos",
+  "spawners": {
+    "type": "welcomescreen:flamingo",
+    "weight": 6,
+    "minCount": 4,
+    "maxCount": 8
+  }
+}

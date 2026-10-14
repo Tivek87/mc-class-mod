@@ -7,6 +7,7 @@ import nl.tivek.multiversepowers.creature.animal.crocodile.client.CrocodileRende
 import nl.tivek.multiversepowers.creature.animal.deer.client.DeerRenderer;
 import nl.tivek.multiversepowers.creature.animal.duck.client.DuckRenderer;
 import nl.tivek.multiversepowers.creature.animal.elephant.client.ElephantRenderer;
+import nl.tivek.multiversepowers.creature.animal.flamingo.client.FlamingoRenderer;
 import nl.tivek.multiversepowers.creature.animal.giraffe.client.GiraffeRenderer;
 import nl.tivek.multiversepowers.creature.animal.hedgehog.client.HedgehogRenderer;
 import nl.tivek.multiversepowers.creature.animal.lynx.client.LynxRenderer;
@@ -53,5 +54,7 @@ public final class WildAnimalsClient {
         modEventBus.addListener(DuckRenderer::onRegisterLayers);
         modEventBus.addListener(CrocodileRenderer::onRegisterRenderers);
         modEventBus.addListener(CrocodileRenderer::onRegisterLayers);
+        modEventBus.addListener(FlamingoRenderer::onRegisterRenderers);
+        modEventBus.addListener(FlamingoRenderer::onRegisterLayers);
     }
 }

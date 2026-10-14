@@ -30,6 +30,7 @@ import nl.tivek.multiversepowers.creature.animal.crocodile.Crocodile;
 import nl.tivek.multiversepowers.creature.animal.deer.Deer;
 import nl.tivek.multiversepowers.creature.animal.duck.Duck;
 import nl.tivek.multiversepowers.creature.animal.elephant.Elephant;
+import nl.tivek.multiversepowers.creature.animal.flamingo.Flamingo;
 import nl.tivek.multiversepowers.creature.animal.giraffe.Giraffe;
 import nl.tivek.multiversepowers.creature.animal.hedgehog.Hedgehog;
 import nl.tivek.multiversepowers.creature.animal.lynx.Lynx;
@@ -116,7 +117,9 @@ public final class ModItems {
             ITEMS.register("duck_spawn_egg",
                     () -> new DeferredSpawnEggItem(Duck.TYPE, 0x8A6A48, 0x1F6A3A, new Item.Properties())),
             ITEMS.register("crocodile_spawn_egg",
-                    () -> new DeferredSpawnEggItem(Crocodile.TYPE, 0x4A5632, 0xC9BE84, new Item.Properties())));
+                    () -> new DeferredSpawnEggItem(Crocodile.TYPE, 0x4A5632, 0xC9BE84, new Item.Properties())),
+            ITEMS.register("flamingo_spawn_egg",
+                    () -> new DeferredSpawnEggItem(Flamingo.TYPE, 0xF26649, 0x16161A, new Item.Properties())));
 
     // The wild animals' meat: venison from deer and moose, bear meat from bears, which raw may make you hungry as
     // raw chicken does, crab, and duck.

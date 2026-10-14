@@ -3,6 +3,15 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.18-alpha] - 2026-10-14
+
+### Added
+- **Flamingo:** a new wild bird on beaches, mangrove swamps and warm shores, in flocks of American or greater
+  flamingos with grey chicks. It wades, feeds with its head upside down, rests on one leg, preens and honks, and the
+  flock joins in a wing salute. Scared, it runs and flies a short way. Breed it with cod, salmon or kelp; it drops
+  feathers.
+- **Project:** the design page the flamingo was built from is kept in `docs/reference/`.
+
 ## [0.9.17-alpha] - 2026-10-14
 
 ### Changed

@@ -1096,6 +1096,73 @@
       }
     ]
   },
+  "flamingo.honk": {
+    "subtitle": "subtitles.welcomescreen.flamingo.honk",
+    "sounds": [
+      {
+        "name": "welcomescreen:flamingo/honk",
+        "attenuation_distance": 24
+      }
+    ]
+  },
+  "flamingo.display": {
+    "subtitle": "subtitles.welcomescreen.flamingo.display",
+    "sounds": [
+      {
+        "name": "welcomescreen:flamingo/display",
+        "attenuation_distance": 32
+      }
+    ]
+  },
+  "flamingo.ambient": {
+    "subtitle": "subtitles.welcomescreen.flamingo.ambient",
+    "sounds": [
+      {
+        "name": "welcomescreen:flamingo/call",
+        "attenuation_distance": 20
+      }
+    ]
+  },
+  "flamingo.hurt": {
+    "subtitle": "subtitles.welcomescreen.flamingo.hurt",
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.hurt",
+        "type": "event",
+        "pitch": 0.75
+      }
+    ]
+  },
+  "flamingo.death": {
+    "subtitle": "subtitles.welcomescreen.flamingo.death",
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.death",
+        "type": "event",
+        "pitch": 0.75
+      }
+    ]
+  },
+  "flamingo.takeoff": {
+    "subtitle": "subtitles.welcomescreen.flamingo.takeoff",
+    "sounds": [
+      {
+        "name": "minecraft:entity.ender_dragon.flap",
+        "type": "event",
+        "pitch": 1.7,
+        "volume": 0.35
+      }
+    ]
+  },
+  "flamingo.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.chicken.step",
+        "type": "event",
+        "pitch": 0.8
+      }
+    ]
+  },
   "crocodile.hiss": {
     "subtitle": "subtitles.welcomescreen.crocodile.hiss",
     "sounds": [

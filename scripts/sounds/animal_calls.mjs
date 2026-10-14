@@ -1,7 +1,9 @@
 // Builds the wild animals' calls that the game has no sound for, under
 // src/main/resources/assets/welcomescreen/sounds/: duck/quack.ogg (four quacks, the first the loudest, each a little
 // lower: they fall where Duck's QUACK act opens its bill, in ticks, 20 a second), duck/call.ogg (one soft quack),
-// monkey/hoot.ogg (five rising hoots, where Monkey's HOOT act bounces), monkey/call.ogg (two short chirps) and
+// monkey/hoot.ogg (five rising hoots, where Monkey's HOOT act bounces), monkey/call.ogg (two short chirps),
+// flamingo/honk.ogg (three nasal honks, where Flamingo's HONK act opens its bill), flamingo/display.ogg (four honks
+// with low grunts between, where its DISPLAY act opens its bill), flamingo/call.ogg (a low two-note gabble) and
 // elephant/trumpet.ogg (one long brassy blast that rises and falls). Each is a voice: a buzz of harmonics at the
 // note's pitch, shaped by the mouth's resonances, made rough by a flutter, with a little breath under it. Change the
 // numbers here and run it again rather than editing a sound by hand:
@@ -58,6 +60,29 @@ const VOICES = {
         arch: 0.42, roll: 0.5,
         formants: [[720, 2.0, 1.0], [1650, 3.0, 0.9], [3100, 4.0, 0.5]],
         dry: 0.12, flutter: [52, 0.5], jitter: 0.035, breath: 0.22, attack: 0.03, release: 0.5,
+    },
+    'flamingo/honk': {
+        length: 3.0,
+        notes: [[0.22, 0.42, 1.0, 470, 400], [1.43, 1.63, 0.9, 460, 390], [2.64, 2.86, 0.85, 450, 375]],
+        arch: 0.12, roll: 0.5,
+        formants: [[900, 3.0, 1.0], [2200, 4.0, 0.7], [3300, 5.0, 0.3]],
+        dry: 0.12, flutter: [60, 0.4], jitter: 0.03, breath: 0.1, attack: 0.02, release: 0.06,
+    },
+    'flamingo/display': {
+        length: 4.1,
+        notes: [[0.22, 0.40, 1.0, 480, 410], [0.80, 0.88, 0.35, 330, 300], [1.43, 1.61, 0.95, 470, 400],
+            [2.01, 2.09, 0.35, 320, 295], [2.64, 2.82, 1.0, 490, 415], [3.22, 3.30, 0.35, 330, 300],
+            [3.85, 4.03, 0.9, 470, 400]],
+        arch: 0.1, roll: 0.5,
+        formants: [[900, 3.0, 1.0], [2200, 4.0, 0.7], [3300, 5.0, 0.3]],
+        dry: 0.12, flutter: [60, 0.4], jitter: 0.035, breath: 0.1, attack: 0.02, release: 0.06,
+    },
+    'flamingo/call': {
+        length: 0.45,
+        notes: [[0.04, 0.14, 1.0, 320, 280], [0.22, 0.34, 0.8, 300, 265]],
+        arch: 0.05, roll: 0.6,
+        formants: [[800, 3.0, 1.0], [2000, 4.0, 0.6]],
+        dry: 0.15, flutter: [48, 0.45], jitter: 0.03, breath: 0.12, attack: 0.015, release: 0.05,
     },
 };
 
