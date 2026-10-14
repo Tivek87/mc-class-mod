@@ -1,6 +1,7 @@
 # Laatste sessie
 
-- Datum: 2026-10-14 12:58
+- Datum: 2026-10-14 13:59
+- Laatste verzoek: flamingo in het water alleen tot het onderbeen. Gedaan: `Flamingo.deep` (meer dan 1 blok water = drijven), anders `Afloat.buoy` op kniehoogte (6.3 design-px x grootte); `Flamingo.size` nu in de entity (renderer en poses gebruiken die); drijflijn kuiken klopt nu ook. Getest in het spel (ondiep: water tot net onder de knie; 2 diep: drijft). Build groen, tour gelopen. Release 0.9.19 (CHANGELOG-regel in SMALL, FROM blijft 0.9.17).
 - Verzoek: nieuwe mob flamingo, 1 op 1 naar `flamingo_demo.html` (model, animaties, kleuren), groter, echte mob; daarna release 0.9.18 en demo naar `docs/reference/`.
 - Gedaan: `creature/animal/flamingo/` (`Flamingo`, `FlamingoFlight`, `client/FlamingoModel`, `FlamingoPoses`, `FlamingoRenderer`): model doos voor doos uit de demo, Amerikaanse en grote flamingo, kuiken eigen model. Acts: op een poot, filteren, poetsen, vleugelgroet (zwerm doet mee), toeteren, strekken; vliegen na aanloop.
 - Textuur: `scripts/models/animals/FlamingoTexture.java`, schilders van de demo, 2x fijn. Kleuren door lineair->sRGB, zoals three.js ze toont (anders te donker).

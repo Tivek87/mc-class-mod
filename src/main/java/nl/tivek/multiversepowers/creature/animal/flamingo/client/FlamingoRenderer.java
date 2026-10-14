@@ -16,9 +16,6 @@ import nl.tivek.multiversepowers.faction.mob.client.MobPreview;
 public final class FlamingoRenderer extends WildRenderer<Flamingo, FlamingoModel> {
     static final ModelLayerLocation LAYER = layer("flamingo");
     static final ModelLayerLocation CHICK_LAYER = layer("flamingo_chick");
-    private static final float AMERICAN_SIZE = 0.85F;
-    private static final float GREATER_SIZE = 0.92F;
-    private static final float CHICK_SIZE = 0.46F;
     private static final ResourceLocation AMERICAN = texture("flamingo");
     private static final ResourceLocation GREATER = texture("flamingo_greater");
     private static final ResourceLocation CHICK = texture("flamingo_chick");
@@ -31,12 +28,6 @@ public final class FlamingoRenderer extends WildRenderer<Flamingo, FlamingoModel
         this.chick = new FlamingoModel(context.bakeLayer(CHICK_LAYER), true);
     }
 
-    // How big this one is drawn against the design.
-    static float size(Flamingo flamingo) {
-        float kind = flamingo.variant() == Flamingo.GREATER ? GREATER_SIZE : AMERICAN_SIZE;
-        return flamingo.isBaby() ? kind * CHICK_SIZE : kind;
-    }
-
     @Override
     public void render(Flamingo flamingo, float yaw, float partialTick, PoseStack poseStack,
             MultiBufferSource buffers, int light) {
@@ -46,13 +37,13 @@ public final class FlamingoRenderer extends WildRenderer<Flamingo, FlamingoModel
 
     @Override
     protected void scale(Flamingo flamingo, PoseStack poseStack, float partialTick) {
-        float size = size(flamingo);
+        float size = flamingo.size();
         poseStack.scale(size, size, size);
     }
 
     @Override
     protected float getShadowRadius(Flamingo flamingo) {
-        return 0.4F * size(flamingo);
+        return 0.4F * flamingo.size();
     }
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {

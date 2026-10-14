@@ -3,6 +3,11 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.19-alpha] - 2026-10-14
+
+### Changed
+- **Flamingo in water:** standing in shallow water, the water reaches only its lower legs; chicks float higher.
+
 ## [0.9.18-alpha] - 2026-10-14
 
 ### Added

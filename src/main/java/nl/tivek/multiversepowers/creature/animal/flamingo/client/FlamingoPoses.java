@@ -67,7 +67,7 @@ final class FlamingoPoses {
             float run = Trunk.in(a, 0.6, 0.95);
             float reach = 1.0F + 0.35F * run;
             float sweep = 2.0F * (chick ? CHICK_LEG : LEG) * Mth.sin(0.42F * reach)
-                    * FlamingoRenderer.size(flamingo);
+                    * flamingo.size();
             float phase = this.strides.phase(id, age, flamingo.level().getGameTime(), Strides.rate(a, 0.5F, sweep));
             // The design's stride run backwards in time, so a planted foot goes back under the body as it walks on.
             p.mix(this.with(c2 -> stride(c2, -phase, reach)), on);

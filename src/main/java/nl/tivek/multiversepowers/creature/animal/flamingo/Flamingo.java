@@ -48,6 +48,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.common.NeoForgeMod;
 import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -86,8 +87,16 @@ public final class Flamingo extends WildAnimal {
     public static final int STRETCH = 6;
     public static final int HONK_END = 58;
     public static final int DISPLAY_END = 80;
-    // How deep it floats where it cannot stand: the surface this far above its feet, over its legs and belly.
-    private static final double FLOAT = 0.85;
+    // How big each is drawn against its design, which stands about two blocks tall.
+    private static final float AMERICAN_SIZE = 0.85F;
+    private static final float GREATER_SIZE = 0.92F;
+    private static final float CHICK_SIZE = 0.46F;
+    // Where the water lies on it, in the design's pixels above its feet: standing, no higher than the lower leg, just
+    // under the joint halfway up; afloat where it cannot stand, just over its belly.
+    private static final double KNEE = 6.3;
+    private static final double CHICK_KNEE = 3.75;
+    private static final double BELLY = 16.0;
+    private static final double CHICK_BELLY = 10.0;
     static final SoundEvent HONKS = Sounds.of("flamingo.honk");
     private static final SoundEvent CHORUS = Sounds.of("flamingo.display");
     private static final SoundEvent AMBIENT = Sounds.of("flamingo.ambient");
@@ -163,6 +172,22 @@ public final class Flamingo extends WildAnimal {
                 && !level.getFluidState(pos.below()).is(FluidTags.WATER)
                 && level.getBlockState(pos.below()).isFaceSturdy(level, pos.below(), Direction.UP)
                 && level.getBlockState(pos.above()).isAir();
+    }
+
+    // How big this one is drawn against the design.
+    public float size() {
+        float kind = this.variant() == GREATER ? GREATER_SIZE : AMERICAN_SIZE;
+        return this.isBaby() ? kind * CHICK_SIZE : kind;
+    }
+
+    // Too deep to stand in: more than a block of water over the ground under it, which it floats on instead.
+    private boolean deep() {
+        double surface = this.getY() + this.getFluidTypeHeight(NeoForgeMod.WATER_TYPE.value());
+        BlockPos.MutableBlockPos at = this.blockPosition().mutable();
+        for (int k = 0; k < 3 && this.level().getFluidState(at).is(FluidTags.WATER); k++) {
+            at.move(Direction.DOWN);
+        }
+        return this.level().getFluidState(at).is(FluidTags.WATER) || surface - (at.getY() + 1) > 1.05;
     }
 
     public boolean wading() {
@@ -265,13 +290,15 @@ public final class Flamingo extends WildAnimal {
         boolean takeoff = !flying && pace > 0.24;
         float want = this.airborne > 3 ? 1.0F : takeoff ? 0.75F : 0.0F;
         this.spread = Mth.clamp(this.spread + Mth.clamp(want - this.spread, -0.15F, 0.2F), 0.0F, 1.0F);
-        boolean afloat = wet && this.level().noCollision(this, this.getBoundingBox().move(0.0, -0.2, 0.0));
+        boolean afloat = wet && this.deep();
         this.swim = Mth.clamp(this.swim + (afloat ? 0.1F : -0.1F), 0.0F, 1.0F);
         if (flying || takeoff) {
             this.flap += takeoff ? 0.7F : 0.55F;
         }
         if (!this.level().isClientSide) {
-            Afloat.buoy(this, FLOAT);
+            boolean chick = this.isBaby();
+            double line = afloat ? (chick ? CHICK_BELLY : BELLY) : chick ? CHICK_KNEE : KNEE;
+            Afloat.buoy(this, line * this.size() / 16.0);
             Vec3 motion = this.getDeltaMovement();
             if (flying && motion.y < 0.0) {
                 this.setDeltaMovement(motion.multiply(1.0, 0.7, 1.0));
