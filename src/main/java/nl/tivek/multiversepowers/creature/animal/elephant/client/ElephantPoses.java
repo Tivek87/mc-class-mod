@@ -3,15 +3,21 @@ package nl.tivek.multiversepowers.creature.animal.elephant.client;
 import javax.annotation.Nullable;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.client.Channels;
+import nl.tivek.multiversepowers.creature.animal.client.Gait;
+import nl.tivek.multiversepowers.creature.animal.client.Strides;
 import nl.tivek.multiversepowers.creature.animal.elephant.Elephant;
+import nl.tivek.multiversepowers.creature.client.PoseSprings;
 import nl.tivek.multiversepowers.creature.client.Trunk;
 
-// How the elephant moves: a slow, rolling walk, a foot at a time, its head nodding and its trunk swinging; the same
-// walk longer and faster when it charges, as an elephant never leaves the ground; ears fanning, trunk swaying and
-// tail swishing while it stands; and its acts: its trunk reached up into the leaves and curled back to its mouth,
-// its trunk sweeping the ground for grass and curled back to its mouth, dust drawn up and thrown back over its
-// shoulders, the threat (head high, ears spread wide, trunk thrown up, rocking on its forefeet), and the strike: head
-// swung down and then up, tusks first, its trunk flung forward.
+// How the elephant moves: a slow, rolling walk, a foot at a time a quarter of a stride apart, each foot kept flat
+// where it was set down while the great body goes over it, the leg folding at the knee as it swings, the shoulders and
+// hips rising and falling over the legs that bear them, its head nodding and its trunk and ears swinging behind; the
+// same walk longer and faster when it charges, as an elephant never leaves the ground; the body leaning into its
+// turns; ears fanning, eyes blinking, trunk swaying and tail swishing while it stands; and its acts: its trunk reached
+// up into the leaves and curled back to its mouth, its trunk sweeping the ground for grass and curled back to its
+// mouth, dust drawn up and thrown back over its shoulders, the threat (head high, ears spread wide, trunk thrown up,
+// rocking on its forefeet), and the strike: head swung down and then up, tusks first, its trunk flung forward. The
+// whole pose follows on springs, the trunk, ears and tail slow and swinging past.
 final class ElephantPoses {
     static final int PITCH = 0;
     static final int ROLL = 1;
@@ -31,13 +37,26 @@ final class ElephantPoses {
     static final int TAIL = 16;
     static final int TAIL_SIDE = 17;
     static final int LOOK = 18;
-    // Per leg (right front, left front, right hind, left hind): swing, outward, and its knee.
-    static final int LEGS = 19;
-    static final int PER_LEG = 3;
+    // Where each ear's back half is (right, then left): its ear's own place, followed more loosely.
+    static final int FLAP_R = 19;
+    static final int FLAP_L = 20;
+    static final int BLINK = 21;
+    // Per leg (right front, left front, right hind, left hind): swing, outward, its knee, and its foot.
+    static final int LEGS = 22;
+    static final int PER_LEG = 4;
     private static final int COUNT = LEGS + 4 * PER_LEG;
     private static final int RF = LEGS;
     private static final int LF = LEGS + PER_LEG;
-    private static final float PACE = 0.3F;
+    // Where in a stride each foot is set down: left hind, left fore, right hind, right fore a quarter apart.
+    private static final float[] AT = { 0.75F, 0.25F, 0.5F, 0.0F };
+    private static final float WALK_SWEEP = 18.0F;
+    private static final float FAST_SWEEP = 28.0F;
+    private static final float LEG = 30.0F;
+    // From the hips to the shoulders.
+    private static final float SPAN = 25.0F;
+    private static final double[][] SPRINGS = springs();
+    private final Strides strides = new Strides();
+    private final PoseSprings springs = new PoseSprings(SPRINGS[0], SPRINGS[1]);
     // Hanging, its tip curled a little back.
     private static final float[] REST = { -0.12F, 0.05F, 0.1F, 0.15F, 0.3F };
     // Hung forward and curled back up, so its tip comes to the mouth.
@@ -61,8 +80,18 @@ final class ElephantPoses {
         float[] c = p.v;
         c[LOOK] = 1.0F;
         System.arraycopy(REST, 0, c, TRUNK, PIECES);
-        this.walk(c, limbSwing, Mth.clamp(amount, 0.0F, 1.0F));
         int id = elephant.getId();
+        float a = Mth.clamp(amount, 0.0F, 1.0F);
+        float fast = Trunk.in(a, 0.5, 0.9);
+        float duty = Gait.duty(fast, 0.72F, 0.55F);
+        float phase = this.strides.phase(id, age, elephant.level().getGameTime(),
+                Strides.rate(a, duty, Mth.lerp(fast, WALK_SWEEP, FAST_SWEEP)));
+        this.walk(c, phase, a, fast, duty);
+        float turn = Mth.clamp(Mth.wrapDegrees(elephant.yBodyRot - elephant.yBodyRotO), -10.0F, 10.0F);
+        c[ROLL] -= 0.008F * turn * a;
+        c[HEAD_YAW] += 0.02F * turn;
+        c[TRUNK_SIDE] -= 0.04F * turn;
+        c[BLINK] = Channels.blink(age, id);
         c[BOB] += 0.12F * Mth.sin(age * 0.05F);
         // It fans itself: both ears out and back together, for a while, then held still.
         float fan = Channels.twitch(age, id, 190, 110.0F) * (0.5F + 0.5F * Mth.sin(age * 0.22F));
@@ -80,29 +109,61 @@ final class ElephantPoses {
                 p.mix(this.act(kind, (float) elephant.actAge(kind, partialTick), id), w);
             }
         }
+        c[FLAP_R] = c[EAR_R];
+        c[FLAP_L] = c[EAR_L];
+        float blink = c[BLINK];
+        this.springs.follow(id, c, age, elephant.level().getGameTime());
+        c[BLINK] = blink;
         return p;
     }
 
-    private void walk(float[] c, float limbSwing, float a) {
-        float phase = limbSwing * PACE;
-        float fast = Trunk.in(a, 0.5, 0.9);
-        float[] at = { 1.5F * Mth.PI, 0.5F * Mth.PI, Mth.PI, 0.0F };
-        for (int k = 0; k < 4; k++) {
-            float w = phase + at[k];
-            int leg = LEGS + k * PER_LEG;
-            c[leg] = (0.3F + 0.2F * fast) * a * Channels.swing(w);
-            c[leg + 2] = (0.6F + 0.3F * fast) * a * Channels.lift(w);
+    private static double[][] springs() {
+        int[] loose = new int[PIECES + 7];
+        for (int k = 0; k < PIECES; k++) {
+            loose[k] = TRUNK + k;
         }
-        c[BOB] = (0.5F + 0.5F * fast) * a * Mth.cos(2.0F * phase);
-        c[ROLL] = 0.04F * a * Mth.sin(phase);
-        c[HEAD] = 0.05F * a * Mth.cos(2.0F * phase + 0.6F) - 0.12F * fast;
-        c[TRUNK_SIDE] = 0.18F * a * Mth.sin(phase);
-        c[TRUNK + 1] += 0.08F * a * Mth.cos(2.0F * phase);
+        int[] more = { TRUNK_SIDE, EAR_R, EAR_L, TAIL, TAIL_SIDE, FLAP_R, FLAP_L };
+        System.arraycopy(more, 0, loose, PIECES, more.length);
+        double[][] s = Channels.springs(COUNT, 0.35, 0.16, 0.45, loose);
+        // The ears' back halves lag furthest.
+        s[0][FLAP_R] = s[0][FLAP_L] = 0.1;
+        s[1][FLAP_R] = s[1][FLAP_L] = 0.35;
+        return s;
+    }
+
+    private void walk(float[] c, float phase, float a, float fast, float duty) {
+        float on = Gait.smooth(0.0F, 0.3F, a);
+        float[] load = new float[4];
+        float[] drop = new float[4];
+        for (int k = 0; k < 4; k++) {
+            int leg = LEGS + k * PER_LEG;
+            float p = phase - Mth.TWO_PI * AT[k];
+            float swing = on * Mth.lerp(fast, 0.3F, 0.45F) * Gait.swing(p, duty);
+            float knee = Mth.lerp(fast, 0.7F, 0.95F) * on * Gait.fold(p, duty);
+            c[leg] = swing;
+            c[leg + 2] = knee;
+            // The foot kept flat, its heel rolling up only a little as it lifts.
+            c[leg + 3] = 0.35F * on * Gait.toe(p, duty) - swing - knee;
+            drop[k] = LEG * (1.0F - Mth.cos(swing));
+            load[k] = Gait.load(p, duty);
+        }
+        float fore = (load[0] * drop[0] + load[1] * drop[1]) / Math.max(0.3F, load[0] + load[1]);
+        float hind = (load[2] * drop[2] + load[3] * drop[3]) / Math.max(0.3F, load[2] + load[3]);
+        c[BOB] = hind;
+        c[PITCH] = (fore - hind) / SPAN;
+        // The great body rolls toward the side whose legs bear it.
+        c[ROLL] = 0.05F * a * (load[0] + load[2] - load[1] - load[3]);
+        float nod = load[0] + load[1] - 1.0F;
+        c[HEAD] = 0.06F * a * nod - 0.12F * fast - c[PITCH];
+        c[TRUNK_SIDE] = 0.2F * a * (load[1] - load[0]);
+        c[TRUNK + 1] += 0.1F * a * nod;
         c[TRUNK + 3] += 0.15F * fast;
         c[TRUNK + 4] += 0.3F * fast;
         c[EAR_R] = c[EAR_L] = 0.9F * fast;
+        c[EAR_R] += 0.12F * a * load[0];
+        c[EAR_L] += 0.12F * a * load[1];
         c[TAIL] = 0.5F * fast;
-        c[TAIL_SIDE] = 0.2F * a * Mth.sin(phase + 1.0F);
+        c[TAIL_SIDE] = 0.2F * a * (load[2] - load[3]);
     }
 
     private Channels act(int kind, float t, int id) {
@@ -164,6 +225,8 @@ final class ElephantPoses {
                 c[RF + 2] = 0.7F * on * Math.max(0.0F, rock);
                 c[LF] = -0.2F * on * Math.max(0.0F, -rock);
                 c[LF + 2] = 0.7F * on * Math.max(0.0F, -rock);
+                c[RF + 3] = -c[RF] - c[RF + 2];
+                c[LF + 3] = -c[LF] - c[LF + 2];
                 c[JAW] = 0.4F * on;
                 c[TAIL] = 0.9F * on;
                 c[LOOK] = 1.0F;

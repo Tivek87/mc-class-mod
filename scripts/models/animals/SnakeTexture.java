@@ -12,8 +12,8 @@ public final class SnakeTexture {
     static final int[] MOUTH = Pelt.rgb(216, 132, 132);
     static final int[] TONGUE = Pelt.rgb(58, 16, 22);
     static final int[] BLACK = Pelt.rgb(22, 20, 18);
-    // Pixels along the body, from the neck: seven pieces of two, then the thin tail.
-    static final int PIECES = 7;
+    // Pixels along the body, from the neck: ten pieces of two, then the thin tail.
+    static final int PIECES = 10;
 
     public static void main(String[] args) throws IOException {
         Path folder = Pelt.textures(args, "entity");
@@ -28,15 +28,19 @@ public final class SnakeTexture {
         p.paint(new Pelt.Box("jaw", 12, 0, 3, 1, 3), (f, x, y, z, px, py) -> f == Pelt.Face.TOP ? MOUTH
                 : head(p, adder, f, x, z, px, py, false));
         p.paint(new Pelt.Box("tongue", 24, 0, 1, 0, 2), (f, x, y, z, px, py) -> TONGUE);
+        p.paint(new Pelt.Box("snout", 30, 0, 2, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM ? MOUTH
+                : head(p, adder, f, x, 0.0, px, py, true));
+        p.paint(new Pelt.Box("chin", 36, 0, 2, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.TOP ? MOUTH
+                : head(p, adder, f, x, 0.0, px, py, false));
         for (int k = 0; k < PIECES; k++) {
             int piece = k;
-            p.paint(new Pelt.Box("piece " + k, k * 8, 4, 2, 2, 2), (f, x, y, z, px, py) -> body(p, adder, f, x, y,
-                    piece * 2 + (int) (z * 2), px, py));
+            p.paint(new Pelt.Box("piece " + k, k % 8 * 8, 4 + k / 8 * 4, 2, 2, 2), (f, x, y, z, px, py) -> body(p,
+                    adder, f, x, y, piece * 2 + (int) (z * 2), px, py));
         }
-        for (int k = 0; k < 2; k++) {
+        for (int k = 0; k < 3; k++) {
             int piece = k;
-            p.paint(new Pelt.Box("tail " + k, k * 6, 8, 1, 1, 2), (f, x, y, z, px, py) -> body(p, adder, f, 0.5, y,
-                    PIECES * 2 + piece * 2 + (int) (z * 2), px, py));
+            p.paint(new Pelt.Box("tail " + k, 16 + k * 6, 8, 1, 1, 2), (f, x, y, z, px, py) -> body(p, adder, f, 0.5,
+                    y, PIECES * 2 + piece * 2 + (int) (z * 2), px, py));
         }
         p.save(folder, name);
     }

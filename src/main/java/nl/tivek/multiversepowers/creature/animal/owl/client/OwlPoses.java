@@ -2,13 +2,19 @@ package nl.tivek.multiversepowers.creature.animal.owl.client;
 
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.client.Channels;
+import nl.tivek.multiversepowers.creature.animal.client.Gait;
+import nl.tivek.multiversepowers.creature.animal.client.Strides;
 import nl.tivek.multiversepowers.creature.animal.owl.Owl;
+import nl.tivek.multiversepowers.creature.client.PoseSprings;
 import nl.tivek.multiversepowers.creature.client.Trunk;
 
-// How the owl moves: perched upright and still but for a blink and a slow breath, waddling when it walks; in flight
-// lying forward with its wings out, beating slow and deep, the outer wing following the inner, feet tucked back and
-// tail spread; and its acts: asleep with its eyes shut, feathers fluffed and head sunk into its shoulders, hooting
-// with its throat swelling at each note, turning its head far round to look behind it, and preening a wing.
+// How the owl moves: perched upright and still but for a slow breath, a slow blink of its lids, its head snapping round
+// to look one way and holding there before it snaps to the next, and now and then bobbing side to side to size up what
+// it sees; waddling when it walks, each foot set down flat and kept there; in flight lying forward with its wings out,
+// beating slow and deep, the outer wing following the inner, feet tucked back with their talons curled and tail
+// spread; and its acts: asleep with its eyes shut, feathers fluffed and head sunk into its shoulders, hooting with its
+// throat swelling at each note, turning its head far round to look behind it, and preening a wing. The whole pose
+// follows on springs, the tail slower.
 final class OwlPoses {
     static final int PITCH = 0;
     static final int ROLL = 1;
@@ -30,9 +36,17 @@ final class OwlPoses {
     static final int LEG_R = 15;
     static final int LEG_L = 16;
     static final int LOOK = 17;
-    private static final int COUNT = 18;
+    // The head moved sideways (pixels), peering; each foot's turn at the end of its leg.
+    static final int PEER = 18;
+    static final int FOOT_R = 19;
+    static final int FOOT_L = 20;
+    private static final int COUNT = 21;
+    private static final float SWEEP = 2.5F;
+    private static final double[][] SPRINGS = Channels.springs(COUNT, 0.6, 0.2, 0.5, TAIL);
     private final Channels pose = new Channels(COUNT);
     private final Channels act = new Channels(COUNT);
+    private final Strides strides = new Strides();
+    private final PoseSprings springs = new PoseSprings(SPRINGS[0], SPRINGS[1]);
 
     Channels of(Owl owl, float limbSwing, float amount, float age, float partialTick) {
         Channels p = this.pose.clear();
@@ -41,6 +55,7 @@ final class OwlPoses {
         float flap = Mth.lerp(partialTick, owl.oFlap, owl.flap);
         float a = Mth.clamp(amount, 0.0F, 1.0F) * (1.0F - spread);
         int id = owl.getId();
+        float perched = 1.0F - spread;
         c[LOOK] = 1.0F;
         c[SPREAD] = spread;
         c[PITCH] = 1.15F * spread;
@@ -49,18 +64,38 @@ final class OwlPoses {
         c[BEAT_OUTER] = 0.4F * Mth.sin(flap - 0.9F);
         c[BOB] = -0.6F * spread * Mth.cos(flap) + 0.05F * Mth.sin(age * 0.08F);
         c[TAIL] = 0.1F * spread;
-        // On foot it waddles from one leg to the other.
-        c[LEG_R] = 0.55F * a * Mth.sin(limbSwing * 1.6F);
-        c[LEG_L] = -0.55F * a * Mth.sin(limbSwing * 1.6F);
-        c[ROLL] = 0.12F * a * Mth.sin(limbSwing * 1.6F);
-        c[LIDS] = Channels.twitch(age, id, 73, 4.0F);
-        c[HEAD_ROLL] = 0.25F * Channels.twitch(age, id + 2, 190, 40.0F) * (1.0F - spread);
+        c[FOOT_R] = c[FOOT_L] = 0.8F * spread;
+        // On foot it waddles from one leg to the other, rocking over the foot that is down.
+        float duty = 0.6F;
+        float phase = this.strides.phase(id, age, owl.level().getGameTime(), Strides.rate(a, duty, SWEEP));
+        float on = Gait.smooth(0.0F, 0.25F, a);
+        for (int s = 0; s < 2; s++) {
+            float leg = phase - Mth.PI * s;
+            float swing = 0.6F * on * Gait.swing(leg, duty);
+            c[LEG_R + s] = swing;
+            c[FOOT_R + s] += on * 0.8F * Gait.toe(leg, duty) - swing;
+        }
+        c[ROLL] = 0.14F * on * (Gait.load(phase, duty) - Gait.load(phase - Mth.PI, duty));
+        c[BOB] -= 0.3F * on * Math.abs(Gait.lift(phase, duty) - Gait.lift(phase - Mth.PI, duty));
+        // A slow blink now and then; the head snapping to a new way to look every so often and holding it.
+        c[LIDS] = Channels.twitch(age, id, 73, 7.0F);
+        int glance = Mth.floor((age + id * 37) / 46.0F);
+        float pick = (float) ((glance * 0x9E3779B9L + id * 0x7F4A7C15L) >>> 8 & 0xFFFF) / 65535.0F;
+        c[HEAD_YAW] = perched * (pick - 0.5F) * 1.6F;
+        c[HEAD_ROLL] = 0.25F * Channels.twitch(age, id + 2, 190, 40.0F) * perched;
+        // Peering: the head swaying side to side and bobbing to size up what it looks at.
+        float peer = Channels.twitch(age, id + 5, 260, 36.0F) * perched;
+        c[PEER] = 0.9F * peer * Mth.sin(age * 0.55F);
+        c[HEAD_SINK] = 0.4F * peer * Mth.sin(age * 1.1F);
         for (int kind = Owl.SLEEP; kind <= Owl.PREEN; kind++) {
-            float w = owl.blend(kind, partialTick) * (1.0F - spread);
+            float w = owl.blend(kind, partialTick) * perched;
             if (w > 0.0F) {
                 p.mix(this.act(kind, (float) owl.actAge(kind, partialTick), id), w);
             }
         }
+        float lids = c[LIDS];
+        this.springs.follow(id, c, age, owl.level().getGameTime());
+        c[LIDS] = lids;
         return p;
     }
 
@@ -68,6 +103,8 @@ final class OwlPoses {
         Channels p = this.act.copy(this.pose);
         float[] c = p.v;
         c[HEAD_ROLL] = 0.0F;
+        c[HEAD_YAW] = 0.0F;
+        c[PEER] = 0.0F;
         switch (kind) {
             case Owl.SLEEP -> {
                 float breath = Mth.sin(t * 0.07F);
@@ -87,7 +124,7 @@ final class OwlPoses {
                 c[PUFF] = 0.7F * note;
                 c[HEAD] = -0.2F * note;
                 c[BOB] = 0.4F * note;
-                c[LIDS] = note > 0.6F ? 1.0F : 0.0F;
+                c[LIDS] = 0.7F * note;
                 c[LOOK] = 0.6F;
             }
             case Owl.TURN -> {

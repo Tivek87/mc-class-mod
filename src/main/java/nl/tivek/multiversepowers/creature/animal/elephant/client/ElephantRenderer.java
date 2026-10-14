@@ -15,7 +15,7 @@ public final class ElephantRenderer extends WildRenderer<Elephant, ElephantModel
     private static final ResourceLocation CALF = texture("elephant_calf");
 
     private ElephantRenderer(EntityRendererProvider.Context context) {
-        super(context, new ElephantModel(context.bakeLayer(LAYER)), 1.3F);
+        super(context, new ElephantModel(context.bakeLayer(LAYER)), 1.6F);
     }
 
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {

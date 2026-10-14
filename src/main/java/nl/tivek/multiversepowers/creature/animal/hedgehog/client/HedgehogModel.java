@@ -10,10 +10,11 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.hedgehog.Hedgehog;
 
-// The hedgehog's body: a low round trunk on four short legs under a coat of spines that domes over its back and
-// sides, a small head with a pointed snout, a black nose and round ears, and a stub of a tail. Rolled up, its head and
-// feet are drawn in under the spines and the trunk rounds into a ball. Its texture is painted by
-// scripts/models/animals. HedgehogPoses moves it.
+// The hedgehog's body: a low round trunk on four short legs, each with a paw that bends at its wrist or ankle, under a
+// coat of spines that domes over its back and sides, peaks over its brow and rounds off over its rump, its edge
+// ragged; a small head with a pointed snout, a black nose, beady eyes that blink and round ears, and a stub of a tail.
+// Rolled up, its head and feet are drawn in under the spines and the trunk rounds into a ball. Its texture is painted
+// by scripts/models/animals. HedgehogPoses moves it.
 public final class HedgehogModel extends HierarchicalModel<Hedgehog> {
     static final float BODY_Y = 21.0F;
     private static final float YOUNG_HEAD = 1.25F;
@@ -23,8 +24,9 @@ public final class HedgehogModel extends HierarchicalModel<Hedgehog> {
     private final ModelPart head;
     private final ModelPart tail;
     private final ModelPart[] ears = new ModelPart[2];
-    // Right front, left front, right hind, left hind.
-    private final ModelPart[] legs = new ModelPart[4];
+    private final ModelPart[] eyes = new ModelPart[2];
+    // Right front, left front, right hind, left hind: each its leg and its paw.
+    private final ModelPart[][] legs = new ModelPart[4][2];
     private final HedgehogPoses poses = new HedgehogPoses();
 
     public HedgehogModel(ModelPart root) {
@@ -35,9 +37,12 @@ public final class HedgehogModel extends HierarchicalModel<Hedgehog> {
         this.tail = this.body.getChild("tail");
         this.ears[0] = this.head.getChild("right_ear");
         this.ears[1] = this.head.getChild("left_ear");
+        this.eyes[0] = this.head.getChild("right_eye");
+        this.eyes[1] = this.head.getChild("left_eye");
         String[] names = { "right_front_leg", "left_front_leg", "right_hind_leg", "left_hind_leg" };
         for (int k = 0; k < 4; k++) {
-            this.legs[k] = this.body.getChild(names[k]);
+            ModelPart leg = this.body.getChild(names[k]);
+            this.legs[k] = new ModelPart[] { leg, leg.getChild("paw") };
         }
     }
 
@@ -49,7 +54,9 @@ public final class HedgehogModel extends HierarchicalModel<Hedgehog> {
                 PartPose.offset(0.0F, BODY_Y, 0.0F));
         body.addOrReplaceChild("spines", CubeListBuilder.create()
                 .texOffs(24, 0).addBox(-3.0F, -2.5F, -3.0F, 6.0F, 4.0F, 7.0F)
-                .texOffs(0, 11).addBox(-2.0F, -3.5F, -2.0F, 4.0F, 1.0F, 5.0F), PartPose.ZERO);
+                .texOffs(0, 11).addBox(-2.0F, -3.5F, -2.0F, 4.0F, 1.0F, 5.0F)
+                .texOffs(46, 15).addBox(-2.0F, -2.5F, -4.0F, 4.0F, 1.0F, 1.0F)
+                .texOffs(0, 17).addBox(-2.5F, -2.0F, 4.0F, 5.0F, 3.0F, 1.0F), PartPose.ZERO);
         PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create()
                 .texOffs(18, 11).addBox(-2.0F, -1.5F, -2.5F, 4.0F, 3.0F, 3.0F)
                 .texOffs(32, 11).addBox(-1.0F, -0.5F, -4.5F, 2.0F, 2.0F, 2.0F)
@@ -64,10 +71,17 @@ public final class HedgehogModel extends HierarchicalModel<Hedgehog> {
             head.addOrReplaceChild(name + "ear", CubeListBuilder.create().mirror(s == 1)
                     .texOffs(44, 11).addBox(-0.5F, -1.0F, -0.5F, 1.0F, 1.0F, 1.0F),
                     PartPose.offset(side * 1.5F, -1.5F, -0.5F));
+            // A bead set at the front corner of the head; it shuts by folding down to nothing.
+            head.addOrReplaceChild(name + "eye", CubeListBuilder.create()
+                    .texOffs(56, 11).addBox(-0.5F, -1.0F, -0.5F, 1.0F, 1.0F, 1.0F),
+                    PartPose.offset(side * 1.6F, 0.5F, -2.1F));
             for (int k = 0; k < 2; k++) {
-                body.addOrReplaceChild(name + (k == 0 ? "front_leg" : "hind_leg"), CubeListBuilder.create()
-                        .mirror(s == 1).texOffs(48, 11).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.0F, 1.0F),
+                PartDefinition leg = body.addOrReplaceChild(name + (k == 0 ? "front_leg" : "hind_leg"),
+                        CubeListBuilder.create().mirror(s == 1).texOffs(48, 11)
+                                .addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.0F, 1.0F),
                         PartPose.offset(side * 1.5F, 1.0F, k == 0 ? -2.5F : 2.5F));
+                leg.addOrReplaceChild("paw", CubeListBuilder.create().mirror(s == 1).texOffs(40, 15)
+                        .addBox(-0.5F, 0.0F, -1.5F, 1.0F, 1.0F, 2.0F), PartPose.offset(0.0F, 1.0F, 0.0F));
             }
         }
         return LayerDefinition.create(mesh, 64, 32);
@@ -106,12 +120,20 @@ public final class HedgehogModel extends HierarchicalModel<Hedgehog> {
         this.ears[0].zRot = -c[HedgehogPoses.EARS];
         this.ears[1].zRot = c[HedgehogPoses.EARS];
         this.tail.visible = curl < 0.5F;
+        this.tail.yRot = c[HedgehogPoses.TAIL];
+        float open = 1.0F - 0.9F * Mth.clamp(c[HedgehogPoses.BLINK], 0.0F, 1.0F);
+        this.eyes[0].yScale = open;
+        this.eyes[1].yScale = open;
         for (int k = 0; k < 4; k++) {
             int at = HedgehogPoses.LEGS + k * HedgehogPoses.PER_LEG;
             float side = k % 2 == 0 ? 1.0F : -1.0F;
-            this.legs[k].xRot = c[at] - c[HedgehogPoses.PITCH];
-            this.legs[k].zRot = side * c[at + 1];
-            this.legs[k].yScale = 1.0F - 0.85F * curl;
+            ModelPart[] leg = this.legs[k];
+            leg[0].xRot = c[at] - c[HedgehogPoses.PITCH];
+            leg[0].zRot = side * c[at + 1];
+            leg[1].xRot = c[at + 2];
+            // Rolled up the feet are drawn in under the spines.
+            leg[0].visible = curl < 0.7F;
+            leg[0].yScale = 1.0F - 0.6F * curl;
         }
     }
 }

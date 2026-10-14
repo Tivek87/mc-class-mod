@@ -67,8 +67,8 @@ public final class Elephant extends NeutralAnimal {
     private static final DeferredRegister<EntityType<?>> TYPES = DeferredRegister.create(Registries.ENTITY_TYPE,
             MultiversePowers.MODID);
     public static final DeferredHolder<EntityType<?>, EntityType<Elephant>> TYPE = TYPES.register("elephant",
-            () -> EntityType.Builder.<Elephant>of(Elephant::new, MobCategory.CREATURE).sized(2.0F, 3.0F)
-                    .eyeHeight(2.5F).clientTrackingRange(10).build("elephant"));
+            () -> EntityType.Builder.<Elephant>of(Elephant::new, MobCategory.CREATURE).sized(2.4F, 3.4F)
+                    .eyeHeight(2.9F).clientTrackingRange(10).build("elephant"));
     public static final TagKey<Item> FOOD = TagKey.create(Registries.ITEM, ResourceLocation.fromNamespaceAndPath(
             MultiversePowers.MODID, "elephant_food"));
     public static final int COW = 0;

@@ -56,7 +56,12 @@ public final class GiraffeTexture {
         p.paint(new Pelt.Box("front leg", 0, 44, 4, 14, 4), (f, x, y, z, px, py) -> hide(p, k, px, py, 2.9,
                 0.55 * Pelt.step(0.3, 1.0, y)));
         p.paint(new Pelt.Box("front cannon", 16, 44, 3, 14, 3), (f, x, y, z, px, py) -> shin(p, k, y, px, py));
-        p.paint(new Pelt.Box("hoof", 28, 44, 3, 2, 4), (f, x, y, z, px, py) -> Pelt.scale(HOOF, y < 0.5 ? 1.3 : 1.0));
+        // Cloven: a dark split down the middle of its front.
+        p.paint(new Pelt.Box("hoof", 28, 44, 3, 2, 4), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
+                && (int) (x * 3) == 1 ? Pelt.scale(HOOF, 0.6) : Pelt.scale(HOOF, y < 0.5 ? 1.3 : 1.0));
+        // A large dark eye, its lid on top.
+        p.paint(new Pelt.Box("eye", 122, 0, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
+                ? Pelt.mix(k.line, EYE, 0.4) : EYE);
         p.paint(new Pelt.Box("thigh", 42, 44, 5, 12, 6), (f, x, y, z, px, py) -> hide(p, k, px, py, 3.3,
                 0.3 * Pelt.step(0.5, 1.0, y)));
         p.paint(new Pelt.Box("gaskin", 64, 44, 3, 9, 3), (f, x, y, z, px, py) -> hide(p, k, px, py, 2.7,
@@ -112,8 +117,9 @@ public final class GiraffeTexture {
     static int[] skull(Pelt p, Coat k, Pelt.Face f, double x, double y, double z, int px, int py) {
         boolean side = f == Pelt.Face.RIGHT || f == Pelt.Face.LEFT;
         int row = (int) (y * 5);
+        // Behind the eye, which is a part of its own: its lid, seen as it shuts.
         if (side && row == 1 && (int) (z * 5) == 1) {
-            return EYE;
+            return Pelt.mix(k.line, EYE, 0.4);
         }
         // Small faint patches on the cheeks and behind the ears; the brow and forehead plain and a little tawny.
         if (f == Pelt.Face.FRONT || f == Pelt.Face.TOP && z < 0.5) {

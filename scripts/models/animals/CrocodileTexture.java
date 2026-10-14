@@ -28,8 +28,16 @@ public final class CrocodileTexture {
     static void paint(Path folder, Hide k) throws IOException {
         Pelt p = new Pelt(128, 64, k.name.hashCode());
         // Pixels along the animal from the neck, so the bands run on from the body down the tail.
-        p.paint(new Pelt.Box("body", 0, 0, 10, 5, 16), (f, x, y, z, px, py) -> hide(p, k, f, x, y, z * 16.0, px, py));
-        p.paint(new Pelt.Box("scutes", 52, 0, 1, 1, 14), (f, x, y, z, px, py) -> scute(k, f, (int) (z * 14)));
+        p.paint(new Pelt.Box("chest", 0, 0, 10, 5, 8), (f, x, y, z, px, py) -> hide(p, k, f, x, y, z * 8.0, px, py));
+        p.paint(new Pelt.Box("hips", 36, 0, 9, 5, 8), (f, x, y, z, px, py) -> hide(p, k, f, x, y, 8.0 + z * 8.0, px,
+                py));
+        p.paint(new Pelt.Box("scutes", 108, 8, 1, 1, 7), (f, x, y, z, px, py) -> scute(k, f, (int) (z * 7)));
+        // A yellow-green eye with its lid dark above it.
+        p.paint(new Pelt.Box("eyeball", 52, 24, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
+                ? Pelt.scale(k.dark, 1.15) : EYE);
+        // A row of teeth, a pixel of gum between each.
+        p.paint(new Pelt.Box("teeth", 46, 31, 1, 1, 7), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
+                || f == Pelt.Face.BACK || ((int) (z * 7)) % 2 == 0 ? Pelt.rgb(232, 224, 196) : null);
         p.paint(new Pelt.Box("tail 1", 82, 0, 7, 4, 6), (f, x, y, z, px, py) -> hide(p, k, f, x, y, 16.0 + z * 6.0, px,
                 py));
         p.paint(new Pelt.Box("crest", 108, 0, 1, 1, 6), (f, x, y, z, px, py) -> scute(k, f, (int) (z * 6)));
@@ -42,8 +50,7 @@ public final class CrocodileTexture {
         p.paint(new Pelt.Box("skull", 0, 21, 8, 4, 5), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM ? k.belly
                 : hide(p, k, f, x, y * 0.8, -5.0 + z * 5.0, px, py));
         p.paint(new Pelt.Box("snout", 26, 21, 5, 2, 8), (f, x, y, z, px, py) -> snout(p, k, f, y, z, px, py));
-        p.paint(new Pelt.Box("eye", 52, 21, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.RIGHT ? z < 0.5 ? EYE
-                : BLACK : Pelt.scale(k.dark, 1.15));
+        p.paint(new Pelt.Box("eye bump", 52, 21, 2, 1, 2), (f, x, y, z, px, py) -> Pelt.scale(k.dark, 1.15));
         p.paint(new Pelt.Box("nostrils", 60, 21, 3, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.TOP && z < 0.5
                 && Math.abs(x - 0.5) > 0.2 ? BLACK : Pelt.scale(k.olive, 1.08));
         p.paint(new Pelt.Box("jaw", 0, 31, 7, 1, 4), (f, x, y, z, px, py) -> jaw(k, f, x, (int) (z * 4), 7));

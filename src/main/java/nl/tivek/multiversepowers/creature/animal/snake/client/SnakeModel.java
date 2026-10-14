@@ -11,13 +11,16 @@ import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.snake.Snake;
 
 // The snake's body: a chain of short pieces jointed end to end, built outward from the middle one (which lies where
-// the creature is) so that a bend at any joint carries what lies beyond it: three pieces forward to a flat, wider head
-// whose skull and jaw open apart and whose forked tongue flicks out, and five back, the last two a thin tail. Its
-// texture is painted by scripts/models/animals. SnakePoses bends it.
+// the creature is) so that a bend at any joint carries what lies beyond it: four pieces forward to a flat, wider head
+// with a rounded snout and chin, whose skull and jaw open apart and whose forked tongue flicks out, and eight back, the
+// last three a thin tail. Its texture is painted by scripts/models/animals. SnakePoses bends it.
 public final class SnakeModel extends HierarchicalModel<Snake> {
-    // Joints from the head back: the head's, three before the middle piece, five behind it.
-    static final int FRONT = 4;
-    static final int JOINTS = 9;
+    // Joints from the head back: the head's, four before the middle piece, eight behind it.
+    static final int FRONT = 5;
+    static final int JOINTS = 13;
+    // The thick pieces from the neck to the start of the tail, the middle one among them, then the tail's.
+    static final int PIECES = 10;
+    static final int TAIL = 3;
     private static final float BODY_Y = 23.0F;
     private final ModelPart root;
     private final ModelPart middle;
@@ -48,36 +51,51 @@ public final class SnakeModel extends HierarchicalModel<Snake> {
     public static LayerDefinition createLayer() {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
+        int neck = FRONT - 1;
         PartDefinition middle = root.addOrReplaceChild("middle", CubeListBuilder.create()
-                .texOffs(24, 4).addBox(-1.0F, -1.0F, -1.0F, 2.0F, 2.0F, 2.0F),
+                .texOffs(u(neck), v(neck)).addBox(-1.0F, -1.0F, -1.0F, 2.0F, 2.0F, 2.0F),
                 PartPose.offset(0.0F, BODY_Y, 0.0F));
         PartDefinition part = middle;
-        for (int k = 0; k < 3; k++) {
+        for (int k = 0; k < neck; k++) {
+            // Counted from the head along the body, as the texture lays the pieces out.
+            int piece = neck - 1 - k;
             part = part.addOrReplaceChild("front", CubeListBuilder.create()
-                    .texOffs(16 - k * 8, 4).addBox(-1.0F, -1.0F, -2.0F, 2.0F, 2.0F, 2.0F),
+                    .texOffs(u(piece), v(piece)).addBox(-1.0F, -1.0F, -2.0F, 2.0F, 2.0F, 2.0F),
                     PartPose.offset(0.0F, 0.0F, k == 0 ? -1.0F : -2.0F));
         }
         PartDefinition head = part.addOrReplaceChild("front", CubeListBuilder.create(),
                 PartPose.offset(0.0F, 0.0F, -2.0F));
         head.addOrReplaceChild("skull", CubeListBuilder.create()
-                .texOffs(0, 0).addBox(-1.5F, -1.0F, -3.0F, 3.0F, 1.0F, 3.0F), PartPose.ZERO);
+                .texOffs(0, 0).addBox(-1.5F, -1.0F, -3.0F, 3.0F, 1.0F, 3.0F)
+                .texOffs(30, 0).addBox(-1.0F, -1.0F, -4.0F, 2.0F, 1.0F, 1.0F), PartPose.ZERO);
         head.addOrReplaceChild("jaw", CubeListBuilder.create()
-                .texOffs(12, 0).addBox(-1.5F, 0.0F, -3.0F, 3.0F, 1.0F, 3.0F), PartPose.ZERO);
+                .texOffs(12, 0).addBox(-1.5F, 0.0F, -3.0F, 3.0F, 1.0F, 3.0F)
+                .texOffs(36, 0).addBox(-1.0F, 0.0F, -4.0F, 2.0F, 1.0F, 1.0F), PartPose.ZERO);
         head.addOrReplaceChild("tongue", CubeListBuilder.create()
                 .texOffs(24, 0).addBox(-0.5F, 0.0F, -2.0F, 1.0F, 0.0F, 2.0F),
-                PartPose.offset(0.0F, 0.0F, -3.0F));
+                PartPose.offset(0.0F, 0.0F, -4.0F));
         part = middle;
-        for (int k = 0; k < 3; k++) {
+        for (int k = 0; k < PIECES - FRONT; k++) {
+            int piece = FRONT + k;
             part = part.addOrReplaceChild("back", CubeListBuilder.create()
-                    .texOffs(32 + k * 8, 4).addBox(-1.0F, -1.0F, 0.0F, 2.0F, 2.0F, 2.0F),
+                    .texOffs(u(piece), v(piece)).addBox(-1.0F, -1.0F, 0.0F, 2.0F, 2.0F, 2.0F),
                     PartPose.offset(0.0F, 0.0F, k == 0 ? 1.0F : 2.0F));
         }
-        for (int k = 0; k < 2; k++) {
+        for (int k = 0; k < TAIL; k++) {
             part = part.addOrReplaceChild("back", CubeListBuilder.create()
-                    .texOffs(k * 6, 8).addBox(-0.5F, 0.0F, 0.0F, 1.0F, 1.0F, 2.0F),
+                    .texOffs(16 + k * 6, 8).addBox(-0.5F, 0.0F, 0.0F, 1.0F, 1.0F, 2.0F),
                     PartPose.offset(0.0F, 0.0F, 2.0F));
         }
         return LayerDefinition.create(mesh, 64, 32);
+    }
+
+    // Where the thick piece `piece` (counted from the head) lies in the texture: eight to a row.
+    static int u(int piece) {
+        return piece % 8 * 8;
+    }
+
+    static int v(int piece) {
+        return 4 + piece / 8 * 4;
     }
 
     @Override

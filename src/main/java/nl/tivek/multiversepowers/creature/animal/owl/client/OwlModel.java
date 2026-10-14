@@ -10,10 +10,11 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.owl.Owl;
 
-// The owl's body: an upright trunk on short feathered legs with broad feet, a big round head wider than its body with
-// a flat face, a small hooked beak and lids that shut over its eyes, a short tail, and broad wings in two pieces each:
-// folded they lie along its sides, their tips crossing behind it; spread, the outer half unfurls and they beat in
-// slow, deep strokes while the body lies forward into its flight and the head stays level. Its texture is painted by
+// The owl's body: an upright trunk with fluffed feathers over the tops of its short legs, broad feet with dark talons,
+// a big round head wider than its body with a flat face, a small hooked beak and lids that slide down over its eyes,
+// a short tail with a ragged end, and broad wings in two pieces each, their flight feathers ragged at the edge: folded
+// they lie along its sides, their tips crossing behind it; spread, the outer half unfurls and they beat in slow, deep
+// strokes while the body lies forward into its flight and the head stays level. Its texture is painted by
 // scripts/models/animals. OwlPoses moves it.
 public final class OwlModel extends HierarchicalModel<Owl> {
     static final float BODY_Y = 19.0F;
@@ -29,6 +30,7 @@ public final class OwlModel extends HierarchicalModel<Owl> {
     // Right, left: the inner half and the outer.
     private final ModelPart[][] wings = new ModelPart[2][2];
     private final ModelPart[] legs = new ModelPart[2];
+    private final ModelPart[] feet = new ModelPart[2];
     private final OwlPoses poses = new OwlPoses();
 
     public OwlModel(ModelPart root) {
@@ -42,6 +44,7 @@ public final class OwlModel extends HierarchicalModel<Owl> {
             ModelPart wing = this.body.getChild(name + "wing");
             this.wings[s] = new ModelPart[] { wing, wing.getChild("outer") };
             this.legs[s] = this.body.getChild(name + "leg");
+            this.feet[s] = this.legs[s].getChild("foot");
         }
     }
 
@@ -49,32 +52,36 @@ public final class OwlModel extends HierarchicalModel<Owl> {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
         PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create()
-                .texOffs(0, 0).addBox(-2.5F, -3.5F, -2.0F, 5.0F, 7.0F, 4.0F),
+                .texOffs(0, 0).addBox(-2.5F, -3.5F, -2.0F, 5.0F, 7.0F, 4.0F)
+                .texOffs(36, 12).addBox(-2.0F, 3.0F, -1.5F, 4.0F, 1.0F, 3.0F),
                 PartPose.offset(0.0F, BODY_Y, 0.0F));
         PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create()
                 .texOffs(18, 0).addBox(-3.5F, -5.0F, -2.5F, 7.0F, 5.0F, 5.0F)
                 .texOffs(42, 0).addBox(-0.5F, -3.0F, -3.5F, 1.0F, 2.0F, 1.0F),
                 PartPose.offset(0.0F, -3.5F, 0.0F));
         body.addOrReplaceChild("tail", CubeListBuilder.create()
-                .texOffs(52, 0).addBox(-1.5F, 0.0F, -0.5F, 3.0F, 3.0F, 1.0F),
+                .texOffs(52, 0).addBox(-1.5F, 0.0F, -0.5F, 3.0F, 4.0F, 1.0F),
                 PartPose.offsetAndRotation(0.0F, 3.0F, 2.0F, TAIL_REST, 0.0F, 0.0F));
         for (int s = 0; s < 2; s++) {
             float side = s == 0 ? -1.0F : 1.0F;
             String name = s == 0 ? "right_" : "left_";
+            // A lid hangs from the top of its eye and slides down over it as it is drawn longer.
             head.addOrReplaceChild(name + "lid", CubeListBuilder.create().mirror(s == 1)
-                    .texOffs(46, 0).addBox(s == 0 ? -2.5F : 0.5F, -4.0F, -2.7F, 2.0F, 2.0F, 1.0F), PartPose.ZERO);
+                    .texOffs(46, 0).addBox(-1.0F, 0.0F, -0.5F, 2.0F, 2.0F, 1.0F),
+                    PartPose.offset(side * 1.5F, -4.0F, -2.2F));
             float from = s == 0 ? -5.0F : 0.0F;
             PartDefinition wing = body.addOrReplaceChild(name + "wing", CubeListBuilder.create().mirror(s == 1)
-                    .texOffs(0, 12).addBox(from, 0.0F, -0.5F, 5.0F, 5.0F, 1.0F),
+                    .texOffs(0, 12).addBox(from, 0.0F, -0.5F, 5.0F, 6.0F, 1.0F),
                     PartPose.offset(side * 2.5F, -3.0F, -1.5F));
             wing.addOrReplaceChild("outer", CubeListBuilder.create().mirror(s == 1)
-                    .texOffs(12, 12).addBox(from, 0.0F, -0.5F, 5.0F, 5.0F, 1.0F),
+                    .texOffs(12, 12).addBox(from, 0.0F, -0.5F, 5.0F, 6.0F, 1.0F),
                     PartPose.offset(side * 5.0F, 0.0F, 0.0F));
             PartDefinition leg = body.addOrReplaceChild(name + "leg", CubeListBuilder.create().mirror(s == 1)
                     .texOffs(24, 12).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.0F, 1.0F),
                     PartPose.offset(side * 1.2F, 3.0F, 0.0F));
             leg.addOrReplaceChild("foot", CubeListBuilder.create().mirror(s == 1)
-                    .texOffs(28, 12).addBox(-1.0F, 0.0F, -1.5F, 2.0F, 1.0F, 2.0F),
+                    .texOffs(28, 12).addBox(-1.0F, 0.0F, -1.5F, 2.0F, 1.0F, 2.0F)
+                    .texOffs(36, 16).addBox(-1.0F, 0.0F, -2.5F, 2.0F, 1.0F, 1.0F),
                     PartPose.offset(0.0F, 1.0F, 0.0F));
         }
         return LayerDefinition.create(mesh, 64, 32);
@@ -105,9 +112,14 @@ public final class OwlModel extends HierarchicalModel<Owl> {
         this.head.yRot = c[OwlPoses.HEAD_YAW] + netHeadYaw * Mth.DEG_TO_RAD * look;
         this.head.zRot = c[OwlPoses.HEAD_ROLL];
         this.head.y += c[OwlPoses.HEAD_SINK];
+        this.head.x += c[OwlPoses.PEER];
         this.head.xScale = this.head.zScale = young / puff;
         this.head.yScale = young;
-        this.lids[0].visible = this.lids[1].visible = c[OwlPoses.LIDS] > 0.5F;
+        float shut = Mth.clamp(c[OwlPoses.LIDS], 0.0F, 1.0F);
+        for (ModelPart lid : this.lids) {
+            lid.visible = shut > 0.05F;
+            lid.yScale = shut;
+        }
         this.tail.xRot = TAIL_REST * (1.0F - spread) + c[OwlPoses.TAIL];
         for (int s = 0; s < 2; s++) {
             float side = s == 0 ? 1.0F : -1.0F;
@@ -118,6 +130,7 @@ public final class OwlModel extends HierarchicalModel<Owl> {
             this.wings[s][1].xScale = spread;
             this.wings[s][1].visible = spread > 0.02F;
             this.legs[s].xRot = c[OwlPoses.LEG_R + s] - pitch * (1.0F - spread) + 0.5F * spread;
+            this.feet[s].xRot = c[OwlPoses.FOOT_R + s] + 0.6F * spread;
         }
     }
 }

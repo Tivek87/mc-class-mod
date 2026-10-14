@@ -3,7 +3,8 @@ import java.nio.file.Path;
 
 // Paints the lynx's textures (textures/entity/lynx.png and lynx_pale.png) from scratch, box by box as LynxModel lays
 // it out. A tawny, red-buff coat spotted dark brown over its back, flanks and legs, darker along the spine, paling to
-// cream on its chest, belly and the insides of its legs; a face with dark lines up the brow, yellow-green eyes, white
+// cream on its chest, belly and the insides of its legs; a face with dark lines up the brow, yellow eyes under darker
+// lids, white
 // round the eyes and muzzle, a pink nose, and a pale ruff barred black at its ends; ears black behind with a pale
 // spot, pale inside, their long tufts black; the tip of the stubby tail black. The pale coat is its winter one: grey
 // and thinly spotted.
@@ -55,10 +56,14 @@ public final class LynxTexture {
         });
         p.paint(new Pelt.Box("tuft", 22, 19, 1, 2, 1), (f, x, y, z, px, py) -> BLACK);
         p.paint(new Pelt.Box("jaw", 26, 19, 3, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.TOP ? MOUTH : k.pale);
-        p.paint(new Pelt.Box("tail", 36, 19, 2, 2, 4), (f, x, y, z, px, py) -> f == Pelt.Face.BACK || z > 0.6
+        p.paint(new Pelt.Box("tail", 36, 19, 2, 2, 3), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM ? k.pale
+                : spotted(p, k, px, py, 0.0));
+        p.paint(new Pelt.Box("tail tip", 38, 9, 2, 2, 2), (f, x, y, z, px, py) -> f == Pelt.Face.BACK || z > 0.4
                 ? BLACK : f == Pelt.Face.BOTTOM ? k.pale : spotted(p, k, px, py, 0.0));
+        p.paint(new Pelt.Box("eye", 56, 0, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT ? EYE
+                : Pelt.scale(EYE, 0.6));
         p.paint(new Pelt.Box("front leg", 0, 28, 3, 6, 3), (f, x, y, z, px, py) -> leg(p, k, f, px, py, true));
-        p.paint(new Pelt.Box("front lower", 12, 28, 2, 4, 2), (f, x, y, z, px, py) -> leg(p, k, f, px, py, false));
+        p.paint(new Pelt.Box("front lower", 12, 28, 2, 3, 2), (f, x, y, z, px, py) -> leg(p, k, f, px, py, false));
         p.paint(new Pelt.Box("paw", 20, 28, 3, 1, 3), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
                 && (int) (x * 3) == 1 ? Pelt.scale(k.base, 0.7) : p.fur(Pelt.mix(k.base, k.pale, 0.35), null, 0.0, px,
                         py));
@@ -91,7 +96,8 @@ public final class LynxTexture {
                 return col == 1 || col == 3 ? Pelt.mix(k.base, k.spot, 0.8) : p.fur(k.base, null, 0.0, px, py);
             }
             if (row == 1) {
-                return col == 1 || col == 3 ? EYE : p.fur(k.base, null, 0.0, px, py);
+                // Behind the eyes, which are parts of their own: the lids, seen as they shut.
+                return col == 1 || col == 3 ? Pelt.mix(k.base, k.spot, 0.5) : p.fur(k.base, null, 0.0, px, py);
             }
             return row == 2 && col == 2 ? p.fur(k.base, null, 0.0, px, py) : k.pale;
         }

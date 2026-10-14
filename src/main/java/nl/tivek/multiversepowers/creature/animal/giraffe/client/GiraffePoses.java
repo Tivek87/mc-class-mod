@@ -2,15 +2,22 @@ package nl.tivek.multiversepowers.creature.animal.giraffe.client;
 
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.client.Channels;
+import nl.tivek.multiversepowers.creature.animal.client.Gait;
+import nl.tivek.multiversepowers.creature.animal.client.Strides;
 import nl.tivek.multiversepowers.creature.animal.giraffe.Giraffe;
+import nl.tivek.multiversepowers.creature.client.PoseSprings;
 import nl.tivek.multiversepowers.creature.client.Trunk;
 
-// How the giraffe moves: a slow pacing walk, both legs of one side together, its long neck swinging forward and back
-// with every stride; a rocking gallop when it runs, forelegs then hind legs, neck pumping; ears flicking, tail
-// swishing and neck swaying while it stands; and its acts: browsing with its neck stretched up, its dark tongue
+// How the giraffe moves: a slow pacing walk, both legs of one side nearly together, the hind a little first, each hoof
+// kept where it was set down while the body goes over it, the foreleg folding at the knee and the hind leg at the hock
+// as it lifts, the body swaying toward the side that bears it and its long neck swinging forward and back with every
+// step; a rocking gallop when it runs, hind feet then forefeet, neck pumping once a stride; the body leaning into its
+// turns; ears flicking, eyes blinking, tail swishing and neck swaying while it stands; and its acts: browsing with its
+// neck stretched up, its dark tongue
 // curling out round the leaves and its head jerking them free; its head down to the ground, forelegs spread wide
 // and its front let down between them; standing chewing, its jaw going from side to side; and the kick: weight thrown
-// onto its forelegs, both hind hooves lashing out behind.
+// onto its forelegs, both hind hooves lashing out behind. The whole pose follows on springs, the neck, ears and tail
+// slower and swinging past.
 final class GiraffePoses {
     static final int PITCH = 0;
     static final int ROLL = 1;
@@ -31,25 +38,48 @@ final class GiraffePoses {
     static final int TAIL = 16;
     static final int TAIL_SIDE = 17;
     static final int LOOK = 18;
+    static final int BLINK = 19;
     // Per leg (right front, left front, right hind, left hind): swing, outward, the joint below it (knee or stifle),
     // the hock (hind legs only), and the hoof.
-    static final int LEGS = 19;
+    static final int LEGS = 20;
     static final int PER_LEG = 5;
     private static final int COUNT = LEGS + 4 * PER_LEG;
     private static final int RF = LEGS;
     private static final int LF = LEGS + PER_LEG;
     private static final int RH = LEGS + 2 * PER_LEG;
     private static final int LH = LEGS + 3 * PER_LEG;
-    private static final float PACE = 0.3F;
+    private static final int[] FEET = { RF, LF, RH, LH };
+    // Where in a stride each foot is set down: pacing, each hind foot just before the forefoot of its side; galloping
+    // the hind feet close together, then the forefeet half a stride on.
+    private static final float[] WALK_AT = { 0.08F, 0.58F, 0.0F, 0.5F };
+    private static final float[] RUN_AT = { 0.55F, 0.45F, 0.0F, 0.08F };
+    private static final float WALK_SWEEP = 17.0F;
+    private static final float RUN_SWEEP = 34.0F;
+    private static final float LEG = 29.0F;
+    // From the hips to the shoulders.
+    private static final float SPAN = 12.5F;
+    private static final double[][] SPRINGS = Channels.springs(COUNT, 0.35, 0.16, 0.45, NECK, NECK + 1, NECK + 2,
+            HEAD, EAR_R, EAR_L, TAIL, TAIL_SIDE);
     private final Channels pose = new Channels(COUNT);
     private final Channels act = new Channels(COUNT);
+    private final Strides strides = new Strides();
+    private final PoseSprings springs = new PoseSprings(SPRINGS[0], SPRINGS[1]);
 
     Channels of(Giraffe giraffe, float limbSwing, float amount, float age, float partialTick) {
         Channels p = this.pose.clear();
         float[] c = p.v;
         c[LOOK] = 1.0F;
-        this.walk(c, limbSwing, Mth.clamp(amount, 0.0F, 1.0F));
         int id = giraffe.getId();
+        float a = Mth.clamp(amount, 0.0F, 1.0F);
+        float run = Trunk.in(a, 0.55, 0.85);
+        float duty = Gait.duty(run, 0.65F, 0.38F);
+        float phase = this.strides.phase(id, age, giraffe.level().getGameTime(),
+                Strides.rate(a, duty, Mth.lerp(run, WALK_SWEEP, RUN_SWEEP)));
+        this.walk(c, phase, a, run, duty);
+        float turn = Mth.clamp(Mth.wrapDegrees(giraffe.yBodyRot - giraffe.yBodyRotO), -10.0F, 10.0F);
+        c[ROLL] -= 0.008F * turn * a;
+        c[NECK_YAW] += 0.04F * turn;
+        c[BLINK] = Channels.blink(age, id);
         c[NECK] += 0.02F * Mth.sin(age * 0.05F);
         c[NECK + 2] += 0.02F * Mth.sin(age * 0.05F + 1.0F);
         c[EAR_R] += 0.6F * Channels.twitch(age, id, 83, 5.0F);
@@ -63,46 +93,57 @@ final class GiraffePoses {
                 p.mix(this.act(kind, (float) giraffe.actAge(kind, partialTick), id), w);
             }
         }
+        float blink = c[BLINK];
+        this.springs.follow(id, c, age, giraffe.level().getGameTime());
+        c[BLINK] = blink;
         return p;
     }
 
-    private void walk(float[] c, float limbSwing, float a) {
-        float phase = limbSwing * PACE;
-        float run = Trunk.in(a, 0.55, 0.85);
+    private void walk(float[] c, float phase, float a, float run, float duty) {
         float walk = a * (1.0F - run);
-        // The pace: the hind foot of a side lifts, and its forefoot just after it.
-        float[] walkAt = { 0.0F, Mth.PI, 0.5F, Mth.PI + 0.5F };
-        // The gallop: the forefeet one after the other, then the hind feet swung past outside them.
-        float[] runAt = { 0.0F, 0.7F, Mth.PI, Mth.PI + 0.7F };
-        int[] legs = { RF, LF, RH, LH };
+        float on = Gait.smooth(0.0F, 0.3F, a);
+        float[] load = new float[4];
+        float[] drop = new float[4];
         for (int k = 0; k < 4; k++) {
-            float w = phase + walkAt[k];
-            float g = phase + runAt[k];
-            float up = Channels.lift(w) * walk + Channels.lift(g) * run * 1.2F;
-            int leg = legs[k];
+            int leg = FEET[k];
+            float p = phase - Mth.TWO_PI * Mth.lerp(run, WALK_AT[k], RUN_AT[k]);
+            float fold = on * Gait.fold(p, duty);
+            float toe = on * Gait.toe(p, duty);
             if (k < 2) {
-                c[leg] = 0.3F * walk * Channels.swing(w) + 0.65F * run * Channels.swing(g);
-                c[leg + 2] = 1.0F * up;
-                c[leg + 4] = 0.5F * up;
+                float swing = on * Mth.lerp(run, 0.3F, 0.6F) * Gait.swing(p, duty);
+                float knee = Mth.lerp(run, 1.2F, 1.6F) * fold;
+                c[leg] = swing;
+                c[leg + 2] = knee;
+                c[leg + 4] = 0.7F * toe - swing - knee;
+                drop[k] = LEG * (1.0F - Mth.cos(swing));
             } else {
-                c[leg] = 0.28F * walk * Channels.swing(w) + 0.6F * run * Channels.swing(g);
+                float swing = on * Mth.lerp(run, 0.28F, 0.55F) * Gait.swing(p, duty);
+                float stifle = Mth.lerp(run, 0.4F, 0.6F) * fold;
+                float hock = -Mth.lerp(run, 0.85F, 1.2F) * fold;
+                c[leg] = swing;
                 c[leg + 1] = 0.12F * run;
-                c[leg + 2] = 0.35F * up;
-                c[leg + 3] = -0.7F * up;
-                c[leg + 4] = 0.5F * up;
+                c[leg + 2] = stifle;
+                c[leg + 3] = hock;
+                c[leg + 4] = 0.6F * toe - swing - stifle - hock;
+                drop[k] = LEG * (1.0F - Mth.cos(swing));
             }
+            load[k] = Gait.load(p, duty);
         }
-        c[BOB] = 0.5F * walk * Mth.cos(2.0F * phase) + 1.6F * run * Mth.cos(phase + 0.4F);
-        c[ROLL] = 0.035F * walk * Mth.sin(phase);
-        c[PITCH] = 0.09F * run * Mth.sin(phase + 0.4F);
-        // The neck goes forward as the weight comes onto a forefoot, and back again.
-        float nod = 0.1F * walk * Mth.cos(2.0F * phase + 0.5F) + 0.2F * run * Mth.sin(phase + 1.2F);
+        float fore = (load[0] * drop[0] + load[1] * drop[1]) / Math.max(0.3F, load[0] + load[1]);
+        float hind = (load[2] * drop[2] + load[3] * drop[3]) / Math.max(0.3F, load[2] + load[3]);
+        float flight = 1.0F - Math.min(1.0F, load[0] + load[1] + load[2] + load[3]);
+        c[BOB] = hind * (1.0F - run) - 1.4F * run * flight;
+        c[PITCH] = (fore - hind) / SPAN * (1.0F - run) + 0.09F * run * Mth.sin(phase - Mth.TWO_PI * 0.3F);
+        // Pacing, the body sways over the side whose legs bear it.
+        c[ROLL] = 0.06F * walk * (load[0] + load[2] - load[1] - load[3]);
+        // The neck goes forward as the weight comes onto a forefoot, and back again; at the gallop once a stride.
+        float nod = 0.1F * walk * (load[0] + load[1] - 1.0F) + 0.2F * run * Mth.sin(phase + 1.2F);
         c[NECK] = nod + 0.12F * run;
         c[NECK + 1] = 0.5F * nod;
         c[NECK + 2] = -0.3F * nod;
         c[HEAD] = -0.4F * nod;
         c[TAIL] = 0.1F * walk + 0.7F * run;
-        c[TAIL_SIDE] = 0.15F * walk * Mth.sin(phase);
+        c[TAIL_SIDE] = 0.15F * walk * (load[2] - load[3]);
         c[EAR_R] = c[EAR_L] = -0.3F * run;
     }
 

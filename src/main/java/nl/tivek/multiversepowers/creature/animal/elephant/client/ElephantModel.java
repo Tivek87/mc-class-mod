@@ -10,17 +10,20 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.elephant.Elephant;
 
-// The elephant's body in an elephant's own build: a huge barrel of a trunk with the spine a ridge along its back, on
-// four legs like pillars that bend at the knee; a great head with a domed brow, a lower lip of its own under it, and
-// at each side an ear as big as a door, hinged at its front edge so it can stand out or lie back along the shoulder;
+// The elephant's body in an elephant's own build: a long barrel of a trunk, high at the withers, its back dipping
+// before the croup and its belly sagging, on
+// four legs like pillars that bend at the knee, each on a round foot of its own that stays flat on the ground; a great
+// head with a domed brow, small eyes that blink, a lower lip of its own under it, and at each side an ear as big as a
+// door, hinged at its front edge so it can stand out or lie back along the shoulder, its back half hinged again so it
+// trails and ripples as the ear moves;
 // a trunk of five pieces that reaches the ground; tusks out of the face beside it, short on a cow, long and curving
 // up on a bull, none on a calf; and a thin tail. Its texture is painted by scripts/models/animals. ElephantPoses
 // moves it.
 public final class ElephantModel extends HierarchicalModel<Elephant> {
-    static final float BODY_Y = -8.0F;
+    static final float BODY_Y = -12.0F;
     // The hips in the body's own frame.
     static final float HIP_Y = 6.0F;
-    static final float HIP_Z = 8.0F;
+    static final float HIP_Z = 12.0F;
     // How far an ear stands out from the head when it is held still.
     private static final float EAR_REST = 0.5F;
     private static final float YOUNG_HEAD = 1.15F;
@@ -30,10 +33,12 @@ public final class ElephantModel extends HierarchicalModel<Elephant> {
     private final ModelPart head;
     private final ModelPart lip;
     private final ModelPart[] ears = new ModelPart[2];
+    private final ModelPart[] flaps = new ModelPart[2];
+    private final ModelPart[] eyes = new ModelPart[2];
     private final ModelPart[] tusks = new ModelPart[2];
     private final ModelPart[] longTusks = new ModelPart[2];
     private final ModelPart[] trunk = new ModelPart[ElephantPoses.PIECES];
-    // Right front, left front, right hind, left hind: upper, lower.
+    // Right front, left front, right hind, left hind: upper, lower, foot.
     private final ModelPart[][] legs = new ModelPart[4][];
     private final ElephantPoses poses = new ElephantPoses();
 
@@ -51,73 +56,91 @@ public final class ElephantModel extends HierarchicalModel<Elephant> {
         String[] sides = { "right_", "left_" };
         for (int s = 0; s < 2; s++) {
             this.ears[s] = this.head.getChild(sides[s] + "ear");
+            this.flaps[s] = this.ears[s].getChild("flap");
+            this.eyes[s] = this.head.getChild(sides[s] + "eye");
             this.tusks[s] = this.head.getChild(sides[s] + "tusk");
             this.longTusks[s] = this.tusks[s].getChild("long");
         }
         String[] names = { "right_front_leg", "left_front_leg", "right_hind_leg", "left_hind_leg" };
         for (int k = 0; k < 4; k++) {
             ModelPart upper = this.body.getChild(names[k]);
-            this.legs[k] = new ModelPart[] { upper, upper.getChild("lower") };
+            ModelPart lower = upper.getChild("lower");
+            this.legs[k] = new ModelPart[] { upper, lower, lower.getChild("foot") };
         }
     }
 
     public static LayerDefinition createLayer() {
         MeshDefinition mesh = new MeshDefinition();
         PartDefinition root = mesh.getRoot();
+        // A long barrel, deepest and highest at the withers, the back dipping before the croup, the belly sagging.
         PartDefinition body = root.addOrReplaceChild("body", CubeListBuilder.create()
-                .texOffs(0, 0).addBox(-9.0F, -12.0F, -13.0F, 18.0F, 24.0F, 26.0F)
-                .texOffs(0, 50).addBox(-6.0F, -14.0F, -10.0F, 12.0F, 2.0F, 20.0F),
+                .texOffs(0, 0).addBox(-11.0F, -13.0F, -21.0F, 22.0F, 26.0F, 20.0F)
+                .texOffs(84, 0).addBox(-10.5F, -12.0F, -2.0F, 21.0F, 24.0F, 22.0F)
+                .texOffs(0, 50).addBox(-9.5F, 12.0F, -16.0F, 19.0F, 2.0F, 28.0F)
+                .texOffs(94, 50).addBox(-7.0F, -15.0F, -19.0F, 14.0F, 2.0F, 14.0F)
+                .texOffs(94, 66).addBox(-6.0F, -14.0F, 6.0F, 12.0F, 2.0F, 12.0F),
                 PartPose.offset(0.0F, BODY_Y, 0.0F));
         body.addOrReplaceChild("tail", CubeListBuilder.create()
-                .texOffs(112, 10).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 12.0F, 2.0F),
-                PartPose.offset(0.0F, -8.0F, 13.0F));
+                .texOffs(244, 0).addBox(-1.0F, 0.0F, -1.0F, 2.0F, 16.0F, 2.0F),
+                PartPose.offset(0.0F, -9.0F, 20.0F));
         PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create()
-                .texOffs(64, 50).addBox(-7.0F, -9.0F, -10.0F, 14.0F, 16.0F, 10.0F)
-                .texOffs(88, 0).addBox(-5.0F, -11.0F, -9.0F, 10.0F, 2.0F, 8.0F),
-                PartPose.offset(0.0F, -5.0F, -13.0F));
+                .texOffs(170, 0).addBox(-8.0F, -12.0F, -12.0F, 16.0F, 18.0F, 12.0F)
+                .texOffs(170, 30).addBox(-6.0F, -14.0F, -11.0F, 12.0F, 2.0F, 9.0F),
+                PartPose.offset(0.0F, -7.0F, -21.0F));
         head.addOrReplaceChild("lip", CubeListBuilder.create()
-                .texOffs(104, 92).addBox(-2.5F, 0.0F, -5.0F, 5.0F, 2.0F, 5.0F),
-                PartPose.offset(0.0F, 7.0F, -4.0F));
-        float[][] pieces = { { 7.0F, 9.0F }, { 6.0F, 8.0F }, { 5.0F, 7.0F }, { 4.0F, 7.0F }, { 3.0F, 6.0F } };
-        int[] u = { 0, 28, 52, 72, 88 };
+                .texOffs(170, 41).addBox(-3.0F, 0.0F, -6.0F, 6.0F, 2.0F, 6.0F),
+                PartPose.offset(0.0F, 6.0F, -6.0F));
+        float[][] pieces = { { 8.0F, 10.0F }, { 7.0F, 9.0F }, { 6.0F, 8.0F }, { 5.0F, 8.0F }, { 4.0F, 6.0F } };
+        int[] u = { 150, 182, 210, 234, 150 };
+        int[] v = { 52, 52, 52, 52, 70 };
         PartDefinition trunk = head;
         for (int k = 0; k < pieces.length; k++) {
             float wide = pieces[k][0];
             // Each piece starts half a pixel inside the one above it, so a bend opens no gap.
             trunk = trunk.addOrReplaceChild("trunk", CubeListBuilder.create()
-                    .texOffs(u[k], 76).addBox(-wide / 2.0F, 0.0F, -wide / 2.0F, wide, pieces[k][1], wide),
-                    k == 0 ? PartPose.offset(0.0F, 0.0F, -8.0F) : PartPose.offset(0.0F, pieces[k - 1][1] - 0.5F,
+                    .texOffs(u[k], v[k]).addBox(-wide / 2.0F, 0.0F, -wide / 2.0F, wide, pieces[k][1], wide),
+                    k == 0 ? PartPose.offset(0.0F, 0.0F, -11.0F) : PartPose.offset(0.0F, pieces[k - 1][1] - 0.5F,
                             0.0F));
         }
         for (int s = 0; s < 2; s++) {
             float side = s == 0 ? -1.0F : 1.0F;
             boolean left = s == 1;
             String name = left ? "left_" : "right_";
-            // An ear is hinged at its front edge and lies back from there.
-            head.addOrReplaceChild(name + "ear", CubeListBuilder.create().mirror(left)
-                    .texOffs(88, 10).addBox(left ? 0.0F : -1.0F, -4.0F, 0.0F, 1.0F, 14.0F, 11.0F),
-                    PartPose.offset(side * 7.0F, -5.0F, -6.0F));
+            // An ear is hinged at its front edge and lies back from there; its back half hinged again.
+            PartDefinition ear = head.addOrReplaceChild(name + "ear", CubeListBuilder.create().mirror(left)
+                    .texOffs(226, 0).addBox(left ? 0.0F : -1.0F, -5.0F, 0.0F, 1.0F, 18.0F, 8.0F),
+                    PartPose.offset(side * 8.0F, -9.0F, -8.0F));
+            ear.addOrReplaceChild("flap", CubeListBuilder.create().mirror(left)
+                    .texOffs(226, 26).addBox(left ? 0.0F : -1.0F, -5.0F, 0.0F, 1.0F, 18.0F, 7.0F),
+                    PartPose.offset(0.0F, 0.0F, 8.0F));
+            // An eye low on the side of the head; it shuts by folding down to nothing, as an upper lid comes down.
+            head.addOrReplaceChild(name + "eye", CubeListBuilder.create()
+                    .texOffs(252, 0).addBox(-0.5F, -1.0F, -0.5F, 1.0F, 1.0F, 1.0F),
+                    PartPose.offset(side * 7.6F, -1.0F, -9.5F));
             PartDefinition tusk = head.addOrReplaceChild(name + "tusk", CubeListBuilder.create().mirror(left)
-                    .texOffs(0, 114).addBox(-1.0F, -1.0F, -6.0F, 2.0F, 2.0F, 6.0F),
-                    PartPose.offsetAndRotation(side * 4.5F, 5.0F, -8.0F, 0.75F, side * 0.1F, 0.0F));
+                    .texOffs(166, 70).addBox(-1.0F, -1.0F, -6.0F, 2.0F, 2.0F, 6.0F),
+                    PartPose.offsetAndRotation(side * 5.0F, 4.0F, -11.0F, 0.75F, side * 0.1F, 0.0F));
             PartDefinition more = tusk.addOrReplaceChild("long", CubeListBuilder.create().mirror(left)
-                    .texOffs(16, 114).addBox(-1.0F, -1.0F, -6.0F, 2.0F, 2.0F, 6.0F),
+                    .texOffs(182, 70).addBox(-1.0F, -1.0F, -6.0F, 2.0F, 2.0F, 6.0F),
                     PartPose.offsetAndRotation(0.0F, 0.0F, -5.5F, -0.4F, 0.0F, 0.0F));
             more.addOrReplaceChild("point", CubeListBuilder.create().mirror(left)
-                    .texOffs(32, 114).addBox(-0.5F, -0.5F, -4.0F, 1.0F, 1.0F, 4.0F),
+                    .texOffs(194, 41).addBox(-0.5F, -0.5F, -4.0F, 1.0F, 1.0F, 4.0F),
                     PartPose.offsetAndRotation(0.0F, 0.0F, -5.5F, -0.4F, 0.0F, 0.0F));
             for (int end = 0; end < 2; end++) {
                 boolean front = end == 0;
                 PartDefinition upper = body.addOrReplaceChild(name + (front ? "front_leg" : "hind_leg"),
                         CubeListBuilder.create().mirror(left)
-                                .texOffs(front ? 0 : 52, 92).addBox(-3.5F, -2.0F, -3.5F, 7.0F, 14.0F, 7.0F),
-                        PartPose.offset(side * 5.5F, HIP_Y, front ? -8.0F : HIP_Z));
-                upper.addOrReplaceChild("lower", CubeListBuilder.create().mirror(left)
-                        .texOffs(front ? 28 : 80, 92).addBox(-3.0F, 0.0F, -3.0F, 6.0F, 14.0F, 6.0F),
-                        PartPose.offset(0.0F, 12.0F, 0.0F));
+                                .texOffs(0, 80).addBox(-4.5F, -3.0F, -4.5F, 9.0F, 17.0F, 9.0F),
+                        PartPose.offset(side * 6.5F, HIP_Y, front ? -13.0F : HIP_Z));
+                PartDefinition lower = upper.addOrReplaceChild("lower", CubeListBuilder.create().mirror(left)
+                        .texOffs(36, 80).addBox(-4.0F, 0.0F, -4.0F, 8.0F, 14.0F, 8.0F),
+                        PartPose.offset(0.0F, 14.0F, 0.0F));
+                lower.addOrReplaceChild("foot", CubeListBuilder.create().mirror(left)
+                        .texOffs(68, 80).addBox(-4.5F, 0.0F, -4.5F, 9.0F, 2.0F, 9.0F),
+                        PartPose.offset(0.0F, 14.0F, 0.0F));
             }
         }
-        return LayerDefinition.create(mesh, 128, 128);
+        return LayerDefinition.create(mesh, 256, 128);
     }
 
     @Override
@@ -156,6 +179,9 @@ public final class ElephantModel extends HierarchicalModel<Elephant> {
         for (int s = 0; s < 2; s++) {
             float side = s == 0 ? -1.0F : 1.0F;
             this.ears[s].yRot = side * (EAR_REST + c[ElephantPoses.EAR_R + s]);
+            // The back half trails behind how far the ear has moved.
+            this.flaps[s].yRot = side * (0.1F + 0.9F * (c[ElephantPoses.FLAP_R + s] - c[ElephantPoses.EAR_R + s]));
+            this.eyes[s].yScale = 1.0F - 0.9F * Mth.clamp(c[ElephantPoses.BLINK], 0.0F, 1.0F);
             this.tusks[s].visible = grown;
             this.longTusks[s].visible = elephant.isBull();
         }
@@ -170,6 +196,7 @@ public final class ElephantModel extends HierarchicalModel<Elephant> {
             leg[0].xRot = c[at] - pitch;
             leg[0].zRot = side * c[at + 1] - c[ElephantPoses.ROLL] * 0.7F;
             leg[1].xRot = c[at + 2];
+            leg[2].xRot = c[at + 3];
         }
     }
 }

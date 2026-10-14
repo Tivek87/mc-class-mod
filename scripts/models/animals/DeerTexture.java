@@ -35,41 +35,61 @@ public final class DeerTexture {
     static Pelt paint(boolean fawn) {
         Pelt p = new Pelt(128, 64, fawn ? 5521L : 4410L);
         int[] coat = fawn ? FAWN : COAT;
-        p.paint(new Pelt.Box("torso", 0, 0, 6, 7, 17), (f, x, y, z, px, py) -> torso(p, coat, fawn, f, x, y, z, px,
+        p.paint(new Pelt.Box("torso", 0, 0, 6, 7, 15), (f, x, y, z, px, py) -> torso(p, coat, fawn, f, x, y, z, px,
                 py));
-        p.paint(new Pelt.Box("chest", 46, 0, 5, 6, 2), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM
-                ? WHITE : p.fur(Pelt.mix(Pelt.mix(coat, GREY, 0.4), WHITE, Pelt.step(0.6, 1.0, y) * 0.8), null, 0.0,
-                        px, py));
-        p.paint(new Pelt.Box("tail", 60, 0, 3, 4, 1), (f, x, y, z, px, py) -> tail(p, coat, f, x, y, px, py));
-        p.paint(new Pelt.Box("neck", 0, 24, 4, 9, 4), (f, x, y, z, px, py) -> neck(p, coat, f, x, y, px, py));
-        p.paint(new Pelt.Box("skull", 16, 24, 5, 4, 5), (f, x, y, z, px, py) -> skull(p, fawn, f, x, y, z, px, py));
-        p.paint(new Pelt.Box("muzzle", 36, 24, 3, 2, 4), (f, x, y, z, px, py) -> muzzle(p, f, x, y, z, px, py));
-        p.paint(new Pelt.Box("jaw", 50, 24, 2, 1, 4), (f, x, y, z, px, py) -> f == Pelt.Face.TOP ? MOUTH
+        p.paint(new Pelt.Box("chest", 42, 0, 6, 8, 3), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM
+                ? WHITE : p.fur(Pelt.mix(Pelt.mix(coat, GREY, 0.4), WHITE, Pelt.step(0.6, 1.0, y)
+                        * (f == Pelt.Face.FRONT ? 0.8 : 0.3)), null, 0.0, px, py));
+        p.paint(new Pelt.Box("withers", 60, 0, 4, 1, 5), (f, x, y, z, px, py) -> p.fur(Pelt.mix(coat, DORSAL,
+                f == Pelt.Face.TOP ? 0.6 : 0.3), null, 0.0, px, py));
+        p.paint(new Pelt.Box("croup", 78, 0, 5, 6, 3), (f, x, y, z, px, py) -> croup(p, coat, f, x, y, px, py));
+        p.paint(new Pelt.Box("tail", 42, 11, 3, 4, 1), (f, x, y, z, px, py) -> tail(p, coat, f, x, y, px, py));
+        p.paint(new Pelt.Box("neck", 0, 22, 3, 9, 4), (f, x, y, z, px, py) -> neck(p, coat, f, x, y, px, py));
+        p.paint(new Pelt.Box("neck base", 14, 22, 4, 4, 5), (f, x, y, z, px, py) -> neck(p, coat, f, x,
+                0.6 + 0.4 * y, px, py));
+        p.paint(new Pelt.Box("skull", 94, 0, 4, 4, 5), (f, x, y, z, px, py) -> skull(p, fawn, f, x, y, z, px, py));
+        p.paint(new Pelt.Box("muzzle", 112, 0, 3, 2, 4), (f, x, y, z, px, py) -> muzzle(p, f, x, y, z, px, py));
+        p.paint(new Pelt.Box("nose", 70, 11, 2, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
+                ? Pelt.scale(NOSE, 1.6) : NOSE);
+        p.paint(new Pelt.Box("eye", 76, 11, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.RIGHT
+                || f == Pelt.Face.LEFT ? Pelt.scale(EYE, 2.2) : EYE);
+        p.paint(new Pelt.Box("jaw", 58, 11, 2, 1, 4), (f, x, y, z, px, py) -> f == Pelt.Face.TOP ? MOUTH
                 : f == Pelt.Face.FRONT ? Pelt.mix(WHITE, RIM, 0.5) : p.fur(WHITE, null, 0.0, px, py));
-        p.paint(new Pelt.Box("ear", 62, 24, 3, 4, 1), (f, x, y, z, px, py) -> ear(p, f, x, y, px, py));
-        p.paint(new Pelt.Box("front leg", 0, 37, 3, 6, 3), (f, x, y, z, px, py) -> leg(p, coat, f, y, 0.0, px, py));
-        p.paint(new Pelt.Box("front cannon", 12, 37, 2, 6, 2), (f, x, y, z, px, py) -> cannon(p, f, y, false, px,
+        p.paint(new Pelt.Box("ear", 50, 11, 3, 4, 1), (f, x, y, z, px, py) -> ear(p, f, x, y, px, py));
+        p.paint(new Pelt.Box("front leg", 32, 22, 3, 7, 3), (f, x, y, z, px, py) -> leg(p, coat, f, y, 0.0, px, py));
+        p.paint(new Pelt.Box("front cannon", 62, 22, 2, 5, 2), (f, x, y, z, px, py) -> cannon(p, f, y, false, px,
                 py));
-        p.paint(new Pelt.Box("hoof", 20, 37, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM
-                ? Pelt.scale(HOOF, 0.7) : f == Pelt.Face.FRONT && x > 0.4 && x < 0.6 ? Pelt.scale(HOOF, 0.6) : HOOF);
-        p.paint(new Pelt.Box("thigh", 28, 37, 4, 7, 5), (f, x, y, z, px, py) -> leg(p, coat, f, y,
+        p.paint(new Pelt.Box("dewclaw", 80, 11, 1, 1, 1), (f, x, y, z, px, py) -> HOOF);
+        p.paint(new Pelt.Box("hoof", 84, 11, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM
+                ? Pelt.scale(HOOF, 0.7) : (f == Pelt.Face.FRONT || f == Pelt.Face.TOP) && x > 0.4 && x < 0.6
+                        ? Pelt.scale(HOOF, 0.55) : HOOF);
+        p.paint(new Pelt.Box("thigh", 44, 22, 4, 7, 5), (f, x, y, z, px, py) -> leg(p, coat, f, y,
                 f == Pelt.Face.BACK || f == Pelt.Face.LEFT ? 0.55 : 0.0, px, py));
-        p.paint(new Pelt.Box("gaskin", 46, 37, 3, 4, 2), (f, x, y, z, px, py) -> p.fur(Pelt.mix(Pelt.mix(coat, TAN,
+        p.paint(new Pelt.Box("gaskin", 92, 11, 3, 4, 2), (f, x, y, z, px, py) -> p.fur(Pelt.mix(Pelt.mix(coat, TAN,
                 0.6), WHITE, f == Pelt.Face.LEFT ? 0.4 : 0.0), null, 0.0, px, py));
-        p.paint(new Pelt.Box("hind cannon", 56, 37, 2, 5, 2), (f, x, y, z, px, py) -> cannon(p, f, y, true, px, py));
+        p.paint(new Pelt.Box("hind cannon", 70, 22, 2, 5, 2), (f, x, y, z, px, py) -> cannon(p, f, y, true, px, py));
         if (!fawn) {
-            p.paint(new Pelt.Box("beam", 70, 0, 1, 3, 1), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER_ROOT,
+            p.paint(new Pelt.Box("beam", 102, 11, 1, 3, 1), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER_ROOT,
                     ANTLER, 1.0 - y), px, py));
-            p.paint(new Pelt.Box("brow tine", 74, 0, 1, 1, 2), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER,
+            p.paint(new Pelt.Box("brow tine", 110, 11, 1, 1, 2), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER,
                     ANTLER_TIP, 1.0 - z), px, py));
-            p.paint(new Pelt.Box("main beam", 80, 0, 1, 1, 4), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER,
+            p.paint(new Pelt.Box("main beam", 42, 17, 1, 1, 4), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER,
                     ANTLER_TIP, 0.5 - 0.5 * z), px, py));
-            p.paint(new Pelt.Box("tine", 90, 0, 1, 3, 1), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER,
+            p.paint(new Pelt.Box("tine", 106, 11, 1, 3, 1), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER,
                     ANTLER_TIP, 1.0 - y), px, py));
-            p.paint(new Pelt.Box("tip", 94, 0, 1, 1, 2), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER,
+            p.paint(new Pelt.Box("tip", 116, 11, 1, 1, 2), (f, x, y, z, px, py) -> antler(p, Pelt.mix(ANTLER,
                     ANTLER_TIP, 0.6 + 0.4 * (1.0 - z)), px, py));
         }
         return p;
+    }
+
+    // The croup over the hips: the coat on top and sides, the white rump patch round the tail behind.
+    static int[] croup(Pelt p, int[] coat, Pelt.Face f, double x, double y, int px, int py) {
+        int[] c = p.fur(Pelt.mix(coat, DORSAL, f == Pelt.Face.TOP ? 0.45 : 0.1), null, 0.0, px, py);
+        if (f == Pelt.Face.BACK) {
+            return Pelt.mix(c, WHITE, Pelt.step(0.15, 0.4, y) * Pelt.step(0.48, 0.25, Math.abs(x - 0.5)));
+        }
+        return Pelt.scale(c, 1.03 - 0.06 * y);
     }
 
     static int[] torso(Pelt p, int[] coat, boolean fawn, Pelt.Face f, double x, double y, double z, int px,
@@ -141,9 +161,10 @@ public final class DeerTexture {
             case RIGHT, LEFT -> {
                 int col = (int) (z * 5);
                 int row = (int) (y * 4);
-                // A big dark eye in a ring of white, a little forward of the middle.
+                // The lid behind the eye (a part of its own, shut by drawing it in) in a ring of white, a little
+                // forward of the middle.
                 if (col == 1 && row == 1) {
-                    return EYE;
+                    return Pelt.mix(c, DORSAL, 0.35);
                 }
                 if (Math.abs(col - 1) <= 1 && Math.abs(row - 1) <= 1) {
                     return Pelt.mix(c, WHITE, 0.75);
@@ -208,10 +229,6 @@ public final class DeerTexture {
         if (hind && f == Pelt.Face.RIGHT && y > 0.3 && y < 0.55) {
             // The dark tuft of the gland on the outside of each hind leg.
             return GLAND;
-        }
-        if (f == Pelt.Face.BACK && y > 0.8) {
-            // The dewclaws.
-            return HOOF;
         }
         return c;
     }

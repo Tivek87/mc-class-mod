@@ -2,9 +2,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 // Paints the brown bear's texture (textures/entity/brown_bear.png) from scratch, box by box as BearModel lays it out:
-// a deep brown coat with grizzled light tips over the hump, shoulders and back, darker legs and belly, a lighter
-// tawny muzzle with a black nose, small dark eyes, round dark ears, near-black paws with grey soles and long ivory
-// claws, and a pink mouth with white teeth that shows when it opens.
+// a deep brown coat with grizzled light tips over the hump, shoulders and back, darker legs and belly with shaggy
+// fringes hanging under the belly, throat, cheeks and elbows, a lighter tawny muzzle with a black nose, small dark eyes
+// under a darker brow, round dark ears, near-black paws with grey soles and long ivory claws, and a pink mouth with
+// white teeth that shows when it opens.
 // Run from the repository root: java scripts/models/animals/BearTexture.java [assets folder]
 public final class BearTexture {
     static final int[] DARK = Pelt.rgb(52, 34, 21);
@@ -15,6 +16,7 @@ public final class BearTexture {
     static final int[] NOSE = Pelt.rgb(40, 35, 33);
     static final int[] NOSTRIL = Pelt.rgb(12, 10, 10);
     static final int[] EYE = Pelt.rgb(14, 10, 8);
+    static final int[] EYE_SHINE = Pelt.rgb(38, 26, 20);
     static final int[] INNER_EAR = Pelt.rgb(76, 54, 38);
     static final int[] PAW = Pelt.rgb(38, 26, 18);
     static final int[] SOLE = Pelt.rgb(46, 42, 40);
@@ -26,35 +28,77 @@ public final class BearTexture {
 
     public static void main(String[] args) throws IOException {
         Path folder = Pelt.textures(args, "entity");
-        Pelt p = new Pelt(128, 64, 1871L);
-        // The coat: darker toward the belly, grizzled on top, most of all over the hump.
-        p.paint(new Pelt.Box("chest", 0, 0, 12, 10, 11), (f, x, y, z, px, py) -> body(p, f, y, 0.3, px, py));
-        p.paint(new Pelt.Box("hump", 46, 0, 9, 3, 7), (f, x, y, z, px, py) -> body(p, f, y * 0.3, 0.5, px, py));
-        p.paint(new Pelt.Box("rump", 0, 21, 11, 9, 13), (f, x, y, z, px, py) -> body(p, f, y, 0.22 * (1.0 - z * 0.5),
+        Pelt p = new Pelt(128, 128, 1871L);
+        // The coat: darker toward the belly, grizzled on top, most of all over the hump; long shaggy hair hanging
+        // under the belly, the throat, the cheeks and behind the elbows.
+        p.paint(new Pelt.Box("chest", 0, 0, 12, 10, 10), (f, x, y, z, px, py) -> body(p, f, y, 0.12, px, py));
+        p.paint(new Pelt.Box("hump", 0, 36, 9, 3, 7), (f, x, y, z, px, py) -> body(p, f, y * 0.3, 0.22, px, py));
+        p.paint(new Pelt.Box("hump top", 24, 52, 7, 1, 5), (f, x, y, z, px, py) -> body(p, f, 0.0, 0.26, px, py));
+        p.paint(new Pelt.Box("belly", 28, 22, 10, 2, 9), (f, x, y, z, px, py) -> shag(p, f, y, Pelt.mix(DARK, BASE,
+                0.25), px, py));
+        p.paint(new Pelt.Box("shoulder", 112, 36, 1, 7, 6), (f, x, y, z, px, py) -> body(p, f, y, 0.14, px, py));
+        p.paint(new Pelt.Box("rump", 44, 0, 11, 9, 13), (f, x, y, z, px, py) -> body(p, f, y, 0.1 * (1.0 - z * 0.5),
                 px, py));
-        p.paint(new Pelt.Box("tail", 78, 0, 3, 3, 2), (f, x, y, z, px, py) -> p.fur(Pelt.mix(BASE, DARK, 0.3 + 0.4 * y),
-                GRIZZLE, 0.1, px, py));
-        p.paint(new Pelt.Box("neck", 48, 21, 8, 8, 6), (f, x, y, z, px, py) -> body(p, f, y, 0.3, px, py));
-        p.paint(new Pelt.Box("skull", 76, 21, 8, 7, 6), (f, x, y, z, px, py) -> skull(p, f, x, y, z, px, py));
-        p.paint(new Pelt.Box("muzzle", 88, 0, 5, 3, 4), (f, x, y, z, px, py) -> muzzle(p, f, y, z, px, py));
-        p.paint(new Pelt.Box("nose", 106, 0, 3, 2, 1), (f, x, y, z, px, py) -> nose(f, x, y));
-        p.paint(new Pelt.Box("ear", 114, 0, 3, 2, 1), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
-                ? Pelt.mix(INNER_EAR, DARK, Math.abs(x - 0.5) < 0.3 && y > 0.4 ? 0.6 : 0.0)
-                : p.fur(Pelt.mix(BASE, DARK, 0.45), null, 0.0, px, py));
-        p.paint(new Pelt.Box("jaw", 88, 7, 4, 1, 4), (f, x, y, z, px, py) -> jaw(p, f, x, z, px, py));
+        p.paint(new Pelt.Box("rump top", 66, 22, 9, 1, 10), (f, x, y, z, px, py) -> body(p, f, 0.0, 0.16, px, py));
+        p.paint(new Pelt.Box("rump belly", 32, 36, 9, 2, 8), (f, x, y, z, px, py) -> shag(p, f, y, Pelt.mix(DARK,
+                BASE, 0.2), px, py));
+        p.paint(new Pelt.Box("tail", 96, 59, 3, 3, 2), (f, x, y, z, px, py) -> p.fur(Pelt.mix(BASE, DARK,
+                0.3 + 0.4 * y), GRIZZLE, 0.1, px, py));
+        p.paint(new Pelt.Box("neck", 0, 22, 8, 8, 6), (f, x, y, z, px, py) -> body(p, f, y, 0.12, px, py));
+        p.paint(new Pelt.Box("throat", 0, 52, 7, 2, 5), (f, x, y, z, px, py) -> shag(p, f, y, Pelt.mix(BASE, DARK,
+                0.5), px, py));
+        p.paint(new Pelt.Box("skull", 92, 0, 8, 7, 6), (f, x, y, z, px, py) -> skull(p, f, x, y, z, px, py));
+        p.paint(new Pelt.Box("brow", 48, 52, 6, 1, 4), (f, x, y, z, px, py) -> p.fur(Pelt.mix(HEAD, GRIZZLE,
+                f == Pelt.Face.TOP ? 0.2 : 0.0), GRIZZLE, 0.25, px, py));
+        p.paint(new Pelt.Box("cheek", 0, 59, 1, 4, 4), (f, x, y, z, px, py) -> shag(p, f, y * 0.8, Pelt.mix(HEAD,
+                GRIZZLE, 0.15), px, py));
+        p.paint(new Pelt.Box("muzzle", 68, 52, 5, 3, 4), (f, x, y, z, px, py) -> muzzle(p, f, y, z, px, py));
+        p.paint(new Pelt.Box("bridge", 72, 59, 3, 1, 3), (f, x, y, z, px, py) -> p.fur(Pelt.mix(MUZZLE, HEAD,
+                0.3 + 0.5 * z), null, 0.0, px, py));
+        p.paint(new Pelt.Box("nose", 0, 67, 3, 2, 1), (f, x, y, z, px, py) -> nose(f, x, y));
+        p.paint(new Pelt.Box("eye", 8, 67, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT ? EYE_SHINE : EYE);
+        p.paint(new Pelt.Box("ear", 116, 59, 3, 3, 1), (f, x, y, z, px, py) -> ear(p, f, x, y, px, py));
+        p.paint(new Pelt.Box("jaw", 42, 59, 4, 1, 4), (f, x, y, z, px, py) -> jaw(p, f, x, z, px, py));
+        p.paint(new Pelt.Box("chin", 84, 59, 3, 1, 3), (f, x, y, z, px, py) -> p.fur(Pelt.mix(MUZZLE, DARK, 0.35),
+                null, 0.0, px, py));
         // Legs: dark brown, near black at the paws.
-        p.paint(new Pelt.Box("front leg", 0, 43, 5, 8, 5), (f, x, y, z, px, py) -> p.fur(Pelt.mix(BASE, DARK,
+        p.paint(new Pelt.Box("front leg", 92, 36, 5, 9, 5), (f, x, y, z, px, py) -> p.fur(Pelt.mix(BASE, DARK,
                 0.35 + 0.5 * y), GRIZZLE, 0.18 * (1.0 - y), px, py));
-        p.paint(new Pelt.Box("forearm", 20, 43, 4, 4, 4), (f, x, y, z, px, py) -> p.fur(Pelt.mix(DARK, PAW, y),
+        p.paint(new Pelt.Box("elbow tuft", 106, 59, 4, 3, 1), (f, x, y, z, px, py) -> shag(p, f, y, Pelt.mix(BASE,
+                DARK, 0.6), px, py));
+        p.paint(new Pelt.Box("forearm", 10, 59, 4, 4, 4), (f, x, y, z, px, py) -> p.fur(Pelt.mix(DARK, PAW, y),
                 null, 0.0, px, py));
-        p.paint(new Pelt.Box("paw", 36, 43, 5, 2, 5), (f, x, y, z, px, py) -> paw(p, f, x, z, px, py));
-        p.paint(new Pelt.Box("claws", 56, 43, 5, 1, 2), (f, x, y, z, px, py) -> claw(f, x, z, px));
-        p.paint(new Pelt.Box("thigh", 70, 43, 5, 7, 6), (f, x, y, z, px, py) -> p.fur(Pelt.mix(BASE, DARK,
+        p.paint(new Pelt.Box("paw", 86, 52, 5, 2, 5), (f, x, y, z, px, py) -> paw(p, f, x, z, px, py));
+        p.paint(new Pelt.Box("claws", 58, 59, 5, 1, 2), (f, x, y, z, px, py) -> claw(f, x, z, px));
+        p.paint(new Pelt.Box("thigh", 66, 36, 6, 9, 7), (f, x, y, z, px, py) -> p.fur(Pelt.mix(BASE, DARK,
                 0.25 + 0.55 * y), GRIZZLE, 0.15 * (1.0 - y), px, py));
-        p.paint(new Pelt.Box("shin", 92, 43, 4, 4, 4), (f, x, y, z, px, py) -> p.fur(Pelt.mix(DARK, PAW, y),
+        p.paint(new Pelt.Box("shin", 26, 59, 4, 4, 4), (f, x, y, z, px, py) -> p.fur(Pelt.mix(DARK, PAW, y),
                 null, 0.0, px, py));
-        p.paint(new Pelt.Box("foot", 36, 50, 5, 1, 6), (f, x, y, z, px, py) -> foot(p, f, x, z, px, py));
+        p.paint(new Pelt.Box("heel", 12, 67, 3, 2, 1), (f, x, y, z, px, py) -> p.fur(PAW, null, 0.0, px, py));
+        p.paint(new Pelt.Box("foot", 106, 52, 5, 1, 6), (f, x, y, z, px, py) -> foot(p, f, x, z, px, py));
+        p.paint(new Pelt.Box("toes", 20, 67, 5, 1, 1), (f, x, y, z, px, py) -> ((int) (x * 5)) % 2 == 0
+                ? Pelt.mix(CLAW_ROOT, CLAW, 0.4) : PAW);
         p.save(folder, "brown_bear");
+    }
+
+    // Long hair hanging below a part: its sides end in a ragged fringe, some strands longer than others.
+    static int[] shag(Pelt p, Pelt.Face f, double y, int[] base, int px, int py) {
+        if (f != Pelt.Face.TOP && f != Pelt.Face.BOTTOM && y > 0.55 && p.noise(px, 0, 7) < 0.4) {
+            return null;
+        }
+        int[] c = p.fur(base, GRIZZLE, f == Pelt.Face.TOP ? 0.0 : 0.12, px, py);
+        return Pelt.scale(c, f == Pelt.Face.BOTTOM ? 0.8 : 1.0 - 0.12 * y);
+    }
+
+    // A round ear: its upper corners left open, the dark inside facing forward.
+    static int[] ear(Pelt p, Pelt.Face f, double x, double y, int px, int py) {
+        if ((f == Pelt.Face.FRONT || f == Pelt.Face.BACK) && y < 0.34 && (x < 0.34 || x > 0.66)) {
+            return null;
+        }
+        if (f == Pelt.Face.FRONT) {
+            return Pelt.mix(INNER_EAR, DARK, Math.abs(x - 0.5) < 0.2 && y > 0.4 ? 0.3 : 0.1);
+        }
+        return p.fur(Pelt.mix(BASE, DARK, 0.45), GRIZZLE, 0.1, px, py);
     }
 
     static int[] body(Pelt p, Pelt.Face f, double y, double grizzle, int px, int py) {
@@ -69,11 +113,11 @@ public final class BearTexture {
         if (f == Pelt.Face.FRONT) {
             int col = (int) (x * 8);
             int row = (int) (y * 7);
-            // Small dark eyes set wide above the muzzle, under a darker brow.
-            if (row == 3 && (col == 1 || col == 6)) {
-                return EYE;
-            }
+            // The lids behind the eyes (each eye a part of its own, shut by drawing it in), under a darker brow.
             if (row == 2 && (col == 1 || col == 6)) {
+                return Pelt.mix(c, DARK, 0.3);
+            }
+            if (row == 1 && (col == 1 || col == 6)) {
                 return Pelt.mix(c, DARK, 0.45);
             }
             // The dished brow between the eyes runs into the muzzle a little lighter.

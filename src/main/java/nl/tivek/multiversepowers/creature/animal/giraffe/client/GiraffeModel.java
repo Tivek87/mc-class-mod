@@ -13,7 +13,8 @@ import nl.tivek.multiversepowers.creature.animal.giraffe.Giraffe;
 // The giraffe's body in a giraffe's own build: a short deep trunk, highest at the withers and sloping down to the
 // rump, on very long legs, the forelegs bending at the knee and the hind legs at the stifle and the hock; a neck of
 // three pieces as long as its legs, leaning forward, with a short mane down the back of it; a long narrow head with
-// a jaw of its own, a dark tongue it can put out, two blunt horns and ears held out to the sides; and a thin tail
+// eyes on its sides that blink, a jaw of its own, a dark tongue it can put out, two blunt horns and ears held out to
+// the sides; and a thin tail
 // ending in a dark tuft. Its texture is painted by scripts/models/animals. GiraffePoses moves it.
 public final class GiraffeModel extends HierarchicalModel<Giraffe> {
     static final float BODY_Y = -9.0F;
@@ -36,6 +37,7 @@ public final class GiraffeModel extends HierarchicalModel<Giraffe> {
     private final ModelPart jaw;
     private final ModelPart tongue;
     private final ModelPart[] ears = new ModelPart[2];
+    private final ModelPart[] eyes = new ModelPart[2];
     // Right front, left front: upper, cannon, hoof. Right hind, left hind: thigh, gaskin, cannon, hoof.
     private final ModelPart[][] legs = new ModelPart[4][];
     private final GiraffePoses poses = new GiraffePoses();
@@ -54,6 +56,8 @@ public final class GiraffeModel extends HierarchicalModel<Giraffe> {
         this.tongue = this.head.getChild("tongue");
         this.ears[0] = this.head.getChild("right_ear");
         this.ears[1] = this.head.getChild("left_ear");
+        this.eyes[0] = this.head.getChild("right_eye");
+        this.eyes[1] = this.head.getChild("left_eye");
         String[] names = { "right_front_leg", "left_front_leg", "right_hind_leg", "left_hind_leg" };
         for (int k = 0; k < 4; k++) {
             ModelPart upper = this.body.getChild(names[k]);
@@ -111,6 +115,10 @@ public final class GiraffeModel extends HierarchicalModel<Giraffe> {
             head.addOrReplaceChild(name + "ear", CubeListBuilder.create().mirror(left)
                     .texOffs(122, 24).addBox(-1.0F, -3.0F, -0.5F, 2.0F, 3.0F, 1.0F),
                     PartPose.offset(side * 2.0F, -1.5F, 0.5F));
+            // An eye on the side of the head; it shuts by folding down to nothing, as an upper lid comes down.
+            head.addOrReplaceChild(name + "eye", CubeListBuilder.create()
+                    .texOffs(122, 0).addBox(-0.5F, -1.0F, -0.5F, 1.0F, 1.0F, 1.0F),
+                    PartPose.offset(side * 1.6F, -0.5F, -2.5F));
             PartDefinition front = body.addOrReplaceChild(name + "front_leg", CubeListBuilder.create().mirror(left)
                     .texOffs(0, 44).addBox(-2.0F, -1.0F, -2.0F, 4.0F, 14.0F, 4.0F),
                     PartPose.offset(side * 3.0F, 4.0F, -6.0F));
@@ -182,6 +190,7 @@ public final class GiraffeModel extends HierarchicalModel<Giraffe> {
             float side = s == 0 ? -1.0F : 1.0F;
             this.ears[s].zRot = side * (1.35F + c[GiraffePoses.EAR_R + s]);
             this.ears[s].xRot = 0.1F;
+            this.eyes[s].yScale = 1.0F - 0.9F * Mth.clamp(c[GiraffePoses.BLINK], 0.0F, 1.0F);
         }
         if (this.young) {
             this.head.xScale = this.head.yScale = this.head.zScale = YOUNG_HEAD;

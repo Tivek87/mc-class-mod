@@ -11,9 +11,10 @@ import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.moose.Moose;
 
 // The moose's body in a moose's own build: a deep chest under a high shoulder hump, a lower rump, and very long
-// legs, the forelegs bending at the knee and the hind legs at the stifle and the hock; a short thick neck carried
-// forward, a long head with a drooping muzzle and a broad overhanging nose, a jaw of its own, big ears, a bell of skin
-// under the throat, and on a bull broad antlers: a beam out to each side widening into a flat palm cupped upward,
+// legs, the forelegs bending at the knee and the hind legs at the stifle and the hock, dewclaws behind each fetlock
+// over broad cloven hooves; a short thick neck carried forward with a dark mane along its top, a long head with a
+// drooping muzzle and a broad overhanging nose, small eyes on its sides that blink, a jaw of its own, big ears, a bell
+// of skin under the throat, and on a bull broad antlers: a beam out to each side widening into a flat palm cupped upward,
 // with tines along its front and outer edges and a brow tine forward. Its texture is painted by
 // scripts/models/animals. MoosePoses moves it.
 public final class MooseModel extends HierarchicalModel<Moose> {
@@ -36,6 +37,7 @@ public final class MooseModel extends HierarchicalModel<Moose> {
     private final ModelPart bell;
     private final ModelPart antlers;
     private final ModelPart[] ears = new ModelPart[2];
+    private final ModelPart[] eyes = new ModelPart[2];
     // Right front, left front: upper, cannon, hoof. Right hind, left hind: thigh, gaskin, cannon, hoof.
     private final ModelPart[][] legs = new ModelPart[4][];
     private final MoosePoses poses = new MoosePoses();
@@ -51,6 +53,8 @@ public final class MooseModel extends HierarchicalModel<Moose> {
         this.antlers = this.head.getChild("antlers");
         this.ears[0] = this.head.getChild("right_ear");
         this.ears[1] = this.head.getChild("left_ear");
+        this.eyes[0] = this.head.getChild("right_eye");
+        this.eyes[1] = this.head.getChild("left_eye");
         String[] names = { "right_front_leg", "left_front_leg", "right_hind_leg", "left_hind_leg" };
         for (int k = 0; k < 4; k++) {
             ModelPart upper = this.body.getChild(names[k]);
@@ -76,7 +80,8 @@ public final class MooseModel extends HierarchicalModel<Moose> {
                 .texOffs(88, 40).addBox(-1.0F, 0.0F, -0.5F, 2.0F, 3.0F, 1.0F),
                 PartPose.offset(0.0F, -4.5F, 10.0F));
         PartDefinition neck = body.addOrReplaceChild("neck", CubeListBuilder.create()
-                .texOffs(0, 24).addBox(-3.0F, -9.0F, -3.5F, 6.0F, 9.0F, 7.0F),
+                .texOffs(0, 24).addBox(-3.0F, -9.0F, -3.5F, 6.0F, 9.0F, 7.0F)
+                .texOffs(114, 4).addBox(-1.0F, -9.0F, 3.5F, 2.0F, 8.0F, 1.0F),
                 PartPose.offset(0.0F, -3.5F, -10.5F));
         PartDefinition head = neck.addOrReplaceChild("head", CubeListBuilder.create()
                 .texOffs(26, 24).addBox(-3.0F, -3.0F, -6.0F, 6.0F, 6.0F, 7.0F)
@@ -98,6 +103,10 @@ public final class MooseModel extends HierarchicalModel<Moose> {
             head.addOrReplaceChild(name + "ear", CubeListBuilder.create().mirror(left)
                     .texOffs(114, 24).addBox(-1.0F, -5.0F, -0.5F, 2.0F, 5.0F, 1.0F),
                     PartPose.offset(side * 3.0F, -2.5F, 0.0F));
+            // An eye on the side of the head; it shuts by folding down to nothing, as an upper lid comes down.
+            head.addOrReplaceChild(name + "eye", CubeListBuilder.create()
+                    .texOffs(114, 0).addBox(-0.5F, -1.0F, -0.5F, 1.0F, 1.0F, 1.0F),
+                    PartPose.offset(side * 2.6F, -0.5F, -4.0F));
             // Every antler box reaches outward from its own joint: to -x on the right, +x on the left.
             PartDefinition beam = antlers.addOrReplaceChild(name + "beam", CubeListBuilder.create().mirror(left)
                     .texOffs(0, 56).addBox(left ? 0.0F : -4.0F, -0.5F, -0.5F, 4.0F, 1.0F, 1.0F),
@@ -122,7 +131,8 @@ public final class MooseModel extends HierarchicalModel<Moose> {
                     .texOffs(0, 40).addBox(-2.0F, -1.0F, -2.0F, 4.0F, 9.0F, 4.0F),
                     PartPose.offset(side * 3.0F, 4.5F, -7.5F));
             PartDefinition cannon = front.addOrReplaceChild("middle", CubeListBuilder.create().mirror(left)
-                    .texOffs(16, 40).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 8.0F, 3.0F),
+                    .texOffs(16, 40).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 8.0F, 3.0F)
+                    .texOffs(120, 0).addBox(-0.5F, 6.5F, 1.5F, 1.0F, 1.0F, 1.0F),
                     PartPose.offset(0.0F, 7.5F, 0.0F));
             cannon.addOrReplaceChild("hoof", CubeListBuilder.create().mirror(left)
                     .texOffs(28, 40).addBox(-1.5F, 0.0F, -2.5F, 3.0F, 2.0F, 4.0F),
@@ -134,7 +144,8 @@ public final class MooseModel extends HierarchicalModel<Moose> {
                     .texOffs(64, 40).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 6.0F, 3.0F),
                     PartPose.offsetAndRotation(0.0F, 6.0F, 0.0F, GASKIN_REST, 0.0F, 0.0F));
             PartDefinition hindCannon = gaskin.addOrReplaceChild("cannon", CubeListBuilder.create().mirror(left)
-                    .texOffs(76, 40).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 8.0F, 3.0F),
+                    .texOffs(76, 40).addBox(-1.5F, 0.0F, -1.5F, 3.0F, 8.0F, 3.0F)
+                    .texOffs(120, 0).addBox(-0.5F, 6.5F, 1.5F, 1.0F, 1.0F, 1.0F),
                     PartPose.offsetAndRotation(0.0F, 5.5F, 0.0F, CANNON_REST, 0.0F, 0.0F));
             hindCannon.addOrReplaceChild("hoof", CubeListBuilder.create().mirror(left)
                     .texOffs(28, 40).addBox(-1.5F, 0.0F, -2.5F, 3.0F, 2.0F, 4.0F),
@@ -181,6 +192,9 @@ public final class MooseModel extends HierarchicalModel<Moose> {
             this.ears[s].zRot = side * (1.0F + c[MoosePoses.EAR_R + s]);
             this.ears[s].xRot = 0.15F + c[MoosePoses.EARS_BACK];
         }
+        float open = 1.0F - 0.9F * Mth.clamp(c[MoosePoses.BLINK], 0.0F, 1.0F);
+        this.eyes[0].yScale = open;
+        this.eyes[1].yScale = open;
         this.antlers.visible = moose.isBull() && !this.young;
         if (this.young) {
             this.head.xScale = this.head.yScale = this.head.zScale = YOUNG_HEAD;

@@ -2,11 +2,15 @@ package nl.tivek.multiversepowers.creature.animal.crocodile.client;
 
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.client.Channels;
+import nl.tivek.multiversepowers.creature.animal.client.Gait;
+import nl.tivek.multiversepowers.creature.animal.client.Strides;
 import nl.tivek.multiversepowers.creature.animal.crocodile.Crocodile;
+import nl.tivek.multiversepowers.creature.client.PoseSprings;
 import nl.tivek.multiversepowers.creature.client.Trunk;
 
-// How the crocodile moves: at rest on land it lies on its belly, legs splayed; walking it lifts itself onto its legs,
-// a forefoot and the hind foot across from it together, its body and tail bending from side to side; afloat its legs
+// How the crocodile moves: at rest on land it lies on its belly, legs splayed, eyes half shut; walking it lifts itself
+// onto its legs, a forefoot and the hind foot across from it together, each foot kept where it was set down, its spine
+// bending from side to side between the front and hind halves and the tail waving after them; afloat its legs
 // are laid back along its body and its tail drives it with slow sweeps; and its acts: the warning (head up, jaws
 // wide, tail curled to one side), the bite (a lunge, the jaws snapped shut, the head shaken), basking flat with its
 // jaws agape, and raised on its forelegs to look about.
@@ -26,54 +30,79 @@ final class CrocodilePoses {
     // How far the tail slopes down to lie on the ground: 1 standing on land, 0 afloat.
     static final int DROOP = 13;
     static final int LOOK = 14;
-    // Per leg (right front, left front, right hind, left hind): swung back, and lifted.
-    static final int LEGS = 15;
-    static final int PER_LEG = 2;
+    // How far the hind half of the body turns from the front half, at the spine between them.
+    static final int HIPS = 15;
+    static final int BLINK = 16;
+    // Per leg (right front, left front, right hind, left hind): swung back, lifted, and the foot's toes curled down.
+    static final int LEGS = 17;
+    static final int PER_LEG = 3;
     private static final int COUNT = LEGS + 4 * PER_LEG;
-    private static final float PACE = 1.1F;
+    // The high walk: a forefoot and the hind foot across from it together.
+    private static final float[] AT = { 0.0F, 0.5F, 0.5F, 0.0F };
+    // How far a foot travels across the ground in a stride, in pixels.
+    private static final float SWEEP = 5.0F;
     // How far a leg is lifted for the belly to lie on the ground.
     private static final float SPLAY = 0.9F;
     private static final float BELLY = 2.5F;
+    private static final double[][] SPRINGS = Channels.springs(COUNT, 0.6, 0.25, 0.5, TAIL, TAIL + 1, TAIL + 2,
+            TAIL + 3);
     private final Channels pose = new Channels(COUNT);
     private final Channels act = new Channels(COUNT);
+    private final Strides strides = new Strides();
+    private final PoseSprings springs = new PoseSprings(SPRINGS[0], SPRINGS[1]);
     private float swim;
 
     Channels of(Crocodile crocodile, float limbSwing, float amount, float age, float partialTick) {
         Channels p = this.pose.clear();
         float[] c = p.v;
+        int id = crocodile.getId();
         this.swim = Mth.lerp(partialTick, crocodile.oSwim, crocodile.swim);
         float land = 1.0F - this.swim;
         // It walks slowly: any walk at all has it up on its legs.
         float a = Mth.clamp(amount * 4.0F, 0.0F, 1.0F);
         float walk = a * land;
         float rest = (1.0F - a) * land;
-        float phase = limbSwing * PACE;
+        float duty = 0.65F;
+        float phase = this.strides.phase(id, age, crocodile.level().getGameTime(),
+                Strides.rate(Mth.clamp(amount, 0.0F, 1.0F), duty, SWEEP));
         c[LOOK] = 1.0F;
         c[SINK] = BELLY * rest;
         c[DROOP] = land * (1.0F - 0.55F * rest);
-        float[] at = { 0.0F, Mth.PI, Mth.PI, 0.0F };
         for (int k = 0; k < 4; k++) {
             int leg = LEGS + k * PER_LEG;
-            float w = phase + at[k];
-            c[leg] = 0.55F * walk * Channels.swing(w) + 1.25F * this.swim;
-            c[leg + 1] = 0.4F * walk * Channels.lift(w) + SPLAY * rest + 0.25F * this.swim;
+            float at = phase - Mth.TWO_PI * AT[k];
+            // Each foot is set down ahead, kept where it was while the body slides past, then lifted and swung round.
+            c[leg] = 0.6F * walk * Gait.swing(at, duty) + 1.25F * this.swim;
+            c[leg + 1] = 0.45F * walk * Gait.lift(at, duty) + SPLAY * rest + 0.25F * this.swim;
+            c[leg + 2] = 0.6F * walk * Gait.toe(at, duty);
         }
-        c[SWAY] = 0.1F * walk * Mth.sin(phase);
-        c[BOB] = 0.3F * walk * Mth.cos(2.0F * phase) + 0.2F * this.swim * Mth.sin(age * 0.07F);
+        // The spine bends from side to side with the stride, the front half one way and the hind half the other.
+        float bend = walk * Mth.sin(phase);
+        c[SWAY] = 0.1F * bend;
+        c[HIPS] = -0.22F * bend;
+        c[BOB] = 0.25F * walk * Mth.abs(Mth.cos(phase)) + 0.2F * this.swim * Mth.sin(age * 0.07F);
+        c[ROLL] = 0.04F * walk * Mth.cos(phase);
         // The tail: a wave running down it, small on land, wide and slow in the water.
         float beat = age * 0.16F + limbSwing * 0.9F;
         for (int k = 0; k < TAIL_PIECES; k++) {
-            c[TAIL + k] = -0.14F * walk * Mth.sin(phase - 0.7F * (k + 1))
+            c[TAIL + k] = -0.16F * walk * Mth.sin(phase - 0.7F * (k + 1))
                     + this.swim * (0.1F + 0.06F * k) * (1.0F + 2.0F * a) * Mth.sin(beat - 0.8F * k)
                     + 0.05F * rest * Mth.sin(age * 0.03F + k);
         }
-        c[HEAD_YAW] = -0.08F * walk * Mth.sin(phase);
+        c[HEAD_YAW] = -0.08F * bend;
+        // A slow blink now and then, its eyes half shut while it lies still.
+        c[BLINK] = Math.max(Channels.twitch(age, id, 140, 10.0F), 0.4F * rest);
         for (int kind = Crocodile.GAPE; kind <= Crocodile.RISE; kind++) {
             float w = crocodile.blend(kind, partialTick);
             if (w > 0.0F) {
-                p.mix(this.act(kind, (float) crocodile.actAge(kind, partialTick), crocodile.getId()), w);
+                p.mix(this.act(kind, (float) crocodile.actAge(kind, partialTick), id), w);
             }
         }
+        float blink = c[BLINK];
+        float jaw = c[JAW];
+        this.springs.follow(id, c, age, crocodile.level().getGameTime());
+        c[BLINK] = blink;
+        c[JAW] = jaw;
         return p;
     }
 
@@ -89,6 +118,7 @@ final class CrocodilePoses {
                 c[PITCH] = -0.08F;
                 c[HEAD] = -0.4F + 0.03F * Mth.sin(t * 0.5F);
                 c[JAW] = 0.85F + 0.05F * Mth.sin(t * 0.5F);
+                c[BLINK] = 0.0F;
                 for (int k = 0; k < TAIL_PIECES; k++) {
                     c[TAIL + k] = side * (0.28F + 0.08F * (k == TAIL_PIECES - 1 ? Mth.sin(t * 0.9F) : 0.0F));
                 }
@@ -118,6 +148,7 @@ final class CrocodilePoses {
                     c[LEGS + k * PER_LEG + 1] = SPLAY * land;
                 }
                 c[HEAD] = -0.22F;
+                c[BLINK] = 0.65F;
                 c[JAW] = 0.5F + 0.02F * Mth.sin(t * 0.05F);
                 c[HEAD_YAW] = 0.0F;
                 for (int k = 0; k < TAIL_PIECES; k++) {

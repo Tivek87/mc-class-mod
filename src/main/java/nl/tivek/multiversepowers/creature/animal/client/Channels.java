@@ -46,4 +46,23 @@ public final class Channels {
         float t = (age + (seed * 7919 & 0xFFFF)) % every;
         return t < length ? Mth.sin(t / length * Mth.PI) : 0.0F;
     }
+
+    // How far an eye is shut, 0 to 1: a quick blink every few seconds, at uneven times, different for each animal.
+    public static float blink(float age, int seed) {
+        return Math.max(twitch(age, seed, 89, 3.5F), twitch(age, seed + 17, 151, 4.0F));
+    }
+
+    // The channels' own springs: `fast` for every channel but those listed, which follow more slowly and swing a
+    // little past (ears, a tail, a trunk), as loose parts lag behind the body that carries them.
+    public static double[][] springs(int count, double fast, double slow, double looseDamping, int... loose) {
+        double[] frequencies = new double[count];
+        double[] dampings = new double[count];
+        Arrays.fill(frequencies, fast);
+        Arrays.fill(dampings, 1.0);
+        for (int k : loose) {
+            frequencies[k] = slow;
+            dampings[k] = looseDamping;
+        }
+        return new double[][] { frequencies, dampings };
+    }
 }

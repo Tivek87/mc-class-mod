@@ -2,14 +2,18 @@ package nl.tivek.multiversepowers.creature.animal.duck.client;
 
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.client.Channels;
+import nl.tivek.multiversepowers.creature.animal.client.Gait;
+import nl.tivek.multiversepowers.creature.animal.client.Strides;
 import nl.tivek.multiversepowers.creature.animal.duck.Duck;
+import nl.tivek.multiversepowers.creature.client.PoseSprings;
 import nl.tivek.multiversepowers.creature.client.Trunk;
 
-// How the duck moves: a waddle on land, the body rolling from foot to foot and the tail wagging against it; afloat it
+// How the duck moves: a waddle on land, each foot kept where it was set down, the body rolling from foot to foot, the
+// head bobbing and the tail wagging against the roll, its eyes blinking; afloat it
 // lies still on the water with its feet paddling under it; in flight its neck is stretched out ahead, its feet trail
 // and its wings beat fast; and its acts: tipped up to dabble with its tail in the air and its feet kicking, preening
-// a wing, rearing up to beat its wings where it stands, quacking with its head thrown forward at each quack, and
-// asleep with its head turned back onto its shoulders.
+// a wing, rearing up to beat its wings where it stands, quacking with its head thrown forward and its bill open at
+// each quack, and asleep with its head turned back onto its shoulders, eyes shut. The pose follows on springs.
 final class DuckPoses {
     static final int PITCH = 0;
     static final int ROLL = 1;
@@ -34,9 +38,17 @@ final class DuckPoses {
     static final int FOOT_R = 17;
     static final int FOOT_L = 18;
     static final int LOOK = 19;
-    private static final int COUNT = 20;
+    static final int BLINK = 20;
+    // How far the lower bill is open.
+    static final int BILL = 21;
+    private static final int COUNT = 22;
+    // How far a foot travels across the ground in a stride, in pixels.
+    private static final float SWEEP = 2.4F;
+    private static final double[][] SPRINGS = Channels.springs(COUNT, 0.9, 0.3, 0.45, TAIL_WAG, TAIL);
     private final Channels pose = new Channels(COUNT);
     private final Channels act = new Channels(COUNT);
+    private final Strides strides = new Strides();
+    private final PoseSprings springs = new PoseSprings(SPRINGS[0], SPRINGS[1]);
     private float swim;
 
     Channels of(Duck duck, float limbSwing, float amount, float age, float partialTick) {
@@ -58,12 +70,25 @@ final class DuckPoses {
         c[LEG_R] = c[LEG_L] = 1.35F * spread;
         // A foot told against the ground: a quarter turn past its leg, it trails in line with it.
         c[FOOT_R] = c[FOOT_L] = 2.85F * spread;
-        float step = limbSwing * 2.2F;
-        c[LEG_R] += 0.7F * walk * Mth.sin(step);
-        c[LEG_L] -= 0.7F * walk * Mth.sin(step);
-        c[ROLL] = 0.2F * walk * Mth.sin(step);
-        c[TAIL_WAG] = -0.35F * walk * Mth.sin(step);
-        c[HEAD] = 0.08F * walk * Mth.cos(2.0F * step);
+        // The waddle: each foot set down and kept where it was while the body goes over it, its toes curling as it
+        // lifts; the body rolls onto the foot that carries it and the head bobs once a step.
+        float duty = 0.62F;
+        float phase = this.strides.phase(id, age, duck.level().getGameTime(), Strides.rate(walk, duty, SWEEP));
+        float on = Gait.smooth(0.0F, 0.25F, walk);
+        float[] load = new float[2];
+        for (int s = 0; s < 2; s++) {
+            float at = phase - Mth.PI * s;
+            float swing = on * 0.6F * Gait.swing(at, duty);
+            c[LEG_R + s] += swing;
+            c[FOOT_R + s] += on * 1.1F * Gait.toe(at, duty) + 0.5F * on * Gait.lift(at, duty);
+            load[s] = Gait.load(at, duty);
+        }
+        c[ROLL] = 0.2F * on * (load[1] - load[0]);
+        c[BOB] += 0.3F * on * Math.abs(Mth.sin(phase));
+        c[TAIL_WAG] = -1.5F * c[ROLL];
+        c[NECK] += 0.12F * on * Mth.cos(2.0F * phase);
+        c[HEAD] = -0.1F * on * Mth.cos(2.0F * phase);
+        c[BLINK] = Channels.blink(age, id);
         // Afloat its feet trail and paddle, one after the other, faster as it swims on.
         float kick = age * 0.3F + limbSwing * 1.5F;
         float right = this.swim * (0.6F + 0.55F * Mth.sin(kick));
@@ -82,6 +107,16 @@ final class DuckPoses {
                 p.mix(this.act(kind, (float) duck.actAge(kind, partialTick), id), w);
             }
         }
+        // The wingbeat, the bill and the eyes are quick enough as they are.
+        float beat = c[BEAT];
+        float outer = c[BEAT_OUTER];
+        float bill = c[BILL];
+        float blink = c[BLINK];
+        this.springs.follow(id, c, age, duck.level().getGameTime());
+        c[BEAT] = beat;
+        c[BEAT_OUTER] = outer;
+        c[BILL] = bill;
+        c[BLINK] = blink;
         return p;
     }
 
@@ -135,6 +170,7 @@ final class DuckPoses {
                 float quack = note(t, 2.0) + 0.9F * note(t, 8.0) + 0.8F * note(t, 14.0) + 0.7F * note(t, 20.0);
                 c[NECK] = 0.3F * quack;
                 c[HEAD] = -0.35F * quack;
+                c[BILL] = 0.55F * quack;
                 c[BOB] = 0.3F * quack;
                 c[TAIL_WAG] = 0.25F * Mth.sin(t * 1.4F);
                 c[LOOK] = 0.7F;
@@ -149,6 +185,7 @@ final class DuckPoses {
                 c[LEG_R] = c[LEG_L] = -1.4F * (1.0F - this.swim);
                 c[FOOT_R] = c[FOOT_L] = 0.0F;
                 c[TAIL_WAG] = 0.0F;
+                c[BLINK] = 1.0F;
                 c[LOOK] = 0.0F;
             }
             default -> {

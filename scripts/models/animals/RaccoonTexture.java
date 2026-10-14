@@ -26,26 +26,39 @@ public final class RaccoonTexture {
         Path folder = Pelt.textures(args, "entity");
         Pelt p = new Pelt(64, 64, 9133L);
         p.paint(new Pelt.Box("front torso", 0, 0, 6, 5, 5), (f, x, y, z, px, py) -> body(p, f, y, px, py));
+        p.paint(new Pelt.Box("scruff", 36, 12, 5, 1, 4), (f, x, y, z, px, py) -> body(p, f, 0.0, px, py));
+        p.paint(new Pelt.Box("belly", 0, 20, 5, 1, 4), (f, x, y, z, px, py) -> body(p, f, 1.0, px, py));
         p.paint(new Pelt.Box("hind", 22, 0, 7, 6, 6), (f, x, y, z, px, py) -> body(p, f, y, px, py));
+        p.paint(new Pelt.Box("rump top", 18, 20, 5, 1, 4), (f, x, y, z, px, py) -> body(p, f, 0.0, px, py));
         p.paint(new Pelt.Box("skull", 0, 12, 5, 4, 4), (f, x, y, z, px, py) -> skull(p, f, x, y, z, px, py));
         p.paint(new Pelt.Box("cheeks", 18, 12, 7, 2, 2), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
                 ? p.fur(GREY, TIP, 0.3, px, py) : p.fur(WHITE, null, 0.0, px, py));
-        p.paint(new Pelt.Box("snout", 36, 12, 2, 2, 2), (f, x, y, z, px, py) -> snout(p, f, x, y, z, px, py));
-        p.paint(new Pelt.Box("ear", 44, 12, 2, 2, 1), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
+        p.paint(new Pelt.Box("snout", 18, 16, 3, 2, 2), (f, x, y, z, px, py) -> snout(p, f, x, y, z, px, py));
+        p.paint(new Pelt.Box("nose", 54, 7, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
+                ? Pelt.scale(NOSE, 2.5) : NOSE);
+        p.paint(new Pelt.Box("eye", 58, 7, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT ? EYE : MASK);
+        p.paint(new Pelt.Box("ear", 48, 7, 2, 2, 1), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
                 ? (y < 0.5 ? WHITE : DARK) : y < 0.5 ? WHITE : p.fur(GREY, null, 0.0, px, py));
-        // The tail's rings, counted from its root to its black tip across its three pieces.
-        p.paint(new Pelt.Box("tail", 0, 22, 3, 3, 3), (f, x, y, z, px, py) -> ring(p, f, 0 + (int) (z * 3), px,
+        // The tail's rings, counted from its root to its black tip across its four pieces.
+        p.paint(new Pelt.Box("tail", 36, 20, 3, 3, 3), (f, x, y, z, px, py) -> ring(p, f, 0 + (int) (z * 3), px,
                 py));
-        p.paint(new Pelt.Box("tail middle", 12, 22, 3, 3, 3), (f, x, y, z, px, py) -> ring(p, f, 3 + (int) (z * 3),
+        p.paint(new Pelt.Box("tail middle", 48, 0, 4, 4, 3), (f, x, y, z, px, py) -> ring(p, f, 3 + (int) (z * 3),
                 px, py));
-        p.paint(new Pelt.Box("tail tip", 24, 22, 3, 3, 2), (f, x, y, z, px, py) -> ring(p, f, 6 + (int) (z * 2), px,
-                py));
-        p.paint(new Pelt.Box("front leg", 0, 30, 2, 4, 2), (f, x, y, z, px, py) -> p.fur(Pelt.mix(GREY, LEG,
-                0.4 + 0.6 * y), null, 0.0, px, py));
-        p.paint(new Pelt.Box("front paw", 8, 30, 2, 2, 2), (f, x, y, z, px, py) -> paw(p, f, x, px, py));
-        p.paint(new Pelt.Box("hind leg", 16, 30, 3, 5, 3), (f, x, y, z, px, py) -> p.fur(Pelt.mix(GREY, LEG,
-                0.25 + 0.6 * y), TIP, 0.15 * (1.0 - y), px, py));
-        p.paint(new Pelt.Box("hind paw", 28, 30, 2, 2, 3), (f, x, y, z, px, py) -> paw(p, f, x, px, py));
+        p.paint(new Pelt.Box("tail outer", 48, 20, 3, 3, 3), (f, x, y, z, px, py) -> ring(p, f, 6 + (int) (z * 3),
+                px, py));
+        p.paint(new Pelt.Box("tail tip", 54, 28, 2, 2, 1), (f, x, y, z, px, py) -> ring(p, f, 9, px, py));
+        p.paint(new Pelt.Box("front leg", 12, 26, 2, 3, 2), (f, x, y, z, px, py) -> p.fur(Pelt.mix(GREY, LEG,
+                0.4 + 0.4 * y), TIP, 0.1, px, py));
+        p.paint(new Pelt.Box("forearm", 20, 26, 2, 2, 2), (f, x, y, z, px, py) -> p.fur(Pelt.mix(LEG, PAW,
+                0.3 + 0.4 * y), null, 0.0, px, py));
+        p.paint(new Pelt.Box("front paw", 46, 26, 2, 1, 2), (f, x, y, z, px, py) -> paw(p, f, x, px, py));
+        p.paint(new Pelt.Box("fingers", 54, 26, 2, 1, 1), (f, x, y, z, px, py) -> fingers(f, x));
+        p.paint(new Pelt.Box("thigh", 0, 26, 3, 4, 3), (f, x, y, z, px, py) -> p.fur(Pelt.mix(GREY, LEG,
+                0.25 + 0.5 * y), TIP, 0.15 * (1.0 - y), px, py));
+        p.paint(new Pelt.Box("shin", 28, 26, 2, 2, 2), (f, x, y, z, px, py) -> p.fur(Pelt.mix(LEG, PAW,
+                0.2 + 0.4 * y), null, 0.0, px, py));
+        p.paint(new Pelt.Box("hind paw", 36, 26, 2, 1, 3), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
+                ? fingers(f, x) : paw(p, f, x, px, py));
         p.save(folder, "raccoon");
     }
 
@@ -70,9 +83,9 @@ public final class RaccoonTexture {
                     return Pelt.mix(DARK, MASK, 0.4);
                 }
                 return switch (row) {
-                    // White brows over the mask, its dark stripe between them.
+                    // White brows over the mask, its dark stripe between them; the eyes are parts of their own.
                     case 0 -> WHITE;
-                    case 1 -> col == 1 || col == 3 ? EYE : MASK;
+                    case 1 -> MASK;
                     case 2 -> col == 0 || col == 4 ? MASK : WHITE;
                     default -> WHITE;
                 };
@@ -121,6 +134,14 @@ public final class RaccoonTexture {
             c = Pelt.mix(c, RING_LIGHT, 0.5);
         }
         return p.fur(c, index % 2 == 0 ? TIP : null, 0.25, px, py);
+    }
+
+    // Long dark fingers, a paler line between each.
+    static int[] fingers(Pelt.Face f, double x) {
+        if (f == Pelt.Face.BOTTOM) {
+            return Pelt.scale(PAW, 0.8);
+        }
+        return ((int) (x * 4)) % 2 == 0 ? PAW : Pelt.scale(PAW, 1.5);
     }
 
     static int[] paw(Pelt p, Pelt.Face f, double x, int px, int py) {

@@ -10,23 +10,26 @@ import net.minecraft.client.model.geom.builders.PartDefinition;
 import net.minecraft.util.Mth;
 import nl.tivek.multiversepowers.creature.animal.squirrel.Squirrel;
 
-// The squirrel's body: a slight chest on thin forelegs, heavy haunches on long hind feet, a rounded head with a short
-// snout and upright ears, and a bushy tail in three pieces, as long as the rest of it, carried up over its back in an
-// S and streaming out behind when it runs. Its texture is painted by scripts/models/animals. SquirrelPoses moves it.
+// The squirrel's body: a slight chest on thin forelegs bending at the elbow and ending in small grasping paws, heavy
+// haunches on long hind legs that bend at the knee and the ankle, a rounded head with a short snout, big dark eyes
+// that blink and upright ears with a tuft at their tips, and a bushy tail in four pieces, as long as the rest of it,
+// carried up over its back in an S and streaming out behind when it runs. Its texture is painted by
+// scripts/models/animals. SquirrelPoses moves it.
 public final class SquirrelModel extends HierarchicalModel<Squirrel> {
     static final float BODY_Y = 20.0F;
     // The hips in the body's own frame, through the haunches.
     static final float HIP_Y = 0.5F;
     static final float HIP_Z = 2.5F;
-    private static final float[] TAIL_REST = { 1.5F, 0.5F, -0.9F };
+    private static final float[] TAIL_REST = { 1.5F, 0.5F, -0.9F, -0.5F };
     private static final float YOUNG_HEAD = 1.3F;
     private final ModelPart root;
     private final ModelPart body;
     private final ModelPart hind;
     private final ModelPart head;
     private final ModelPart[] ears = new ModelPart[2];
-    private final ModelPart[] tail = new ModelPart[3];
-    // Right front, left front: the leg. Right hind, left hind: thigh and foot.
+    private final ModelPart[] eyes = new ModelPart[2];
+    private final ModelPart[] tail = new ModelPart[4];
+    // Right front, left front: the leg and its paw. Right hind, left hind: thigh, shank and foot.
     private final ModelPart[][] legs = new ModelPart[4][];
     private final SquirrelPoses poses = new SquirrelPoses();
 
@@ -37,14 +40,19 @@ public final class SquirrelModel extends HierarchicalModel<Squirrel> {
         this.head = this.body.getChild("head");
         this.ears[0] = this.head.getChild("right_ear");
         this.ears[1] = this.head.getChild("left_ear");
+        this.eyes[0] = this.head.getChild("right_eye");
+        this.eyes[1] = this.head.getChild("left_eye");
         this.tail[0] = this.hind.getChild("tail");
         this.tail[1] = this.tail[0].getChild("middle");
-        this.tail[2] = this.tail[1].getChild("tip");
-        this.legs[0] = new ModelPart[] { this.body.getChild("right_front_leg") };
-        this.legs[1] = new ModelPart[] { this.body.getChild("left_front_leg") };
+        this.tail[2] = this.tail[1].getChild("outer");
+        this.tail[3] = this.tail[2].getChild("tip");
         for (int s = 0; s < 2; s++) {
-            ModelPart thigh = this.hind.getChild(s == 0 ? "right_hind_leg" : "left_hind_leg");
-            this.legs[2 + s] = new ModelPart[] { thigh, thigh.getChild("foot") };
+            String name = s == 0 ? "right_" : "left_";
+            ModelPart arm = this.body.getChild(name + "front_leg");
+            this.legs[s] = new ModelPart[] { arm, arm.getChild("paw") };
+            ModelPart thigh = this.hind.getChild(name + "hind_leg");
+            ModelPart shank = thigh.getChild("middle");
+            this.legs[2 + s] = new ModelPart[] { thigh, shank, shank.getChild("foot") };
         }
     }
 
@@ -62,9 +70,12 @@ public final class SquirrelModel extends HierarchicalModel<Squirrel> {
         PartDefinition middle = tail.addOrReplaceChild("middle", CubeListBuilder.create()
                 .texOffs(26, 8).addBox(-1.5F, -1.5F, 0.0F, 3.0F, 3.0F, 4.0F),
                 PartPose.offset(0.0F, 0.0F, 2.5F));
-        middle.addOrReplaceChild("tip", CubeListBuilder.create()
+        PartDefinition outer = middle.addOrReplaceChild("outer", CubeListBuilder.create()
                 .texOffs(40, 8).addBox(-1.5F, -1.5F, 0.0F, 3.0F, 3.0F, 3.0F),
                 PartPose.offset(0.0F, 0.0F, 3.5F));
+        outer.addOrReplaceChild("tip", CubeListBuilder.create()
+                .texOffs(52, 8).addBox(-1.0F, -1.0F, 0.0F, 2.0F, 2.0F, 2.0F),
+                PartPose.offset(0.0F, 0.0F, 2.5F));
         PartDefinition head = body.addOrReplaceChild("head", CubeListBuilder.create()
                 .texOffs(28, 0).addBox(-1.5F, -2.0F, -3.0F, 3.0F, 3.0F, 3.0F)
                 .texOffs(40, 0).addBox(-1.0F, -1.0F, -4.0F, 2.0F, 2.0F, 1.0F),
@@ -73,17 +84,28 @@ public final class SquirrelModel extends HierarchicalModel<Squirrel> {
             float side = s == 0 ? -1.0F : 1.0F;
             String name = s == 0 ? "right_" : "left_";
             head.addOrReplaceChild(name + "ear", CubeListBuilder.create().mirror(s == 1)
-                    .texOffs(46, 0).addBox(-0.5F, -2.0F, -0.5F, 1.0F, 2.0F, 1.0F),
+                    .texOffs(46, 0).addBox(-0.5F, -2.0F, -0.5F, 1.0F, 2.0F, 1.0F)
+                    .texOffs(54, 2).addBox(-0.5F, -3.0F, -0.5F, 1.0F, 1.0F, 1.0F),
                     PartPose.offset(side * 1.0F, -2.0F, -0.5F));
-            body.addOrReplaceChild(name + "front_leg", CubeListBuilder.create().mirror(s == 1)
-                    .texOffs(50, 0).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 3.0F, 1.0F),
+            // A big eye at the front corner of the head; it shuts by folding down to nothing.
+            head.addOrReplaceChild(name + "eye", CubeListBuilder.create()
+                    .texOffs(58, 0).addBox(-0.5F, -1.0F, -0.5F, 1.0F, 1.0F, 1.0F),
+                    PartPose.offset(side * 1.1F, 0.0F, -2.6F));
+            PartDefinition arm = body.addOrReplaceChild(name + "front_leg", CubeListBuilder.create().mirror(s == 1)
+                    .texOffs(50, 0).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 2.0F, 1.0F),
                     PartPose.offset(side * 1.0F, 1.0F, -2.0F));
+            arm.addOrReplaceChild("paw", CubeListBuilder.create().mirror(s == 1)
+                    .texOffs(54, 0).addBox(-0.5F, 0.0F, -0.7F, 1.0F, 1.0F, 1.0F),
+                    PartPose.offset(0.0F, 2.0F, 0.0F));
             PartDefinition thigh = hind.addOrReplaceChild(name + "hind_leg", CubeListBuilder.create().mirror(s == 1)
-                    .texOffs(0, 8).addBox(-1.0F, -1.5F, -1.0F, 2.0F, 4.0F, 2.0F),
+                    .texOffs(0, 8).addBox(-1.0F, -1.5F, -1.0F, 2.0F, 3.0F, 2.0F),
                     PartPose.offset(side * 1.5F, HIP_Y, HIP_Z));
-            thigh.addOrReplaceChild("foot", CubeListBuilder.create().mirror(s == 1)
+            PartDefinition shank = thigh.addOrReplaceChild("middle", CubeListBuilder.create().mirror(s == 1)
+                    .texOffs(0, 13).addBox(-0.5F, 0.0F, -0.5F, 1.0F, 1.0F, 1.0F),
+                    PartPose.offset(0.0F, 1.5F, 0.0F));
+            shank.addOrReplaceChild("foot", CubeListBuilder.create().mirror(s == 1)
                     .texOffs(8, 8).addBox(-0.5F, 0.0F, -2.5F, 1.0F, 1.0F, 3.0F),
-                    PartPose.offset(0.0F, 2.5F, 0.0F));
+                    PartPose.offset(0.0F, 1.0F, 0.0F));
         }
         return LayerDefinition.create(mesh, 64, 32);
     }
@@ -123,6 +145,12 @@ public final class SquirrelModel extends HierarchicalModel<Squirrel> {
         this.tail[1].xRot = TAIL_REST[1] + c[SquirrelPoses.TAIL_MID];
         this.tail[1].yRot = c[SquirrelPoses.TAIL_SIDE] * 0.7F;
         this.tail[2].xRot = TAIL_REST[2] + c[SquirrelPoses.TAIL_TIP];
+        this.tail[2].yRot = c[SquirrelPoses.TAIL_WAVE];
+        this.tail[3].xRot = TAIL_REST[3] + c[SquirrelPoses.TAIL_TIP] * 0.6F;
+        this.tail[3].yRot = c[SquirrelPoses.TAIL_WAVE] * 1.3F;
+        float open = 1.0F - 0.9F * Mth.clamp(c[SquirrelPoses.BLINK], 0.0F, 1.0F);
+        this.eyes[0].yScale = open;
+        this.eyes[1].yScale = open;
         if (this.young) {
             this.head.xScale = this.head.yScale = this.head.zScale = YOUNG_HEAD;
         }
@@ -134,8 +162,11 @@ public final class SquirrelModel extends HierarchicalModel<Squirrel> {
             // A leg's swing is told against the ground, whatever the body does.
             leg[0].xRot = c[at] - pitch - (front ? 0.0F : flex);
             leg[0].zRot = side * c[at + 1];
-            if (!front) {
+            if (front) {
+                leg[1].xRot = c[at + 3];
+            } else {
                 leg[1].xRot = c[at + 2];
+                leg[2].xRot = c[at + 3];
             }
         }
     }

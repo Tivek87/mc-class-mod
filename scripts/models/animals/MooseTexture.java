@@ -4,7 +4,8 @@ import java.nio.file.Path;
 // Paints the moose's textures (textures/entity/moose.png and moose_calf.png) from scratch, box by box as MooseModel
 // lays it out. The grown moose: a dark chocolate-brown coat, almost black over the hump, neck and shoulders, a little
 // browner on the rump and flanks; long legs paling from the knee and hock down to grey-white stockings over black
-// hooves; a greyer, lighter muzzle ending in a dark nose with two nostrils; a small dark eye; pale inside the ears;
+// cloven hooves and dewclaws; a near-black mane along the top of the neck; a greyer, lighter muzzle ending in a dark
+// nose with two nostrils; a small dark eye under a lid of the coat's colour; pale inside the ears;
 // and antlers the colour of old bone, darker at the burr and palest at the tips. The calf: a light red-brown all
 // over, its legs only a little paler.
 // Run from the repository root: java scripts/models/animals/MooseTexture.java [assets folder]
@@ -47,8 +48,14 @@ public final class MooseTexture {
         p.paint(new Pelt.Box("front leg", 0, 40, 4, 9, 4), (f, x, y, z, px, py) -> p.fur(Pelt.mix(k.coat,
                 k.stocking, Pelt.step(0.55, 1.1, y)), null, 0.0, px, py));
         p.paint(new Pelt.Box("front cannon", 16, 40, 3, 8, 3), (f, x, y, z, px, py) -> stocking(p, k, y, px, py));
-        p.paint(new Pelt.Box("hoof", 28, 40, 3, 2, 4), (f, x, y, z, px, py) -> Pelt.scale(HOOF, y < 0.5 ? 1.25
-                : 1.0));
+        // Cloven: a dark split down the middle of its front.
+        p.paint(new Pelt.Box("hoof", 28, 40, 3, 2, 4), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
+                && (int) (x * 3) == 1 ? HOOF : Pelt.scale(HOOF, y < 0.5 ? 1.9 : 1.5));
+        p.paint(new Pelt.Box("dewclaw", 120, 0, 1, 1, 1), (f, x, y, z, px, py) -> Pelt.scale(HOOF, 1.4));
+        p.paint(new Pelt.Box("eye", 114, 0, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
+                ? Pelt.mix(k.dark, k.coat, 0.5) : EYE);
+        p.paint(new Pelt.Box("mane", 114, 4, 2, 8, 1), (f, x, y, z, px, py) -> p.fur(Pelt.scale(k.dark, 0.85),
+                k.tip, 0.05, px, py));
         p.paint(new Pelt.Box("thigh", 42, 40, 5, 9, 6), (f, x, y, z, px, py) -> p.fur(Pelt.mix(k.flank, k.coat,
                 Pelt.step(0.3, 0.9, y)), k.tip, 0.05, px, py));
         p.paint(new Pelt.Box("gaskin", 64, 40, 3, 6, 3), (f, x, y, z, px, py) -> p.fur(Pelt.mix(k.coat, k.stocking,
@@ -94,8 +101,9 @@ public final class MooseTexture {
     }
 
     static int[] skull(Pelt p, Coat k, Pelt.Face f, double y, double z, int px, int py) {
+        // Behind the eye, which is a part of its own: its lid, seen as it shuts.
         if ((f == Pelt.Face.RIGHT || f == Pelt.Face.LEFT) && (int) (y * 6) == 2 && (int) (z * 7) == 2) {
-            return EYE;
+            return Pelt.mix(k.dark, k.coat, 0.4);
         }
         // Lighter toward the muzzle, darker on the brow and behind the ears.
         double front = f == Pelt.Face.FRONT ? 0.0 : f == Pelt.Face.BACK ? 1.0 : z;

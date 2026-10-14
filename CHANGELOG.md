@@ -3,6 +3,14 @@
 What changed in the project, newest first. Every release has its own section, `## [<version>] - <date>`;
 the sections before 0.0.1-alpha came before versions were numbered.
 
+## [0.9.17-alpha] - 2026-10-14
+
+### Changed
+- **Wild animals:** all fifteen remade with more detail: wrists, ankles and paws that bend, eyes that blink, and
+  smoother walks and runs whose feet stay where they are set down.
+- **Elephant:** longer and bigger (2.4 by 3.4 blocks), with a longer trunk, larger ears and longer tusks.
+- **Monkey:** a capuchin's face, with eyes, a nose, a dark cap and pale fur round it, on a slimmer body.
+
 ## [0.9.16-alpha] - 2026-10-13
 
 ### Changed

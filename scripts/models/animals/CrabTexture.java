@@ -3,7 +3,8 @@ import java.nio.file.Path;
 
 // Paints the crab's texture (textures/entity/crab.png) and its meat (textures/item/raw_crab.png and cooked_crab.png)
 // from scratch. The crab, box by box as CrabModel lays it out: a red-brown shell mottled darker and lighter, a paler
-// scalloped rim round its edge, cream underneath and across its face; black eyes on pale stalks; brick-red claws,
+// scalloped rim round its edge, a raised middle with its H-shaped groove, dark-tipped spines at its front corners,
+// cream underneath and across its face over brownish mouthparts; black eyes on pale stalks; brick-red claws,
 // paler below, their fingers tipped black; and orange-brown legs darkening to their points. The meat is a claw: raw,
 // dull grey-brown with its black tip; cooked, bright orange-red.
 // Run from the repository root: java scripts/models/animals/CrabTexture.java [assets folder]
@@ -27,17 +28,27 @@ public final class CrabTexture {
                 && ((int) (z * 5)) % 2 == 1 ? Pelt.scale(CREAM, 0.88) : CREAM);
         p.paint(new Pelt.Box("eye", 52, 0, 1, 2, 1), (f, x, y, z, px, py) -> f == Pelt.Face.TOP || y < 0.5 ? BLACK
                 : Pelt.mix(CREAM, SHELL_LIGHT, 0.4));
+        p.paint(new Pelt.Box("dome", 0, 14, 7, 1, 4), (f, x, y, z, px, py) -> dome(p, f, x, z, px, py));
+        // The spine's point lies at its front.
+        p.paint(new Pelt.Box("spine", 56, 0, 1, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT || z < 0.5
+                ? POINT : Pelt.mix(RIM, SHELL, 0.4));
+        p.paint(new Pelt.Box("mouth", 52, 3, 3, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
+                && (int) (x * 3) == 1 ? Pelt.scale(MOUTH, 0.7) : Pelt.mix(MOUTH, CREAM, 0.3));
         p.paint(new Pelt.Box("arm", 0, 9, 2, 2, 3), (f, x, y, z, px, py) -> claw(p, f, y, px, py));
-        p.paint(new Pelt.Box("claw", 10, 9, 2, 3, 2), (f, x, y, z, px, py) -> claw(p, f, y, px, py));
-        p.paint(new Pelt.Box("finger", 18, 9, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT || z < 0.5
+        p.paint(new Pelt.Box("wrist", 34, 11, 2, 2, 2), (f, x, y, z, px, py) -> claw(p, f, y, px, py));
+        p.paint(new Pelt.Box("hand", 22, 14, 3, 3, 2), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
+                && p.noise(px, py, 4) < 0.25 ? Pelt.scale(CLAW, 0.8) : claw(p, f, y, px, py));
+        p.paint(new Pelt.Box("thumb", 34, 15, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT || z < 0.5
                 ? BLACK : Pelt.mix(CLAW, CREAM, 0.35));
-        p.paint(new Pelt.Box("thumb", 26, 9, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT || z < 0.5
+        p.paint(new Pelt.Box("finger", 42, 15, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT || z < 0.5
                 ? BLACK : p.fur(CLAW, null, 0.0, px, py));
         p.paint(new Pelt.Box("leg", 34, 9, 3, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM
                 ? Pelt.mix(LEG, CREAM, 0.4) : p.fur(LEG, null, 0.0, px, py));
-        // The foot's point lies at the box's outer end, the animal's right on the unmirrored piece.
-        p.paint(new Pelt.Box("foot", 42, 9, 4, 1, 1), (f, x, y, z, px, py) -> Pelt.mix(POINT, LEG,
-                Pelt.step(0.1, 0.8, f == Pelt.Face.RIGHT ? 0.0 : f == Pelt.Face.LEFT ? 1.0 : x)));
+        p.paint(new Pelt.Box("lower leg", 42, 9, 3, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM
+                ? Pelt.mix(LEG, CREAM, 0.3) : Pelt.scale(p.fur(LEG, null, 0.0, px, py), 0.9));
+        // The tip's point lies at the box's outer end, the animal's right on the unmirrored piece.
+        p.paint(new Pelt.Box("tip", 50, 9, 2, 1, 1), (f, x, y, z, px, py) -> Pelt.mix(POINT, LEG,
+                Pelt.step(0.1, 0.9, f == Pelt.Face.RIGHT ? 0.0 : f == Pelt.Face.LEFT ? 1.0 : x)));
         p.save(folder, "crab");
         Path items = Pelt.textures(args, "item");
         meat(items, "raw_crab", Pelt.rgb(120, 104, 92), Pelt.rgb(88, 74, 66), Pelt.rgb(190, 176, 150),
@@ -71,6 +82,22 @@ public final class CrabTexture {
         int[] c = mottle < 0.22 ? SHELL_DARK : mottle > 0.82 ? SHELL_LIGHT : SHELL;
         // Two darker dimples in the middle of the back.
         if (row == 2 && (col == 3 || col == 5)) {
+            c = SHELL_DARK;
+        }
+        return Pelt.scale(c, 0.95 + 0.1 * p.noise(px, py, 6));
+    }
+
+    // The raised middle of the back: mottled like the shell, its edges paler where it rises.
+    static int[] dome(Pelt p, Pelt.Face f, double x, double z, int px, int py) {
+        if (f != Pelt.Face.TOP) {
+            return Pelt.mix(SHELL, RIM, 0.25);
+        }
+        double mottle = p.noise(px, py, 5);
+        int[] c = mottle < 0.25 ? SHELL_DARK : mottle > 0.8 ? SHELL_LIGHT : SHELL;
+        // The H-shaped groove of a crab's back.
+        int col = (int) (x * 7);
+        int row = (int) (z * 4);
+        if ((col == 2 || col == 4) && row != 0 || row == 2 && col == 3) {
             c = SHELL_DARK;
         }
         return Pelt.scale(c, 0.95 + 0.1 * p.noise(px, py, 6));

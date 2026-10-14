@@ -1,15 +1,21 @@
 package nl.tivek.multiversepowers.creature.animal.bear.client;
 
 import net.minecraft.util.Mth;
-import nl.tivek.multiversepowers.creature.animal.client.Channels;
 import nl.tivek.multiversepowers.creature.animal.bear.BrownBear;
+import nl.tivek.multiversepowers.creature.animal.client.Channels;
+import nl.tivek.multiversepowers.creature.animal.client.Gait;
+import nl.tivek.multiversepowers.creature.animal.client.Strides;
+import nl.tivek.multiversepowers.creature.client.PoseSprings;
 import nl.tivek.multiversepowers.creature.client.Trunk;
 
-// How the brown bear moves: a heavy, rolling walk in a bear's order of feet (hind, fore, other hind, other fore), its
-// head low and swinging, breaking into a bounding gallop when it runs; paddling when it swims; and its acts on top:
-// sitting back on its rump, rearing up to sniff the wind, lying down with its head on its paws, shaking itself dry,
-// standing up to roar and swinging a paw down in a maul. Every leg's swing is told against the ground (BearModel takes
-// off what the body's own lean already gives it).
+// How the brown bear moves: a heavy, rolling walk in a bear's order of feet (left hind, left fore, right hind, right
+// fore), each paw set down flat and kept where it was set while the body goes over it, rolled up off its heel and
+// folded as it lifts; the shoulders and hips dropping on the side whose foot is up, the head low and swinging, and
+// leaning into its turns; breaking into a rotary gallop when it runs, the back bending and stretching with each bound;
+// paddling when it swims; and its acts on top: sitting back on its rump, rearing up to sniff the wind, lying down with
+// its head on its paws, shaking itself dry, standing up to roar and swinging a paw down in a maul. Every leg's swing is
+// told against the ground (BearModel takes off what the body's own lean already gives it). The whole pose follows on
+// springs, ears and tail slower and swinging past, and the eyes blink.
 final class BearPoses {
     static final int PITCH = 0;
     static final int ROLL = 1;
@@ -27,33 +33,60 @@ final class BearPoses {
     static final int EAR_R = 13;
     static final int EAR_L = 14;
     static final int TAIL = 15;
-    static final int LOOK = 16;
+    static final int TAIL_YAW = 16;
+    static final int LOOK = 17;
+    static final int BLINK = 18;
     // Per leg (right front, left front, right hind, left hind): swing, outward, middle joint, paw.
-    static final int LEGS = 17;
+    static final int LEGS = 19;
     static final int PER_LEG = 4;
     private static final int COUNT = LEGS + 4 * PER_LEG;
     private static final int RF = LEGS;
     private static final int LF = LEGS + PER_LEG;
     private static final int RH = LEGS + 2 * PER_LEG;
     private static final int LH = LEGS + 3 * PER_LEG;
-    private static final float PACE = 0.55F;
+    private static final int[] FEET = { RF, LF, RH, LH };
+    // Where in a stride each foot is set down, as a share of it: walking, left hind first, then left fore, right hind
+    // and right fore; galloping, the hind feet close together and the forefeet half a stride after them.
+    private static final float[] WALK_AT = { 0.75F, 0.25F, 0.5F, 0.0F };
+    private static final float[] RUN_AT = { 0.55F, 0.45F, 0.0F, 0.1F };
+    // How far a paw sweeps back under it (pixels) walking and running: a little longer than the legs show, so a
+    // stride keeps pace with the ground.
+    private static final float WALK_SWEEP = 11.0F;
+    private static final float RUN_SWEEP = 22.0F;
+    private static final float FORE_LEG = 10.0F;
+    private static final float HIND_LEG = 9.0F;
+    private static final double[][] SPRINGS = Channels.springs(COUNT, 0.45, 0.16, 0.45, EAR_R, EAR_L, TAIL,
+            TAIL_YAW, HEAD_ROLL);
     private final Channels pose = new Channels(COUNT);
     private final Channels act = new Channels(COUNT);
+    private final Strides strides = new Strides();
+    private final PoseSprings springs = new PoseSprings(SPRINGS[0], SPRINGS[1]);
 
     Channels of(BrownBear bear, float limbSwing, float amount, float age, float partialTick) {
         Channels p = this.pose.clear();
         float[] c = p.v;
         c[LOOK] = 1.0F;
+        float a = Mth.clamp(amount, 0.0F, 1.0F);
+        float run = Trunk.in(a, 0.62, 0.92);
+        float duty = Gait.duty(run, 0.68F, 0.4F);
+        float rate = bear.isInWater() ? 0.3F : Strides.rate(a, duty, Mth.lerp(run, WALK_SWEEP, RUN_SWEEP));
+        float phase = this.strides.phase(bear.getId(), age, bear.level().getGameTime(), rate);
         if (bear.isInWater()) {
-            this.swim(c, age);
+            this.swim(c, phase);
         } else {
-            this.walk(c, limbSwing, Mth.clamp(amount, 0.0F, 1.0F));
+            this.walk(c, phase, a, run, duty);
         }
+        // Leaning into a turn, the head leading it.
+        float turn = Mth.clamp(Mth.wrapDegrees(bear.yBodyRot - bear.yBodyRotO), -15.0F, 15.0F);
+        c[ROLL] -= 0.012F * turn * a;
+        c[NECK_YAW] += 0.02F * turn;
+        c[TAIL_YAW] -= 0.03F * turn;
         // Breathing, a flick of either ear and a twitch of the tail now and then.
         c[BOB] += 0.12F * Mth.sin(age * 0.09F);
         c[EAR_R] += 0.35F * Channels.twitch(age, bear.getId(), 97, 5.0F);
         c[EAR_L] += 0.35F * Channels.twitch(age, bear.getId() + 3, 131, 5.0F);
         c[TAIL] += 0.08F * Mth.sin(age * 0.05F) + 0.3F * Channels.twitch(age, bear.getId() + 5, 173, 6.0F);
+        c[BLINK] = Channels.blink(age, bear.getId());
         for (int kind = BrownBear.SIT; kind <= BrownBear.MAUL; kind++) {
             float w = bear.blend(kind, partialTick);
             if (w > 0.0F) {
@@ -61,53 +94,71 @@ final class BearPoses {
                 p.mix(this.act(kind, t, age), w);
             }
         }
+        float blink = c[BLINK];
+        this.springs.follow(bear.getId(), c, age, bear.level().getGameTime());
+        c[BLINK] = blink;
         return p;
     }
 
-    private void walk(float[] c, float limbSwing, float a) {
-        float phase = limbSwing * PACE;
-        float run = Trunk.in(a, 0.62, 0.92);
+    private void walk(float[] c, float phase, float a, float run, float duty) {
         float walk = a * (1.0F - run);
-        // Walking, each foot a quarter of a stride after the last: left hind, left fore, right hind, right fore.
-        float[] walkAt = { 1.5F * Mth.PI, 0.5F * Mth.PI, Mth.PI, 0.0F };
-        // Galloping, the forefeet close together and the hind feet half a stride after them.
-        float[] runAt = { 0.0F, 0.45F, Mth.PI, Mth.PI + 0.45F };
-        int[] legs = { RF, LF, RH, LH };
+        float on = Gait.smooth(0.0F, 0.3F, a);
+        float[] load = new float[4];
+        float[] drop = new float[4];
         for (int k = 0; k < 4; k++) {
             boolean front = k < 2;
-            float w = phase + walkAt[k];
-            float g = phase + runAt[k];
-            float up = Channels.lift(w) * walk + Channels.lift(g) * run * 1.3F;
-            c[legs[k]] = 0.42F * walk * Channels.swing(w) + 0.85F * run * Channels.swing(g);
-            c[legs[k] + 2] = (front ? 0.95F : 0.75F) * up;
-            c[legs[k] + 3] = (front ? 0.7F : 0.5F) * up;
+            int leg = FEET[k];
+            float p = phase - Mth.TWO_PI * Mth.lerp(run, WALK_AT[k], RUN_AT[k]);
+            float reach = on * (front ? Mth.lerp(run, 0.36F, 0.75F) : Mth.lerp(run, 0.32F, 0.7F));
+            float swing = reach * Gait.swing(p, duty);
+            float fold = on * Gait.fold(p, duty) * (front ? Mth.lerp(run, 0.85F, 1.3F) : Mth.lerp(run, 0.7F, 1.1F));
+            c[leg] = swing;
+            c[leg + 1] = 0.04F * on;
+            c[leg + 2] = fold;
+            // The paw kept flat on the ground under the leg's lean, folding only as the foot rolls off and lifts.
+            c[leg + 3] = on * (front ? 1.1F : 0.8F) * Gait.toe(p, duty) - swing - fold;
+            load[k] = Gait.load(p, duty);
+            drop[k] = (front ? FORE_LEG : HIND_LEG) * (1.0F - Mth.cos(swing));
         }
-        // The shoulders roll with each forefoot, the hump with them, the head swinging low.
-        c[ROLL] = 0.07F * walk * Mth.sin(phase);
-        c[HIND_ROLL] = -0.05F * walk * Mth.sin(phase + 0.5F * Mth.PI);
-        c[YAW] = 0.03F * walk * Mth.sin(phase + 0.5F * Mth.PI);
-        c[BOB] = 0.35F * walk * Mth.cos(2.0F * phase) - 1.1F * run * Math.abs(Mth.sin(phase));
-        c[NECK] = 0.12F * a + 0.05F * walk * Mth.cos(2.0F * phase) - 0.12F * run * Mth.sin(phase);
-        c[NECK_YAW] = 0.09F * walk * Mth.sin(phase + 0.5F * Mth.PI);
-        // Running, the back bends and stretches with each bound.
-        c[FLEX] = 0.3F * run * Mth.sin(phase + 0.5F * Mth.PI);
-        c[PITCH] = -0.1F * run * Mth.sin(phase);
-        c[EAR_R] = c[EAR_L] = 0.25F * run;
+        // The shoulders sit as high as the legs under them stand, dropping on the side whose foot is up, and the hips
+        // with them; the hump rolls with every step.
+        float fore = (load[0] * drop[0] + load[1] * drop[1]) / Math.max(0.3F, load[0] + load[1]);
+        float hind = (load[2] * drop[2] + load[3] * drop[3]) / Math.max(0.3F, load[2] + load[3]);
+        // BearModel keeps the hips where the hind legs hold them, so the body sinks by the hips' drop and its pitch
+        // brings the shoulders down to theirs.
+        c[BOB] = hind * (1.0F - run) - 0.9F * run * (1.0F - Math.min(1.0F, load[0] + load[1] + load[2] + load[3]));
+        c[PITCH] = (fore - hind) / 15.0F * (1.0F - run);
+        c[ROLL] = 0.09F * walk * (load[0] - load[1]);
+        c[HIND_ROLL] = 0.08F * walk * (load[2] - load[3]) - c[ROLL];
+        c[YAW] = 0.04F * walk * (load[0] - load[1]);
+        // The head low and swinging toward the forefoot that is down.
+        c[NECK] = 0.12F * a + 0.06F * walk * (load[0] + load[1] - 1.0F);
+        c[NECK_YAW] = 0.1F * walk * (load[1] - load[0]);
+        c[HEAD] = -0.6F * c[PITCH];
+        // Galloping, the back bends and stretches with each bound and the head is held steady against it.
+        float bound = run * Mth.sin(phase - Mth.TWO_PI * 0.3F);
+        c[FLEX] = 0.22F * bound;
+        c[PITCH] += -0.12F * run * Mth.sin(phase - Mth.TWO_PI * 0.05F);
+        c[NECK] += -0.15F * bound;
+        c[HEAD] += 0.12F * run * Mth.sin(phase - Mth.TWO_PI * 0.05F);
+        c[EAR_R] += 0.25F * run;
+        c[EAR_L] += 0.25F * run;
+        c[TAIL] += 0.25F * run;
     }
 
-    // Paddling with its head held up out of the water.
-    private void swim(float[] c, float age) {
-        float phase = age * 0.32F;
-        float[] at = { 0.0F, Mth.PI, 0.5F * Mth.PI, 1.5F * Mth.PI };
-        int[] legs = { RF, LF, RH, LH };
+    // Paddling with its head held up out of the water, each leg pulling back folded and reaching forward again.
+    private void swim(float[] c, float phase) {
+        float[] at = { 0.0F, 0.5F, 0.25F, 0.75F };
         for (int k = 0; k < 4; k++) {
-            float p = phase + at[k];
-            c[legs[k]] = 0.65F * Mth.sin(p) - 0.2F;
-            c[legs[k] + 2] = 0.8F * Channels.lift(p);
-            c[legs[k] + 3] = 0.4F * Channels.lift(p);
+            int leg = FEET[k];
+            float p = phase - Mth.TWO_PI * at[k];
+            c[leg] = 0.65F * Gait.swing(p, 0.5F) - 0.2F;
+            c[leg + 2] = 0.8F * Gait.fold(p, 0.5F);
+            c[leg + 3] = 0.5F * Gait.toe(p, 0.5F);
         }
         c[PITCH] = -0.18F;
         c[NECK] = -0.25F;
+        c[HEAD] = 0.15F;
         c[ROLL] = 0.04F * Mth.sin(phase);
     }
 
@@ -117,7 +168,7 @@ final class BearPoses {
         switch (kind) {
             case BrownBear.SIT -> {
                 c[PITCH] = -0.78F;
-                c[SINK] = 4.0F;
+                c[SINK] = 5.5F;
                 c[FLEX] = 0.12F;
                 c[BOB] = 0.12F * Mth.sin(age * 0.09F);
                 c[ROLL] = c[HIND_ROLL] = c[YAW] = 0.0F;
@@ -149,7 +200,7 @@ final class BearPoses {
                 c[LOOK] = 0.3F;
             }
             case BrownBear.REST -> {
-                c[SINK] = 6.6F;
+                c[SINK] = 7.8F;
                 c[PITCH] = c[FLEX] = c[ROLL] = c[HIND_ROLL] = c[YAW] = 0.0F;
                 c[BOB] = 0.25F * Mth.sin(age * 0.055F);
                 // Forelegs stretched out before it, hind legs out behind.
@@ -166,6 +217,8 @@ final class BearPoses {
                 c[EAR_L] += 0.15F;
                 c[TAIL] = 0.0F;
                 c[LOOK] = 0.4F * looks;
+                // Dozing, its eyes open only while it looks round.
+                c[BLINK] = Math.max(c[BLINK], 0.85F * (1.0F - looks));
             }
             case BrownBear.SHAKE -> {
                 float on = Trunk.in(t, 0.0, 5.0) * (1.0F - Trunk.in(t, BrownBear.SHAKE_END - 8, BrownBear.SHAKE_END));
@@ -181,6 +234,8 @@ final class BearPoses {
                     c[leg + 1] = 0.15F * on;
                 }
                 c[TAIL] = 0.5F * on * Mth.sin(s + 2.0F);
+                c[JAW] = 0.25F * on;
+                c[BLINK] = Math.max(c[BLINK], 0.7F * on);
             }
             case BrownBear.ROAR -> {
                 float rise = Trunk.in(t, 0.0, 8.0) * (1.0F - Trunk.in(t, 22.0, BrownBear.ROAR_END));
@@ -198,6 +253,7 @@ final class BearPoses {
                 c[HEAD_YAW] = 0.1F * open * Mth.sin(t * 1.1F);
                 c[EAR_R] = c[EAR_L] = 0.4F * open;
                 c[LOOK] = 0.5F;
+                c[BLINK] = 0.0F;
             }
             case BrownBear.MAUL -> {
                 float raise = Trunk.in(t, 0.0, 6.0);

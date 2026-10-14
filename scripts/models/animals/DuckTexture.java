@@ -45,6 +45,13 @@ public final class DuckTexture {
         p.paint(new Pelt.Box("neck", 34, 0, 2, 4, 2), (f, x, y, z, px, py) -> neck(p, k, f, y, px, py));
         p.paint(new Pelt.Box("head", 42, 0, 3, 3, 3), (f, x, y, z, px, py) -> head(p, k, f, y, z, px, py));
         p.paint(new Pelt.Box("bill", 54, 0, 2, 1, 2), (f, x, y, z, px, py) -> bill(k, f, z));
+        p.paint(new Pelt.Box("lower bill", 54, 3, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
+                ? Pelt.rgb(150, 72, 66) : Pelt.scale(bill(k, Pelt.Face.BOTTOM, z), 0.88));
+        // The breast swells out of the body's front, coloured as the chest.
+        p.paint(new Pelt.Box("breast", 30, 12, 4, 3, 1), (f, x, y, z, px, py) -> body(p, k, f == Pelt.Face.TOP
+                ? Pelt.Face.TOP : Pelt.Face.FRONT, y, 0.0, px, py));
+        p.paint(new Pelt.Box("eye", 40, 12, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
+                ? head(p, k, Pelt.Face.TOP, 0.0, 0.5, px, py) : EYE);
         p.paint(new Pelt.Box("wing", 0, 12, 4, 3, 1), (f, x, y, z, px, py) -> wing(p, k, f, x, y, px, py, false));
         p.paint(new Pelt.Box("outer wing", 10, 12, 3, 3, 1), (f, x, y, z, px, py) -> wing(p, k, f, x, y, px, py,
                 true));

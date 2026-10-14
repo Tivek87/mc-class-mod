@@ -41,13 +41,18 @@ public final class OwlTexture {
                 : 0.82));
         p.paint(new Pelt.Box("lid", 46, 0, 2, 2, 1), (f, x, y, z, px, py) -> Pelt.scale(k.lid, y < 0.5 ? 1.0
                 : 0.86));
-        p.paint(new Pelt.Box("tail", 52, 0, 3, 3, 1), (f, x, y, z, px, py) -> barred(p, k, (int) (y * 3), px, py));
-        p.paint(new Pelt.Box("wing", 0, 12, 5, 5, 1), (f, x, y, z, px, py) -> wing(p, k, f, x, y, px, py, false));
-        p.paint(new Pelt.Box("outer wing", 12, 12, 5, 5, 1), (f, x, y, z, px, py) -> wing(p, k, f, x, y, px, py,
+        p.paint(new Pelt.Box("tail", 52, 0, 3, 4, 1), (f, x, y, z, px, py) -> y > 0.75 && p.noise(px, py, 13) < 0.45
+                ? null : barred(p, k, (int) (y * 4), px, py));
+        p.paint(new Pelt.Box("wing", 0, 12, 5, 6, 1), (f, x, y, z, px, py) -> wing(p, k, f, x, y, px, py, false));
+        p.paint(new Pelt.Box("outer wing", 12, 12, 5, 6, 1), (f, x, y, z, px, py) -> wing(p, k, f, x, y, px, py,
                 true));
+        p.paint(new Pelt.Box("fluff", 36, 12, 4, 1, 3), (f, x, y, z, px, py) -> f != Pelt.Face.TOP
+                && f != Pelt.Face.BOTTOM && p.noise(px, py, 14) < 0.3 ? null : breast(p, k, px, py));
         p.paint(new Pelt.Box("leg", 24, 12, 1, 2, 1), (f, x, y, z, px, py) -> p.fur(k.foot, null, 0.0, px, py));
-        p.paint(new Pelt.Box("foot", 28, 12, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
-                || f == Pelt.Face.TOP && z < 0.5 ? TALON : k.foot);
+        p.paint(new Pelt.Box("foot", 28, 12, 2, 1, 2), (f, x, y, z, px, py) -> f == Pelt.Face.BOTTOM
+                ? Pelt.scale(k.foot, 0.8) : k.foot);
+        p.paint(new Pelt.Box("talons", 36, 16, 2, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.TOP
+                ? k.foot : TALON);
         p.save(folder, k.name);
     }
 
@@ -77,7 +82,11 @@ public final class OwlTexture {
         if (f != Pelt.Face.FRONT && f != Pelt.Face.BACK) {
             return p.fur(Pelt.mix(k.back, k.streak, 0.35), null, 0.0, px, py);
         }
-        int row = (int) (y * 5);
+        int row = (int) (y * 6);
+        // The flight feathers end unevenly, one longer than the next.
+        if (row == 5 && p.noise(px, 0, 15) < 0.45) {
+            return null;
+        }
         // The coverts near the shoulder mottled like the back, the flight feathers below them barred.
         if (row == 0 && !outer) {
             return back(p, k, px, py);

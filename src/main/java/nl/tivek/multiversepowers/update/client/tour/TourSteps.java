@@ -20,24 +20,18 @@ import nl.tivek.multiversepowers.update.client.tour.TourStep.Place;
 // while a line is in neither, or a tour text is too long. Only steps from `FROM` up to the version installed are ever
 // shown, so a release's steps replace the last one's. A player's first tour starts with `INTRO`.
 final class TourSteps {
-    static final String VERSION = "0.9.16-alpha";
-    // The oldest version whose changes this tour shows: normally its own. 0.9.15 and 0.9.16 came out within hours of
-    // 0.9.14, so it shows that one's changes too.
-    static final String FROM = "0.9.14-alpha";
+    static final String VERSION = "0.9.17-alpha";
+    // The oldest version whose changes this tour shows: normally its own.
+    static final String FROM = VERSION;
     // The card every release with a new character (`GameCharacter.newIn` = VERSION) shows: hold the wheel key, where
     // the newest is marked NEW.
     static final String NEW_CHARACTER = "new_character";
 
     static final List<TourStep> ALL = List.of(
-            step(FROM, "faction_enemies", Kind.CHANGED, Place.GAME).covers("Joining makes enemies:"),
-            step(FROM, "fight_through", Kind.CHANGED, Place.GAME).covers("Creatures finish their fight:"),
-            step(FROM, "blaze_look", Kind.CHANGED, Place.GAME).covers("Elemental Blaze:"),
-            step(VERSION, "stone_heave", Kind.CHANGED, Place.GAME).covers("Stone Heave:"));
+            step(VERSION, "wild_animals", Kind.CHANGED, Place.GAME).covers("Wild animals:"));
 
     // Changes too small for a step of their own, each by how its changelog line starts, as in `covers`.
-    static final List<String> SMALL = List.of("Faction names:", "Members start in good standing:",
-            "Cast out only at a low reputation:", "Faction help:", "Feedback forms:", "Dimmer Elemental Blaze:",
-            "Stronger Elemental Blaze:", "Gale Push:", "Pixel effects:", "Faction over heads:", "Wizard's staff:");
+    static final List<String> SMALL = List.of("Elephant:", "Monkey:");
 
     // Shown first on a player's first tour, wherever it starts: what the tour is and how to use it.
     static final TourStep INTRO = step(VERSION, "tour_intro", Kind.HOW, Place.ANY);

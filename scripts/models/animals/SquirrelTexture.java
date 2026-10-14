@@ -34,15 +34,22 @@ public final class SquirrelTexture {
                 || f == Pelt.Face.TOP ? NOSE : WHITE);
         p.paint(new Pelt.Box("ear", 46, 0, 1, 2, 1), (f, x, y, z, px, py) -> y < 0.5 || f == Pelt.Face.TOP ? k.ear
                 : p.fur(k.coat, null, 0.0, px, py));
-        p.paint(new Pelt.Box("front leg", 50, 0, 1, 3, 1), (f, x, y, z, px, py) -> p.fur(Pelt.mix(k.coat, k.foot,
-                Pelt.step(0.5, 1.0, y)), null, 0.0, px, py));
-        p.paint(new Pelt.Box("thigh", 0, 8, 2, 4, 2), (f, x, y, z, px, py) -> p.fur(k.coat, k.tip, 0.15, px, py));
-        p.paint(new Pelt.Box("foot", 8, 8, 1, 1, 3), (f, x, y, z, px, py) -> k.foot);
+        p.paint(new Pelt.Box("ear tuft", 54, 2, 1, 1, 1), (f, x, y, z, px, py) -> Pelt.mix(k.ear, k.coat, 0.3));
+        p.paint(new Pelt.Box("eye", 58, 0, 1, 1, 1), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
+                ? Pelt.scale(EYE, 2.4) : EYE);
+        p.paint(new Pelt.Box("front leg", 50, 0, 1, 2, 1), (f, x, y, z, px, py) -> p.fur(Pelt.mix(k.coat, k.foot,
+                0.5 * y), null, 0.0, px, py));
+        p.paint(new Pelt.Box("front paw", 54, 0, 1, 1, 1), (f, x, y, z, px, py) -> Pelt.scale(k.foot, 0.85));
+        p.paint(new Pelt.Box("thigh", 0, 8, 2, 3, 2), (f, x, y, z, px, py) -> p.fur(k.coat, k.tip, 0.15, px, py));
+        p.paint(new Pelt.Box("shank", 0, 13, 1, 1, 1), (f, x, y, z, px, py) -> Pelt.mix(k.coat, k.foot, 0.5));
+        p.paint(new Pelt.Box("foot", 8, 8, 1, 1, 3), (f, x, y, z, px, py) -> f == Pelt.Face.FRONT
+                ? Pelt.scale(k.foot, 0.7) : k.foot);
         p.paint(new Pelt.Box("tail", 16, 8, 2, 2, 3), (f, x, y, z, px, py) -> tail(p, k, 0.3, px, py));
-        p.paint(new Pelt.Box("tail middle", 26, 8, 3, 3, 4), (f, x, y, z, px, py) -> tail(p, k, edge(f, x, y), px,
+        p.paint(new Pelt.Box("tail middle", 26, 8, 3, 3, 4), (f, x, y, z, px, py) -> brush(p, k, f, x, y, 0.0, px,
                 py));
-        p.paint(new Pelt.Box("tail tip", 40, 8, 3, 3, 3), (f, x, y, z, px, py) -> tail(p, k, edge(f, x, y) + 0.15,
-                px, py));
+        p.paint(new Pelt.Box("tail outer", 40, 8, 3, 3, 3), (f, x, y, z, px, py) -> brush(p, k, f, x, y, 0.15, px,
+                py));
+        p.paint(new Pelt.Box("tail tip", 52, 8, 2, 2, 2), (f, x, y, z, px, py) -> tail(p, k, 0.9, px, py));
         p.save(folder, k.name);
     }
 
@@ -65,14 +72,15 @@ public final class SquirrelTexture {
         switch (f) {
             case FRONT -> {
                 int col = (int) (x * 3);
+                // The lids behind the eyes, which are parts of their own.
                 if (row == 1 && col != 1) {
-                    return EYE;
+                    return Pelt.scale(k.coat, 0.7);
                 }
                 return row == 2 ? WHITE : p.fur(k.coat, null, 0.0, px, py);
             }
             case RIGHT, LEFT -> {
                 if (row == 1 && z < 0.34) {
-                    return EYE;
+                    return Pelt.scale(k.coat, 0.7);
                 }
                 // A pale ring behind the eye, white cheeks under it.
                 if (row == 1 && z < 0.67) {
@@ -93,6 +101,17 @@ public final class SquirrelTexture {
     static double edge(Pelt.Face f, double x, double y) {
         return f == Pelt.Face.TOP || f == Pelt.Face.BOTTOM ? 2.0 * Math.abs(x - 0.5) * 0.6
                 : f == Pelt.Face.FRONT || f == Pelt.Face.BACK ? 0.6 : 2.0 * Math.abs(y - 0.5) * 0.6;
+    }
+
+    // The brush: frosted toward its outside, the long hairs at its corners standing out in a ragged fringe.
+    static int[] brush(Pelt p, Coat k, Pelt.Face f, double x, double y, double more, int px, int py) {
+        double edge = edge(f, x, y);
+        boolean corner = (f == Pelt.Face.RIGHT || f == Pelt.Face.LEFT) && (y < 0.34 || y > 0.66)
+                || (f == Pelt.Face.TOP || f == Pelt.Face.BOTTOM) && (x < 0.34 || x > 0.66);
+        if (corner && p.noise(px, py, 6) < 0.3) {
+            return null;
+        }
+        return tail(p, k, edge + more, px, py);
     }
 
     static int[] tail(Pelt p, Coat k, double edge, int px, int py) {
